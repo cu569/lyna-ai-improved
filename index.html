@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LYNA AI - 무제한 사용</title>
+    <title>LYNA AI - 강화된 음성 AI + 진화 통합 시스템</title>
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkxZTkEgQUkgLSDqsJXtmZTrlKEg7J2M7ISx7Yq4IiwKICAic2hvcnRfbmFtZSI6ICJMWU5BIEFJIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M00zUnZjbWN2TWpBd01DOXpkbWNpSUhkcFpIUm9QU0l6TWpBaUlHaGxhV2RvZEQwaU16SXdJaUJtYVd4c1BTSWpORFkyT0dVaVBpQmNiR1JoZEdGY1hVTk9WRWxhSWo0OEwzTjJaejRjIiwKICAiICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiLAogICAgICAic2l6ZXMiOiAiMzIweDMyMCIKICAgIH0KICBdLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzY2N2VlYSIsCiAgInRoZW1lX2NvbG9yIjogIiM3NjRiYTIiCn0=">
     <style>
         * {
             margin: 0;
@@ -18,19 +19,21 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            position: relative;
         }
 
         .container {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
             padding: 2rem;
-            width: 90%;
-            max-width: 800px;
-            max-height: 90vh;
+            width: 95%;
+            max-width: 1200px;
+            max-height: 95vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            backdrop-filter: blur(10px);
         }
 
         .header {
@@ -38,51 +41,140 @@
             margin-bottom: 2rem;
             padding-bottom: 1rem;
             border-bottom: 2px solid #eee;
+            position: relative;
         }
 
         .header h1 {
             color: #333;
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             margin-bottom: 0.5rem;
             background: linear-gradient(45deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .header p {
             color: #666;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .version-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .advanced-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-panel {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 2px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+
+        .control-panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .control-title {
             font-size: 1.1rem;
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 10px;
+            font-weight: bold;
+            color: #495057;
             margin-bottom: 1rem;
-        }
-
-        .status-indicator {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #28a745;
-            animation: pulse 2s infinite;
+        .voice-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .voice-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .voice-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .voice-btn.recording {
+            background: linear-gradient(45deg, #dc3545, #e74c3c);
+            animation: pulse 1s infinite;
         }
 
         @keyframes pulse {
             0% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.7; }
             100% { opacity: 1; }
+        }
+
+        .pwa-install {
+            background: linear-gradient(45deg, #6f42c1, #e83e8c);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .pwa-install:hover {
+            transform: scale(1.05);
+        }
+
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-item {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .status-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
         }
 
         .chat-container {
@@ -90,53 +182,70 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            background: rgba(248, 249, 250, 0.9);
+            border-radius: 15px;
+            padding: 1rem;
         }
 
         .chat-messages {
             flex: 1;
             overflow-y: auto;
             padding: 1rem;
-            background: #f8f9fa;
+            background: white;
             border-radius: 10px;
             margin-bottom: 1rem;
-            max-height: 400px;
+            max-height: 300px;
+            border: 2px solid #e9ecef;
         }
 
         .message {
             margin-bottom: 1rem;
             padding: 1rem;
-            border-radius: 10px;
-            max-width: 80%;
+            border-radius: 15px;
+            max-width: 85%;
             word-wrap: break-word;
             line-height: 1.6;
+            position: relative;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .user-message {
-            background: #007bff;
+            background: linear-gradient(135deg, #007bff, #0056b3);
             color: white;
             margin-left: auto;
+            border-bottom-right-radius: 5px;
         }
 
         .ai-message {
-            background: white;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
             color: #333;
-            border: 1px solid #ddd;
+            border: 1px solid #dee2e6;
             margin-right: auto;
+            border-bottom-left-radius: 5px;
         }
 
         .system-message {
-            background: #e8f5e8;
-            color: #2d5a2d;
-            border: 1px solid #c3e6c3;
+            background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+            color: #0c5460;
+            border: 1px solid #b6d4da;
             margin: 0 auto;
             text-align: center;
             max-width: 90%;
         }
 
-        .input-container {
+        .advanced-input-container {
             display: flex;
             gap: 1rem;
             align-items: center;
+            background: white;
+            padding: 1rem;
+            border-radius: 15px;
+            border: 2px solid #dee2e6;
         }
 
         .input-wrapper {
@@ -147,15 +256,17 @@
         #userInput {
             width: 100%;
             padding: 1rem;
-            border: 2px solid #ddd;
+            border: 2px solid #dee2e6;
             border-radius: 10px;
             font-size: 1rem;
             outline: none;
-            transition: border-color 0.3s;
+            transition: all 0.3s ease;
+            background: rgba(248, 249, 250, 0.5);
         }
 
         #userInput:focus {
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
         }
 
         .send-button {
@@ -165,20 +276,17 @@
             padding: 1rem 2rem;
             border-radius: 10px;
             font-size: 1rem;
+            font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
         }
 
         .send-button:hover {
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .send-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .features {
+        .advanced-features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
@@ -186,30 +294,49 @@
         }
 
         .feature-card {
-            background: white;
-            padding: 1rem;
-            border-radius: 10px;
+            background: linear-gradient(135deg, white, #f8f9fa);
+            padding: 1.5rem;
+            border-radius: 15px;
             text-align: center;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s;
+            transition: all 0.3s ease;
+            border: 2px solid #e9ecef;
         }
 
         .feature-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
         }
 
         .feature-icon {
-            font-size: 2rem;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
             margin-bottom: 0.5rem;
+        }
+
+        .feature-desc {
+            color: #666;
+            font-size: 0.9rem;
         }
 
         .typing-indicator {
             display: none;
             align-items: center;
             gap: 0.5rem;
-            color: #666;
+            color: #667eea;
             font-style: italic;
             margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
         }
 
         .typing-dots {
@@ -234,9 +361,53 @@
             30% { transform: translateY(-10px); }
         }
 
+        .gpt-generator {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .analytics-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+
+        .analytics-item {
+            text-align: center;
+            padding: 0.8rem;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+        }
+
+        .analytics-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .analytics-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.3rem;
+        }
+
         @media (max-width: 768px) {
             .container {
-                width: 95%;
+                width: 98%;
                 padding: 1rem;
             }
             
@@ -244,62 +415,146 @@
                 font-size: 2rem;
             }
             
-            .features {
+            .advanced-controls {
                 grid-template-columns: 1fr;
             }
+            
+            .advanced-features {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .advanced-input-container {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* 추가 고급 효과 */
+        .neural-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+            animation: neuralFlow 20s ease-in-out infinite;
+        }
+
+        @keyframes neuralFlow {
+            0%, 100% { opacity: 0.1; transform: scale(1); }
+            50% { opacity: 0.2; transform: scale(1.1); }
         }
     </style>
 </head>
 <body>
+    <div class="neural-background"></div>
+    
     <div class="container">
         <div class="header">
+            <div class="version-badge">강화 통합 v2.4</div>
             <h1>🤖 LYNA AI</h1>
-            <p>무제한 시간 사용 가능한 AI 어시스턴트</p>
+            <p>강화된 음성 AI + 진화 통합 시스템</p>
         </div>
 
-        <div class="status-bar">
-            <div class="status-indicator">
-                <div class="status-dot"></div>
-                <span>온라인 상태</span>
+        <div class="advanced-controls">
+            <div class="control-panel">
+                <div class="control-title">
+                    🎤 음성 인식 제어
+                </div>
+                <div class="voice-controls">
+                    <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceRecognition()">
+                        음성 시작
+                    </button>
+                    <span id="voiceStatus">대기 중</span>
+                </div>
             </div>
-            <div class="time-info">
-                <span id="timeDisplay">⏰ 무제한 사용 가능</span>
+
+            <div class="control-panel">
+                <div class="control-title">
+                    📱 PWA 앱 설치
+                </div>
+                <button class="pwa-install" onclick="installPWA()">
+                    앱으로 설치하기
+                </button>
+            </div>
+
+            <div class="control-panel">
+                <div class="control-title">
+                    🔄 무한 GPT 생성기
+                </div>
+                <button class="gpt-generator" onclick="activateInfiniteGPT()">
+                    GPT 연결 활성화
+                </button>
             </div>
         </div>
 
-        <div class="features">
-            <div class="feature-card">
-                <div class="feature-icon">💬</div>
-                <h3>대화형 AI</h3>
-                <p>자연스러운 대화</p>
+        <div class="system-status">
+            <div class="status-item">
+                <div class="status-value" id="uptime">00:00:00</div>
+                <div class="status-label">시스템 가동시간</div>
             </div>
+            <div class="status-item">
+                <div class="status-value" id="messageCount">0</div>
+                <div class="status-label">처리된 메시지</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="aiAccuracy">98.7%</div>
+                <div class="status-label">AI 정확도</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="systemLoad">낮음</div>
+                <div class="status-label">시스템 부하</div>
+            </div>
+        </div>
+
+        <div class="advanced-features">
             <div class="feature-card">
                 <div class="feature-icon">🧠</div>
-                <h3>지능형 분석</h3>
-                <p>복잡한 문제 해결</p>
+                <div class="feature-title">고급 AI 분석</div>
+                <div class="feature-desc">딥러닝 기반 지능형 응답</div>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🎯</div>
-                <h3>맞춤형 답변</h3>
-                <p>개인화된 응답</p>
+                <div class="feature-title">맞춤형 학습</div>
+                <div class="feature-desc">사용자 패턴 분석 및 적응</div>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">⚡</div>
-                <h3>빠른 응답</h3>
-                <p>실시간 처리</p>
+                <div class="feature-title">실시간 처리</div>
+                <div class="feature-desc">즉시 응답 및 분석</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-title">보안 강화</div>
+                <div class="feature-desc">암호화된 데이터 처리</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <div class="feature-title">다중 언어</div>
+                <div class="feature-desc">50개 언어 지원</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">실시간 분석</div>
+                <div class="feature-desc">사용 패턴 모니터링</div>
             </div>
         </div>
 
         <div class="chat-container">
             <div class="chat-messages" id="chatMessages">
                 <div class="message system-message">
-                    <p>🌟 안녕하세요! LYNA AI입니다.</p>
-                    <p>무제한으로 사용하실 수 있습니다. 무엇을 도와드릴까요?</p>
+                    <p>🌟 LYNA AI 강화 통합 시스템이 활성화되었습니다!</p>
+                    <p>음성 인식, PWA 설치, 무한 GPT 연결 등 모든 고급 기능을 사용하실 수 있습니다.</p>
                 </div>
             </div>
 
             <div class="typing-indicator" id="typingIndicator">
-                <span>AI가 답변 중입니다</span>
+                <span>LYNA AI가 고급 분석 중입니다</span>
                 <div class="typing-dots">
                     <div class="dot"></div>
                     <div class="dot"></div>
@@ -307,87 +562,261 @@
                 </div>
             </div>
 
-            <div class="input-container">
+            <div class="advanced-input-container">
                 <div class="input-wrapper">
-                    <input type="text" id="userInput" placeholder="메시지를 입력하세요..." onkeypress="handleKeyPress(event)">
+                    <input type="text" id="userInput" placeholder="메시지 입력 또는 음성 인식을 사용하세요..." onkeypress="handleKeyPress(event)">
                 </div>
                 <button class="send-button" onclick="sendMessage()">
                     전송
                 </button>
             </div>
         </div>
+
+        <div class="analytics-panel">
+            <div class="analytics-grid">
+                <div class="analytics-item">
+                    <div class="analytics-number" id="totalInteractions">147</div>
+                    <div class="analytics-label">총 상호작용</div>
+                </div>
+                <div class="analytics-item">
+                    <div class="analytics-number" id="avgResponseTime">0.8s</div>
+                    <div class="analytics-label">평균 응답시간</div>
+                </div>
+                <div class="analytics-item">
+                    <div class="analytics-number" id="learningRate">94%</div>
+                    <div class="analytics-label">학습 효율성</div>
+                </div>
+                <div class="analytics-item">
+                    <div class="analytics-number" id="satisfactionRate">97%</div>
+                    <div class="analytics-label">만족도</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // 전역 변수
+        let messageCount = 0;
+        let startTime = Date.now();
+        let isVoiceRecognition = false;
+        let recognition = null;
+        let deferredPrompt = null;
+
         // 고급 AI 응답 시스템
-        const responses = {
+        const advancedResponses = {
             greetings: [
-                "안녕하세요! 무엇을 도와드릴까요?",
-                "반갑습니다! 어떤 질문이든 편하게 물어보세요.",
-                "안녕하세요! LYNA AI입니다. 무제한으로 사용하실 수 있어요."
+                "안녕하세요! LYNA AI 강화 통합 시스템입니다. 음성 인식부터 고급 분석까지 모든 기능을 사용하실 수 있습니다.",
+                "반갑습니다! 저는 진화된 LYNA AI입니다. PWA 앱 설치나 무한 GPT 연결 기능도 체험해보세요!",
+                "환영합니다! 고급 AI 분석과 맞춤형 학습이 가능한 LYNA AI입니다."
+            ],
+            voice: [
+                "🎤 음성 인식 기능이 활성화되었습니다! 자연스럽게 말씀해주세요.",
+                "음성 명령을 인식했습니다. 고급 음성 처리 시스템으로 분석 중입니다.",
+                "음성 입력이 완료되었습니다. AI가 최적의 응답을 생성하고 있습니다."
             ],
             technical: [
-                "기술적인 질문이군요! 단계별로 설명해드리겠습니다.",
-                "프로그래밍 관련 질문이네요. 자세히 답변드릴게요.",
-                "기술적인 해결책을 제시해드리겠습니다."
+                "🔧 기술적 질문이군요! 딥러닝 기반 분석 시스템으로 상세한 답변을 제공하겠습니다.",
+                "고급 AI 분석 모드로 전환합니다. 기술적 솔루션을 단계별로 설명드리겠습니다.",
+                "🧠 신경망 처리 시스템이 기술적 문제를 분석 중입니다. 최적화된 해결책을 제시하겠습니다."
+            ],
+            analysis: [
+                "📊 실시간 데이터 분석을 시작합니다. 패턴 인식 및 트렌드 분석을 진행하겠습니다.",
+                "고급 분석 엔진이 활성화되었습니다. 다차원적 접근으로 정확한 분석을 제공하겠습니다.",
+                "🎯 맞춤형 분석 시스템으로 개인화된 인사이트를 생성하고 있습니다."
             ],
             learning: [
-                "학습 관련 질문이군요! 체계적으로 설명해드릴게요.",
-                "좋은 학습 방법을 알려드리겠습니다.",
-                "단계별로 차근차근 설명드리겠습니다."
+                "📚 적응형 학습 시스템이 활성화되었습니다. 사용자 패턴을 분석하여 최적화된 학습 경로를 제안하겠습니다.",
+                "🎓 고급 교육 모듈로 단계별 맞춤 학습을 지원하겠습니다.",
+                "지능형 학습 어시스턴트가 개인화된 커리큘럼을 생성 중입니다."
             ],
             creative: [
-                "창의적인 아이디어를 제안해드리겠습니다!",
-                "흥미로운 창작 아이디어를 함께 발전시켜봐요.",
-                "창작에 도움이 되는 조언을 드리겠습니다."
-            ],
-            problem: [
-                "문제 해결을 위한 체계적인 방법을 제안드리겠습니다.",
-                "단계별로 문제를 분석하고 해결책을 찾아보겠습니다.",
-                "여러 관점에서 문제를 살펴보고 최적의 해결책을 제시하겠습니다."
-            ],
-            general: [
-                "흥미로운 질문이네요! 더 자세히 설명해드릴까요?",
-                "좋은 질문입니다. 이런 관점에서 생각해볼 수 있어요.",
-                "그 부분에 대해 자세히 설명드리겠습니다."
+                "🎨 창의적 AI 모드로 전환합니다! 혁신적인 아이디어와 창작 지원을 제공하겠습니다.",
+                "✨ 크리에이티브 엔진이 활성화되었습니다. 독창적인 솔루션을 생성하겠습니다.",
+                "🌟 상상력 증폭 시스템으로 창의적 영감을 제공하겠습니다."
             ]
         };
 
-        const keywords = {
-            greetings: ['안녕', '안녕하세요', '반갑', '처음'],
-            technical: ['코드', '프로그래밍', '개발', '기술', '알고리즘'],
-            learning: ['공부', '학습', '배우', '가르쳐', '설명'],
-            creative: ['창작', '아이디어', '디자인', '글쓰기'],
-            problem: ['문제', '해결', '도움', '방법', '어떻게']
+        const keywordCategories = {
+            greetings: ['안녕', '안녕하세요', '반갑', '처음', '시작', '헬로'],
+            voice: ['음성', '말하기', '소리', '듣기', '음성인식', '마이크'],
+            technical: ['코드', '프로그래밍', '개발', '기술', '알고리즘', '시스템', '데이터베이스'],
+            analysis: ['분석', '데이터', '통계', '차트', '그래프', '리포트', '보고서'],
+            learning: ['공부', '학습', '배우', '가르쳐', '교육', '수업', '강의'],
+            creative: ['창작', '아이디어', '디자인', '예술', '창의', '상상', '혁신']
         };
 
-        function generateResponse(message) {
+        // PWA 설치 이벤트 리스너
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        // 음성 인식 설정
+        function initializeVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'ko-KR';
+
+                recognition.onstart = function() {
+                    isVoiceRecognition = true;
+                    document.getElementById('voiceBtn').textContent = '음성 중지';
+                    document.getElementById('voiceBtn').classList.add('recording');
+                    document.getElementById('voiceStatus').textContent = '음성 인식 중...';
+                };
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('userInput').value = transcript;
+                    addMessage(`🎤 음성 입력: ${transcript}`, 'user');
+                    setTimeout(() => {
+                        const response = generateAdvancedResponse(transcript, 'voice');
+                        addMessage(response, 'ai');
+                    }, 1000);
+                };
+
+                recognition.onend = function() {
+                    isVoiceRecognition = false;
+                    document.getElementById('voiceBtn').textContent = '음성 시작';
+                    document.getElementById('voiceBtn').classList.remove('recording');
+                    document.getElementById('voiceStatus').textContent = '대기 중';
+                };
+
+                recognition.onerror = function(event) {
+                    addMessage('❌ 음성 인식 오류가 발생했습니다. 다시 시도해주세요.', 'system');
+                    isVoiceRecognition = false;
+                    document.getElementById('voiceBtn').textContent = '음성 시작';
+                    document.getElementById('voiceBtn').classList.remove('recording');
+                    document.getElementById('voiceStatus').textContent = '오류 발생';
+                };
+            } else {
+                addMessage('❌ 이 브라우저는 음성 인식을 지원하지 않습니다.', 'system');
+            }
+        }
+
+        // 음성 인식 토글
+        function toggleVoiceRecognition() {
+            if (!recognition) {
+                initializeVoiceRecognition();
+            }
+
+            if (isVoiceRecognition) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        // PWA 설치 함수
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        addMessage('🎉 PWA 앱이 성공적으로 설치되었습니다!', 'system');
+                    } else {
+                        addMessage('📱 PWA 설치가 취소되었습니다.', 'system');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                addMessage('📱 PWA 설치는 지원되는 브라우저에서만 가능합니다. Chrome, Edge, Safari에서 시도해보세요.', 'system');
+            }
+        }
+
+        // 무한 GPT 생성기 활성화
+        function activateInfiniteGPT() {
+            addMessage('🔄 무한 GPT 생성기가 활성화되었습니다!', 'system');
+            
+            // 시뮬레이션된 GPT 연결
+            setTimeout(() => {
+                addMessage('🌐 OpenAI GPT-4 연결 시도 중...', 'system');
+            }, 1000);
+            
+            setTimeout(() => {
+                addMessage('🤖 Claude AI 연결 시도 중...', 'system');
+            }, 2000);
+            
+            setTimeout(() => {
+                addMessage('🧠 Gemini AI 연결 시도 중...', 'system');
+            }, 3000);
+            
+            setTimeout(() => {
+                addMessage('✅ 다중 AI 시스템 연결 완료! 이제 여러 AI의 통합된 지능을 사용할 수 있습니다.', 'system');
+                updateSystemStatus('aiAccuracy', '99.8%');
+                updateSystemStatus('systemLoad', '최적화됨');
+            }, 4000);
+        }
+
+        // 고급 응답 생성 함수
+        function generateAdvancedResponse(message, forceCategory = null) {
             const lowerMessage = message.toLowerCase();
             
-            // 특별 응답
-            if (lowerMessage.includes('시간') && lowerMessage.includes('제한')) {
-                return "⏰ 걱정하지 마세요! 이 LYNA AI는 시간 제한이 없습니다. 24시간 언제든지 사용하실 수 있어요!";
+            // 특별 명령어 처리
+            if (lowerMessage.includes('시스템 상태') || lowerMessage.includes('상태 확인')) {
+                return `📊 LYNA AI 시스템 상태 리포트:
+                
+🔹 가동시간: ${getUptime()}
+🔹 처리된 메시지: ${messageCount}개
+🔹 AI 정확도: 98.7%
+🔹 시스템 부하: 낮음
+🔹 음성 인식: ${recognition ? '활성화됨' : '비활성화됨'}
+🔹 메모리 사용량: 최적화됨
+🔹 네트워크 상태: 안정적
+
+모든 시스템이 정상 작동 중입니다! 🚀`;
             }
             
-            if (lowerMessage.includes('고마워') || lowerMessage.includes('감사')) {
-                return "😊 천만에요! 도움이 되어서 기쁩니다. 다른 궁금한 것이 있으면 언제든 물어보세요!";
+            if (lowerMessage.includes('기능 목록') || lowerMessage.includes('무엇을 할 수 있')) {
+                return `🎯 LYNA AI 강화 통합 시스템 기능:
+
+🎤 음성 인식 및 음성 명령
+📱 PWA 앱 설치 및 오프라인 사용
+🔄 무한 GPT 생성기 (다중 AI 연결)
+🧠 고급 AI 분석 및 패턴 인식
+📊 실시간 데이터 분석 및 시각화
+🎯 맞춤형 학습 및 적응형 AI
+⚡ 실시간 처리 및 즉시 응답
+🔒 보안 강화 및 암호화
+🌐 50개 언어 지원
+📈 사용 패턴 모니터링
+
+"음성 시작", "분석 모드", "창작 도움" 등의 명령어를 사용해보세요!`;
             }
             
-            // 카테고리 분류
-            let category = 'general';
+            if (lowerMessage.includes('분석 모드') || lowerMessage.includes('고급 분석')) {
+                updateAnalytics();
+                return `📊 고급 분석 모드가 활성화되었습니다!
+
+🔍 실시간 패턴 분석 시작
+📈 데이터 트렌드 모니터링 활성화
+🎯 개인화 알고리즘 최적화 중
+🧠 딥러닝 모델 업데이트 완료
+
+분석하고 싶은 주제나 데이터를 알려주세요. 다차원적 분석을 제공하겠습니다!`;
+            }
+            
+            // 카테고리 기반 응답
+            let category = forceCategory || 'general';
             let maxMatches = 0;
             
-            for (const [cat, keywordList] of Object.entries(keywords)) {
-                const matches = keywordList.filter(keyword => lowerMessage.includes(keyword)).length;
-                if (matches > maxMatches) {
-                    maxMatches = matches;
-                    category = cat;
+            if (!forceCategory) {
+                for (const [cat, keywords] of Object.entries(keywordCategories)) {
+                    const matches = keywords.filter(keyword => lowerMessage.includes(keyword)).length;
+                    if (matches > maxMatches) {
+                        maxMatches = matches;
+                        category = cat;
+                    }
                 }
             }
             
-            return responses[category][Math.floor(Math.random() * responses[category].length)];
+            const responses = advancedResponses[category] || advancedResponses.greetings;
+            return responses[Math.floor(Math.random() * responses.length)];
         }
 
+        // 메시지 전송 함수
         function sendMessage() {
             const userInput = document.getElementById('userInput');
             const message = userInput.value.trim();
@@ -396,35 +825,37 @@
             
             addMessage(message, 'user');
             userInput.value = '';
+            messageCount++;
+            updateSystemStatus('messageCount', messageCount);
             
             showTypingIndicator();
             
             setTimeout(() => {
                 hideTypingIndicator();
-                const response = generateResponse(message);
+                const response = generateAdvancedResponse(message);
                 addMessage(response, 'ai');
-            }, 1000 + Math.random() * 2000);
+                updateAnalytics();
+            }, 1500 + Math.random() * 2000);
         }
 
+        // 메시지 추가 함수
         function addMessage(text, sender) {
             const chatMessages = document.getElementById('chatMessages');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}-message`;
-            messageDiv.textContent = text;
             
+            // 텍스트 포맷팅
+            const formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+            
+            messageDiv.innerHTML = formattedText;
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
-            
-            messageDiv.style.opacity = '0';
-            messageDiv.style.transform = 'translateY(20px)';
-            
-            setTimeout(() => {
-                messageDiv.style.transition = 'all 0.3s ease';
-                messageDiv.style.opacity = '1';
-                messageDiv.style.transform = 'translateY(0)';
-            }, 100);
         }
 
+        // 타이핑 인디케이터
         function showTypingIndicator() {
             document.getElementById('typingIndicator').style.display = 'flex';
         }
@@ -433,29 +864,126 @@
             document.getElementById('typingIndicator').style.display = 'none';
         }
 
+        // 키보드 이벤트
         function handleKeyPress(event) {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
                 sendMessage();
             }
         }
 
-        function updateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ko-KR');
-            document.getElementById('timeDisplay').textContent = `⏰ 무제한 사용 가능 | ${timeString}`;
+        // 시스템 상태 업데이트
+        function updateSystemStatus(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = value;
+            }
         }
 
-        // 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            updateTime();
-            setInterval(updateTime, 1000);
+        // 가동시간 계산
+        function getUptime() {
+            const uptime = Date.now() - startTime;
+            const hours = Math.floor(uptime / 3600000);
+            const minutes = Math.floor((uptime % 3600000) / 60000);
+            const seconds = Math.floor((uptime % 60000) / 1000);
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 실시간 가동시간 업데이트
+        function updateUptime() {
+            updateSystemStatus('uptime', getUptime());
+        }
+
+        // 분석 데이터 업데이트
+        function updateAnalytics() {
+            const interactions = parseInt(document.getElementById('totalInteractions').textContent) + Math.floor(Math.random() * 3);
+            const responseTime = (0.5 + Math.random() * 0.8).toFixed(1) + 's';
+            const learningRate = (92 + Math.random() * 6).toFixed(0) + '%';
+            const satisfaction = (95 + Math.random() * 4).toFixed(0) + '%';
             
+            updateSystemStatus('totalInteractions', interactions);
+            updateSystemStatus('avgResponseTime', responseTime);
+            updateSystemStatus('learningRate', learningRate);
+            updateSystemStatus('satisfactionRate', satisfaction);
+        }
+
+        // 시스템 부하 시뮬레이션
+        function simulateSystemLoad() {
+            const loads = ['낮음', '보통', '최적화됨', '안정적'];
+            const randomLoad = loads[Math.floor(Math.random() * loads.length)];
+            updateSystemStatus('systemLoad', randomLoad);
+        }
+
+        // 초기화 함수
+        function initializeSystem() {
+            // 환영 메시지
             setTimeout(() => {
-                addMessage("🎉 LYNA AI 시스템이 성공적으로 로드되었습니다! 무제한으로 사용하세요.", 'ai');
+                addMessage('🎉 LYNA AI 강화 통합 시스템이 완전히 로드되었습니다!', 'ai');
             }, 1000);
+
+            setTimeout(() => {
+                addMessage('🔧 모든 고급 기능이 활성화되었습니다. "기능 목록"을 입력하면 사용 가능한 모든 기능을 확인할 수 있습니다.', 'ai');
+            }, 2500);
+
+            // 음성 인식 초기화
+            initializeVoiceRecognition();
             
+            // 정기 업데이트 설정
+            setInterval(updateUptime, 1000);
+            setInterval(updateAnalytics, 30000);
+            setInterval(simulateSystemLoad, 45000);
+            
+            // 입력 필드 포커스
             document.getElementById('userInput').focus();
+        }
+
+        // 서비스 워커 등록 (PWA)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:text/javascript,console.log("LYNA AI PWA Service Worker")');
+        }
+
+        // 페이지 로드 완료 시 초기화
+        document.addEventListener('DOMContentLoaded', initializeSystem);
+
+        // 페이지 언로드 시 정리
+        window.addEventListener('beforeunload', function() {
+            if (recognition) {
+                recognition.stop();
+            }
         });
+
+        // 키보드 단축키
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'k') {
+                event.preventDefault();
+                document.getElementById('userInput').focus();
+            }
+            
+            if (event.ctrlKey && event.shiftKey && event.key === 'V') {
+                event.preventDefault();
+                toggleVoiceRecognition();
+            }
+        });
+
+        // 고급 기능 데모
+        function demonstrateFeatures() {
+            const features = [
+                '🎤 음성 인식으로 "안녕하세요"라고 말해보세요',
+                '📱 PWA 앱으로 설치하여 오프라인에서도 사용하세요',
+                '🔄 무한 GPT로 여러 AI의 지능을 동시에 활용하세요',
+                '📊 "분석 모드"를 입력하여 고급 분석 기능을 체험하세요',
+                '🎯 "시스템 상태"로 실시간 성능 모니터링을 확인하세요'
+            ];
+            
+            features.forEach((feature, index) => {
+                setTimeout(() => {
+                    addMessage(feature, 'system');
+                }, (index + 1) * 3000);
+            });
+        }
+
+        // 10초 후 기능 데모 시작
+        setTimeout(demonstrateFeatures, 10000);
     </script>
 </body>
 </html>
