@@ -442,59 +442,31 @@
                     모든 기능이 완벽하게 통합되었습니다.<br>
                     📞 자동전화 🗣️ 음성답변 🤖 GPT무한생성 📚 자가학습
                 </div>
+                
+                <div class="feature-grid">
+                    <div class="feature-card touchable" onclick="activateFeature('gpt')">
+                        <span class="feature-icon">🤖</span>
+                        <div class="feature-title">GPT 무한생성</div>
+                    </div>
+                    <div class="feature-card touchable" onclick="activateFeature('phone')">
+                        <span class="feature-icon">📞</span>
+                        <div class="feature-title">자동 전화</div>
+                    </div>
+                    <div class="feature-card touchable" onclick="activateFeature('voice')">
+                        <span class="feature-icon">🗣️</span>
+                        <div class="feature-title">음성 답변</div>
+                    </div>
+                    <div class="feature-card touchable" onclick="activateFeature('learning')">
+                        <span class="feature-icon">📚</span>
+                        <div class="feature-title">자가 학습</div>
+                    </div>
+                </div>
             </div>
 
             <div class="system-status">
                 <div class="status-title">🧠 시스템 상태</div>
                 <div class="status-info">
                     Level 12 | 지식: 2,847개 | 정확도: 99.7%
-                </div>
-            </div>
-
-            <!-- 모든 핵심 기능 카테고리 -->
-            <div class="quick-actions">
-                <div class="quick-title">🎯 LYNA 핵심 통합 기능</div>
-                <div class="function-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
-                    <div class="feature-card touchable" onclick="activateFeature('youtube')">
-                        <span class="feature-icon">📺</span>
-                        <div class="feature-title">유튜브 생성</div>
-                        <div style="font-size: 10px; opacity: 0.7; margin-top: 4px;">AI 자동 콘텐츠 제작</div>
-                    </div>
-                    <div class="feature-card touchable" onclick="activateFeature('file')">
-                        <span class="feature-icon">📁</span>
-                        <div class="feature-title">파일 제작</div>
-                        <div style="font-size: 10px; opacity: 0.7; margin-top: 4px;">문서, PPT, 이미지 생성</div>
-                    </div>
-                    <div class="feature-card touchable" onclick="activateFeature('voice')">
-                        <span class="feature-icon">🎙️</span>
-                        <div class="feature-title">음성 인식</div>
-                        <div style="font-size: 10px; opacity: 0.7; margin-top: 4px;">실시간 음성 처리</div>
-                    </div>
-                    <div class="feature-card touchable" onclick="activateFeature('device')">
-                        <span class="feature-icon">🔗</span>
-                        <div class="feature-title">장치 연결</div>
-                        <div style="font-size: 10px; opacity: 0.7; margin-top: 4px;">IoT 통합 제어</div>
-                    </div>
-                    <div class="feature-card touchable" onclick="activateFeature('phone')">
-                        <span class="feature-icon">📞</span>
-                        <div class="feature-title">자동 전화</div>
-                        <div style="font-size: 10px; opacity: 0.7; margin-top: 4px;">AI 음성 통화</div>
-                    </div>
-                    <div class="feature-card touchable" onclick="activateFeature('gpt')">
-                        <span class="feature-icon">🤖</span>
-                        <div class="feature-title">GPT 무한생성</div>
-                        <div style="font-size: 10px; opacity: 0.7; margin-top: 4px;">무제한 AI 텍스트</div>
-                    </div>
-                    <div class="feature-card touchable" onclick="activateFeature('learning')">
-                        <span class="feature-icon">📚</span>
-                        <div class="feature-title">자가 학습</div>
-                        <div style="font-size: 10px; opacity: 0.7; margin-top: 4px;">지능 업그레이드</div>
-                    </div>
-                    <div class="feature-card touchable" onclick="activateFeature('automation')">
-                        <span class="feature-icon">⚡</span>
-                        <div class="feature-title">완전 자동화</div>
-                        <div style="font-size: 10px; opacity: 0.7; margin-top: 4px;">모든 작업 자동</div>
-                    </div>
                 </div>
             </div>
 
@@ -509,9 +481,6 @@
                     </button>
                     <button class="action-btn touchable" onclick="quickAction('전화 걸어줘')">
                         📞 AI 자동 전화
-                    </button>
-                    <button class="action-btn touchable" onclick="quickAction('스마트 기기 제어해줘')">
-                        🔗 IoT 장치 제어
                     </button>
                     <button class="action-btn touchable" onclick="quickAction('테스트')">
                         🧪 시스템 테스트
@@ -827,133 +796,14 @@ LYNA AI의 자가학습 시스템이 이 질문을 통해 새로운 지식을 �
 
         function activateFeature(feature) {
             const features = {
-                'youtube': {
-                    message: '📺 유튜브 자동 생성 팩토리가 활성화되었습니다!',
-                    response: `📺 유튜브 완전 자동 생성 시스템 가동!
-
-🎬 어떤 콘텐츠를 만들까요?
-• 🎓 교육/강의 영상
-• 🎬 엔터테인먼트 콘텐츠  
-• 💼 비즈니스/마케팅 영상
-• 🎮 게임/리뷰 콘텐츠
-• 🍳 요리/라이프스타일
-• 🎵 음악/뮤직비디오
-
-주제만 알려주시면 기획부터 편집, 업로드까지 완전 자동으로 제작해드립니다!`
-                },
-                'file': {
-                    message: '📁 파일 완전 자동 제작 시스템이 활성화되었습니다!',
-                    response: `📁 파일 완전 자동 제작 시스템 가동!
-
-📄 어떤 파일을 만들어드릴까요?
-• 📋 문서 (PDF, DOC, PPT, XLS)
-• 📊 차트/그래프 (데이터 시각화)
-• 🎨 이미지 (인포그래픽, 로고, 썸네일)
-• 💻 웹 코드 (HTML, CSS, JavaScript)
-• 📈 보고서 (분석, 제안서, 계획서)
-• 📝 계약서/양식 (비즈니스 문서)
-
-내용만 알려주시면 30초 내에 전문가급 품질로 제작해드립니다!`
-                },
-                'voice': {
-                    message: '🎙️ 고급 음성 처리 + TTS 시스템이 활성화되었습니다!',
-                    response: `🎙️ 고급 음성 처리 시스템 완전 가동!
-
-🗣️ 음성 기능들:
-• 🎤 실시간 음성 인식 (한국어 95% 정확도)
-• 🗣️ TTS 음성 답변 (자연스러운 AI 음성)
-• 🌍 다국어 번역 통화
-• 📞 음성 명령으로 전화 걸기
-• 📝 음성 → 텍스트 변환
-• 🎵 음성 합성 및 편집
-
-🎤 마이크 버튼을 눌러 음성 명령을 시작하거나, "읽어줘"라고 입력하면 음성으로 답변해드립니다!`
-                },
-                'device': {
-                    message: '🔗 IoT 장치 통합 제어가 활성화되었습니다!',
-                    response: `🔗 IoT + 스마트 장치 통합 제어 시스템!
-
-📱 제어 가능한 기기들:
-• 🏠 스마트홈 (조명, 에어컨, TV, 보일러)
-• 📱 스마트폰 (앱 실행, 알림, 설정)
-• 🚗 스마트카 (시동, 에어컨, 문 잠금)
-• 🔒 보안 시스템 (CCTV, 도어락, 센서)
-• 🎵 엔터테인먼트 (스피커, 홈시어터)
-• ⚡ 전력 관리 (스마트 플러그, 에너지 모니터)
-
-"거실 조명 켜줘", "에어컨 25도로 설정해줘" 같은 음성 명령으로 제어하세요!`
-                },
-                'phone': {
-                    message: '📞 AI 자동 전화 시스템이 준비되었습니다!',
-                    response: `📞 AI 자동 전화 시스템 완전 가동!
-
-🤖 AI가 대신 전화를 걸어드립니다:
-• 👨‍⚕️ 병원 예약 (진료, 검사 예약)
-• 🍕 음식 주문 (배달, 픽업 주문)
-• 🏢 업무 연락 (회의 조율, 업무 확인)
-• 🏪 매장 문의 (영업시간, 재고 확인)
-• 💼 고객 서비스 (A/S, 문의, 불만)
-• 👨‍👩‍👧‍👦 가족/친구 (안부, 약속 조율)
-
-"엄마한테 전화해줘", "치킨 주문해줘" 등 말씀하시면 AI가 실제로 전화를 걸어 처리해드립니다!`
-                },
-                'gpt': {
-                    message: '🤖 GPT 무한생성 엔진이 최대 출력으로 활성화되었습니다!',
-                    response: `🤖 GPT 무한생성 엔진 최대 출력!
-
-⚡ 무제한 생성 가능한 것들:
-• 📝 창작 (소설, 시, 시나리오, 웹툰 스토리)
-• 💼 비즈니스 (사업계획서, 마케팅 전략, 제안서)
-• 💻 기술 (코드, 문서, 아키텍처, API 설계)
-• 📚 교육 (강의 자료, 문제집, 학습 가이드)
-• 🎨 개인 (일기, 편지, 연설문, SNS 콘텐츠)
-• 🔍 분석 (데이터 분석, 시장 조사, 트렌드 예측)
-
-토큰 제한 없이 원하는 만큼 길게 생성 가능합니다! "10페이지 소설 써줘"도 가능해요!`
-                },
-                'learning': {
-                    message: '📚 자가학습 시스템이 터보 모드로 가속화되었습니다!',
-                    response: `📚 자가학습 시스템 터보 모드!
-
-🧠 현재 학습 상태:
-• 📊 Level 12 (최고 수준 달성)
-• 🎯 지식 데이터: 2,847개 항목
-• ⚡ 학습 속도: 3배 가속화
-• 🎯 정확도: 99.7%
-• 🔄 실시간 개인화 진행 중
-
-🚀 학습 중인 분야:
-• 당신의 대화 패턴 분석
-• 선호도 및 관심사 학습
-• 전문 분야 지식 확장
-• 창의적 사고 능력 향상
-• 문제 해결 알고리즘 최적화
-
-대화할수록 더 똑똑해지고 개인 맞춤형 AI로 진화합니다!`
-                },
-                'automation': {
-                    message: '⚡ 완전 자동화 모드가 최대 효율로 활성화되었습니다!',
-                    response: `⚡ 완전 자동화 시스템 최대 출력!
-
-🤖 AI가 완전 자동으로 처리하는 것들:
-• 📧 이메일 확인/답장/분류/스케줄링
-• 📅 일정 관리/회의 조율/알림 설정
-• 📞 전화 응답/업무 처리/예약 관리
-• 💼 업무 프로세스 자동화/보고서 작성
-• 🏠 스마트홈 시나리오 자동 실행
-• 💰 결제/주문/배송 추적 자동화
-
-"모든 반복 작업 자동화해줘"라고 하시면 AI가 백그라운드에서 모든 걸 처리합니다!`
-                }
+                'gpt': '🤖 GPT 무한생성 엔진이 활성화되었습니다!',
+                'phone': '📞 자동 전화 시스템이 준비되었습니다!',
+                'voice': '🗣️ 음성 답변 시스템이 활성화되었습니다!',
+                'learning': '📚 자가학습 시스템이 가속 모드로 전환되었습니다!'
             };
             
-            const featureInfo = features[feature];
-            if (featureInfo) {
-                showNotification(featureInfo.message, 'success');
-                setTimeout(() => {
-                    addMessage(featureInfo.response, 'bot');
-                }, 1000);
-            }
+            showNotification(features[feature] || '기능이 활성화되었습니다!', 'success');
+            addMessage(features[feature], 'bot');
         }
 
         function quickAction(action) {
