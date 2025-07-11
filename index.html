@@ -1,414 +1,1239 @@
-# 🎬 간단하지만 강력한 YouTube 자동화 시스템
-# 즉시 실행 가능한 핵심 버전
-
-import os
-import asyncio
-import json
-import logging
-from datetime import datetime
-from typing import Dict, List, Optional
-from dataclasses import dataclass
-
-# 환경 설정
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
-logger = logging.getLogger(__name__)
-
-@dataclass
-class SimpleVideoProject:
-    """간단한 비디오 프로젝트"""
-    title: str
-    description: str
-    tags: List[str]
-    script: str = ""
-    created_at: datetime = None
-    
-    def __post_init__(self):
-        if self.created_at is None:
-            self.created_at = datetime.now()
-
-class SimpleYouTubeAutomation:
-    """간단한 YouTube 자동화 시스템"""
-    
-    def __init__(self, openai_key: str = None):
-        self.openai_key = openai_key or os.getenv('OPENAI_API_KEY')
-        self.projects = []
-        
-        # 기본 설정
-        self.settings = {
-            'default_duration': 5,
-            'default_audience': '일반',
-            'auto_save': True
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube 자동화 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
-        # 디렉토리 생성
-        os.makedirs('simple_projects', exist_ok=True)
-        
-        print("🎬 간단 YouTube 자동화 시스템 준비 완료!")
-    
-    async def create_quick_project(self, topic: str, custom_title: str = None) -> SimpleVideoProject:
-        """빠른 프로젝트 생성 (GPT 없이도 작동)"""
-        
-        print(f"📹 '{topic}' 프로젝트 생성 중...")
-        
-        # 1. 제목 생성
-        if custom_title:
-            title = custom_title
-        else:
-            title_templates = [
-                f"{topic}에 대한 완벽 가이드",
-                f"{topic} 초보자를 위한 필수 정보",
-                f"{topic} 전문가가 알려주는 비밀",
-                f"{topic}로 성공하는 확실한 방법",
-                f"{topic} 완전 정복하기"
-            ]
-            import random
-            title = random.choice(title_templates)
-        
-        # 2. 설명 생성
-        description = self._generate_description(topic, title)
-        
-        # 3. 태그 생성
-        tags = self._generate_tags(topic)
-        
-        # 4. 스크립트 생성
-        script = self._generate_script(title, topic)
-        
-        # 5. 프로젝트 생성
-        project = SimpleVideoProject(
-            title=title,
-            description=description,
-            tags=tags,
-            script=script
-        )
-        
-        # 6. 저장
-        if self.settings['auto_save']:
-            self._save_project(project)
-        
-        self.projects.append(project)
-        
-        print(f"✅ 프로젝트 생성 완료: {title}")
-        return project
-    
-    def _generate_description(self, topic: str, title: str) -> str:
-        """설명 자동 생성"""
-        
-        description_parts = [
-            f"안녕하세요! 오늘은 {topic}에 대해 자세히 알아보겠습니다.",
-            "",
-            f"🎯 이 영상에서 배울 수 있는 것:",
-            f"✅ {topic}의 핵심 개념",
-            f"✅ 실제 활용 방법", 
-            f"✅ 전문가 팁과 노하우",
-            f"✅ 자주 묻는 질문들",
-            "",
-            "📋 타임스탬프:",
-            "00:00 인트로",
-            "00:30 핵심 내용",
-            "04:00 실습 및 예시",
-            "04:30 마무리",
-            "",
-            "👍 이 영상이 도움되셨다면 좋아요와 구독 부탁드립니다!",
-            "🔔 알림 설정을 켜서 새로운 영상을 가장 먼저 받아보세요!",
-            "💬 궁금한 점이나 의견은 댓글로 남겨주세요!",
-            "",
-            f"#{topic.replace(' ', '')} #유튜브 #정보 #가이드 #팁",
-            "",
-            "📧 문의: contact@example.com"
-        ]
-        
-        return "\n".join(description_parts)
-    
-    def _generate_tags(self, topic: str) -> List[str]:
-        """태그 자동 생성"""
-        
-        # 기본 태그
-        basic_tags = [topic, '유튜브', '가이드', '정보', '팁', '방법']
-        
-        # 주제별 추가 태그
-        topic_tags = {
-            'AI': ['인공지능', '머신러닝', '자동화', '기술'],
-            '투자': ['재테크', '경제', '주식', '부동산', '금융'],
-            '유튜브': ['크리에이터', '마케팅', '콘텐츠', '조회수'],
-            '요리': ['레시피', '음식', '맛집', '건강'],
-            '운동': ['헬스', '다이어트', '건강', '피트니스'],
-            '개발': ['프로그래밍', 'IT', '코딩', '기술'],
-            '부동산': ['투자', '경제', '재테크', '금융']
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
         }
-        
-        # 주제 관련 태그 추가
-        for key, values in topic_tags.items():
-            if key.lower() in topic.lower():
-                basic_tags.extend(values)
-                break
-        
-        # 일반적인 인기 태그 추가
-        popular_tags = ['2024', '최신', '완벽', '초보자', '전문가', '꿀팁']
-        basic_tags.extend(popular_tags)
-        
-        # 중복 제거 및 최대 15개 제한
-        unique_tags = list(dict.fromkeys(basic_tags))
-        return unique_tags[:15]
-    
-    def _generate_script(self, title: str, topic: str) -> str:
-        """스크립트 자동 생성"""
-        
-        script_template = f"""
-[0:00] 안녕하세요! 오늘은 "{title}"에 대해 이야기해보겠습니다.
 
-[0:15] 이 영상을 끝까지 보시면 {topic}에 대해 확실히 이해하실 수 있을 거예요.
-
-[0:30] 그럼 바로 시작해볼까요?
-
-=== 메인 콘텐츠 ===
-
-[1:00] 첫 번째로 알아볼 내용은 {topic}의 기본 개념입니다.
-
-[1:30] {topic}를 처음 접하시는 분들을 위해 쉽게 설명드릴게요.
-
-[2:00] 많은 분들이 궁금해하시는 부분이 바로 이것인데요...
-
-[2:30] 실제로 어떻게 적용할 수 있는지 구체적인 예시를 들어보겠습니다.
-
-[3:00] 여기서 중요한 포인트는...
-
-[3:30] 초보자들이 자주 실수하는 부분도 함께 알아보겠습니다.
-
-[4:00] 지금까지 {topic}에 대해 알아보았는데요.
-
-[4:15] 오늘 내용이 도움이 되셨다면 좋아요와 구독 부탁드립니다!
-
-[4:30] 다음 영상에서 더 유용한 내용으로 찾아뵙겠습니다. 감사합니다!
-
-=== 추가 팁 ===
-• 시청자와의 소통: "여러분은 어떻게 생각하시나요?"
-• 참여 유도: "댓글로 의견을 남겨주세요!"
-• 구독 유도: "구독과 알림 설정 잊지 마세요!"
-"""
-        
-        return script_template.strip()
-    
-    def _save_project(self, project: SimpleVideoProject):
-        """프로젝트 저장"""
-        
-        # 안전한 파일명 생성
-        safe_title = "".join(c for c in project.title if c.isalnum() or c in (' ', '-', '_')).strip()[:30]
-        timestamp = project.created_at.strftime('%Y%m%d_%H%M%S')
-        filename = f"simple_projects/{timestamp}_{safe_title}.json"
-        
-        # 프로젝트 데이터
-        project_data = {
-            'title': project.title,
-            'description': project.description,
-            'tags': project.tags,
-            'script': project.script,
-            'created_at': project.created_at.isoformat(),
-            'settings_used': self.settings.copy()
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
         }
-        
-        # JSON 파일로 저장
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(project_data, f, ensure_ascii=False, indent=2)
-        
-        # 스크립트 별도 저장
-        script_filename = filename.replace('.json', '_script.txt')
-        with open(script_filename, 'w', encoding='utf-8') as f:
-            f.write(project.script)
-        
-        logger.info(f"📁 프로젝트 저장: {filename}")
-    
-    async def bulk_create(self, topics: List[str]) -> List[SimpleVideoProject]:
-        """대량 프로젝트 생성"""
-        
-        print(f"🚀 {len(topics)}개 주제로 대량 생성 시작!")
-        
-        projects = []
-        for i, topic in enumerate(topics, 1):
-            print(f"\n[{i}/{len(topics)}] 처리 중: {topic}")
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .status-card {
+            text-align: center;
+        }
+
+        .status-indicator {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.running {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .status-indicator.stopped {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .budget-progress {
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #ff9800, #f57c00);
+        }
+
+        .progress-fill.danger {
+            background: linear-gradient(90deg, #f44336, #d32f2f);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        .task-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .task-form {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .task-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .task-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .status-running {
+            background: #74b9ff;
+            color: #0984e3;
+        }
+
+        .status-completed {
+            background: #00b894;
+            color: #00a085;
+        }
+
+        .status-failed {
+            background: #fd79a8;
+            color: #e84393;
+        }
+
+        .task-details {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .activity-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .activity-feed {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 16px;
+            color: white;
+        }
+
+        .activity-success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .activity-error {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+        }
+
+        .activity-info {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-message {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .performance-chart {
+            margin-top: 20px;
+            height: 200px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
             
-            try:
-                project = await self.create_quick_project(topic)
-                projects.append(project)
-                print(f"✅ 완료: {project.title}")
-                
-                # 너무 빠르게 처리하지 않도록 잠시 대기
-                await asyncio.sleep(0.5)
-                
-            except Exception as e:
-                print(f"❌ 실패: {topic} - {e}")
-        
-        print(f"\n🎉 대량 생성 완료! 총 {len(projects)}개 프로젝트")
-        return projects
-    
-    def get_project_summary(self) -> Dict:
-        """프로젝트 요약"""
-        
-        if not self.projects:
-            return {'message': '생성된 프로젝트가 없습니다.'}
-        
-        return {
-            'total_projects': len(self.projects),
-            'recent_projects': [
-                {
-                    'title': p.title,
-                    'tags_count': len(p.tags),
-                    'script_length': len(p.script),
-                    'created_at': p.created_at.strftime('%Y-%m-%d %H:%M')
-                }
-                for p in self.projects[-5:]  # 최근 5개
-            ],
-            'total_tags': sum(len(p.tags) for p in self.projects),
-            'avg_script_length': sum(len(p.script) for p in self.projects) // len(self.projects)
+            .main-content {
+                grid-template-columns: 1fr;
+            }
         }
-    
-    def print_project_details(self, project: SimpleVideoProject):
-        """프로젝트 상세 정보 출력"""
-        
-        print("\n" + "="*60)
-        print("📋 프로젝트 상세 정보")
-        print("="*60)
-        print(f"📹 제목: {project.title}")
-        print(f"🏷️ 태그: {', '.join(project.tags[:8])}{'...' if len(project.tags) > 8 else ''}")
-        print(f"📝 설명 길이: {len(project.description)}자")
-        print(f"📜 스크립트 길이: {len(project.script)}자") 
-        print(f"📅 생성 시간: {project.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"💾 저장됨: simple_projects/ 폴더")
 
-# GPT 연동 기능 (선택적)
-class GPTEnhancer:
-    """GPT로 콘텐츠 품질 향상 (선택 사항)"""
-    
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        try:
-            import openai
-            self.client = openai.OpenAI(api_key=api_key)
-            self.available = True
-        except ImportError:
-            print("⚠️ OpenAI 패키지가 없습니다. 기본 생성 모드로 작동합니다.")
-            self.available = False
-    
-    async def enhance_title(self, topic: str) -> str:
-        """제목 개선"""
-        if not self.available:
-            return f"{topic}에 대한 완벽 가이드"
-        
-        try:
-            response = await self.client.chat.completions.acreate(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "user", "content": f"'{topic}' 주제로 클릭률이 높은 유튜브 제목 1개를 50자 이내로 만들어주세요."}
-                ],
-                max_tokens=100
-            )
-            return response.choices[0].message.content.strip()
-        except:
-            return f"{topic} - 전문가가 알려주는 비밀"
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .task-controls {
+                flex-direction: column;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
 
-# 사용 예시 및 실행 함수
-async def demo_simple_automation():
-    """간단한 자동화 시스템 데모"""
-    
-    print("🎬 간단 YouTube 자동화 시스템 데모")
-    print("="*50)
-    
-    # 시스템 초기화
-    automation = SimpleYouTubeAutomation()
-    
-    # 1. 단일 프로젝트 생성
-    print("\n1️⃣ 단일 프로젝트 생성 테스트")
-    project1 = await automation.create_quick_project("AI 투자 전략")
-    automation.print_project_details(project1)
-    
-    # 2. 사용자 정의 제목으로 생성
-    print("\n2️⃣ 사용자 정의 제목 프로젝트")
-    project2 = await automation.create_quick_project(
-        topic="부동산 투자", 
-        custom_title="2024년 부동산 투자 대박나는 3가지 비법"
-    )
-    automation.print_project_details(project2)
-    
-    # 3. 대량 생성
-    print("\n3️⃣ 대량 프로젝트 생성 테스트")
-    topics = ["유튜브 마케팅", "주식 투자", "파이썬 프로그래밍", "영어 회화"]
-    bulk_projects = await automation.bulk_create(topics)
-    
-    # 4. 요약 정보
-    print("\n4️⃣ 전체 프로젝트 요약")
-    summary = automation.get_project_summary()
-    print(json.dumps(summary, ensure_ascii=False, indent=2))
-    
-    print(f"\n🎉 데모 완료! 총 {len(automation.projects)}개 프로젝트 생성됨")
-    print(f"📁 파일 위치: simple_projects/ 폴더 확인")
+        .floating-action {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
 
-# 대화형 실행 함수
-async def interactive_mode():
-    """대화형 모드"""
-    
-    print("🎬 대화형 YouTube 프로젝트 생성기")
-    print("="*50)
-    
-    automation = SimpleYouTubeAutomation()
-    
-    while True:
-        print("\n📋 메뉴:")
-        print("1. 단일 프로젝트 생성")
-        print("2. 대량 프로젝트 생성") 
-        print("3. 프로젝트 요약 보기")
-        print("4. 종료")
-        
-        choice = input("\n선택 (1-4): ").strip()
-        
-        try:
-            if choice == "1":
-                topic = input("📝 주제를 입력하세요: ").strip()
-                if topic:
-                    custom_title = input("✏️ 사용자 정의 제목 (엔터로 건너뛰기): ").strip()
-                    project = await automation.create_quick_project(
-                        topic, 
-                        custom_title if custom_title else None
-                    )
-                    automation.print_project_details(project)
-                
-            elif choice == "2":
-                topics_input = input("📝 주제들을 쉼표로 구분해서 입력하세요: ").strip()
-                if topics_input:
-                    topics = [t.strip() for t in topics_input.split(',') if t.strip()]
-                    await automation.bulk_create(topics)
-                
-            elif choice == "3":
-                summary = automation.get_project_summary()
-                print(json.dumps(summary, ensure_ascii=False, indent=2))
-                
-            elif choice == "4":
-                print("👋 시스템을 종료합니다.")
-                break
-                
-            else:
-                print("❌ 잘못된 선택입니다.")
-                
-        except KeyboardInterrupt:
-            print("\n👋 시스템을 종료합니다.")
-            break
-        except Exception as e:
-            print(f"❌ 오류: {e}")
+        .floating-action:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <h1>🚀 YouTube 자동화 시스템</h1>
+            <p>스마트한 콘텐츠 관리와 최적화된 업로드 스케줄링</p>
+        </div>
 
-# 메인 실행
-if __name__ == "__main__":
-    print("🚀 즉시 실행 가능한 YouTube 자동화 시스템")
-    print("="*60)
-    print("선택하세요:")
-    print("1. 데모 실행")
-    print("2. 대화형 모드")
-    
-    choice = input("\n선택 (1-2): ").strip()
-    
-    try:
-        if choice == "1":
-            asyncio.run(demo_simple_automation())
-        elif choice == "2":
-            asyncio.run(interactive_mode())
-        else:
-            print("❌ 잘못된 선택입니다.")
-    except KeyboardInterrupt:
-        print("\n👋 프로그램을 종료합니다.")
+        <!-- 대시보드 카드 -->
+        <div class="dashboard-grid">
+            <!-- 시스템 상태 -->
+            <div class="card status-card">
+                <h3>시스템 상태</h3>
+                <div class="status-indicator running" id="systemStatus">
+                    ⚡
+                </div>
+                <div id="systemStatusText">시스템 실행 중</div>
+                <button class="btn btn-danger" onclick="toggleSystem()" id="systemToggle">
+                    시스템 중지
+                </button>
+            </div>
+
+            <!-- 성능 지표 -->
+            <div class="card">
+                <h3>📊 성능 지표</h3>
+                <div class="metric-item">
+                    <span>총 작업 수</span>
+                    <span class="metric-value" id="totalTasks">156</span>
+                </div>
+                <div class="metric-item">
+                    <span>완료된 작업</span>
+                    <span class="metric-value" id="completedTasks">142</span>
+                </div>
+                <div class="metric-item">
+                    <span>실행 중</span>
+                    <span class="metric-value" id="runningTasks">3</span>
+                </div>
+                <div class="metric-item">
+                    <span>성공률</span>
+                    <span class="metric-value" id="successRate">91.0%</span>
+                </div>
+                <div class="metric-item">
+                    <span>평균 실행시간</span>
+                    <span class="metric-value" id="avgTime">2.3분</span>
+                </div>
+            </div>
+
+            <!-- 예산 관리 -->
+            <div class="card">
+                <h3>💰 예산 관리</h3>
+                <div class="metric-item">
+                    <span>일일 예산</span>
+                    <span class="metric-value">$100.00</span>
+                </div>
+                <div class="metric-item">
+                    <span>사용 금액</span>
+                    <span class="metric-value" id="currentSpend">$67.45</span>
+                </div>
+                <div class="metric-item">
+                    <span>잔여 예산</span>
+                    <span class="metric-value" id="remainingBudget">$32.55</span>
+                </div>
+                <div class="budget-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill warning" id="budgetProgress" style="width: 67%"></div>
+                    </div>
+                    <small>예산 사용률: <span id="budgetUsage">67%</span></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 콘텐츠 -->
+        <div class="main-content">
+            <!-- 작업 관리 -->
+            <div class="task-section">
+                <h2>🎯 작업 관리</h2>
+                
+                <!-- 작업 제어 버튼 -->
+                <div class="task-controls">
+                    <button class="btn btn-primary" onclick="showAddTaskForm()">
+                        ➕ 새 작업 추가
+                    </button>
+                    <button class="btn btn-success" onclick="startAllTasks()">
+                        ▶️ 모든 작업 시작
+                    </button>
+                    <button class="btn btn-warning" onclick="pauseAllTasks()">
+                        ⏸️ 일시 정지
+                    </button>
+                    <button class="btn btn-danger" onclick="clearCompletedTasks()">
+                        🗑️ 완료된 작업 정리
+                    </button>
+                </div>
+
+                <!-- 작업 추가 폼 -->
+                <div class="task-form" id="addTaskForm" style="display: none;">
+                    <h4>새 작업 추가</h4>
+                    <div class="form-group">
+                        <label>작업 유형</label>
+                        <select class="form-control" id="taskType">
+                            <option value="youtube_search">YouTube 검색</option>
+                            <option value="youtube_upload">YouTube 업로드</option>
+                            <option value="video_processing">비디오 처리</option>
+                            <option value="thumbnail_generation">썸네일 생성</option>
+                            <option value="transcription">자막 생성</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>우선순위</label>
+                        <select class="form-control" id="taskPriority">
+                            <option value="LOW">낮음</option>
+                            <option value="MEDIUM" selected>보통</option>
+                            <option value="HIGH">높음</option>
+                            <option value="URGENT">긴급</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="taskDataFields">
+                        <!-- 동적으로 생성되는 필드들 -->
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="addTask()">작업 추가</button>
+                        <button class="btn btn-secondary" onclick="hideAddTaskForm()">취소</button>
+                    </div>
+                </div>
+
+                <!-- 작업 목록 -->
+                <div class="task-list" id="taskList">
+                    <!-- 샘플 작업들 -->
+                    <div class="task-item">
+                        <div class="task-header">
+                            <div class="task-title">🔍 인기 게임 트렌드 검색</div>
+                            <div class="task-status status-running">실행 중</div>
+                        </div>
+                        <div class="task-details">
+                            유형: YouTube 검색 | 우선순위: 높음 | 예상 비용: $0.02<br>
+                            예상 시간: 5분 | 생성: 2025-07-12 14:30
+                        </div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-header">
+                            <div class="task-title">🎬 게임 리뷰 영상 업로드</div>
+                            <div class="task-status status-pending">대기 중</div>
+                        </div>
+                        <div class="task-details">
+                            유형: YouTube 업로드 | 우선순위: 높음 | 예상 비용: $0.01<br>
+                            예상 시간: 5분 | 예약: 2025-07-12 18:00
+                        </div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-header">
+                            <div class="task-title">🖼️ 썸네일 자동 생성</div>
+                            <div class="task-status status-completed">완료</div>
+                        </div>
+                        <div class="task-details">
+                            유형: 썸네일 생성 | 우선순위: 보통 | 실제 비용: $0.005<br>
+                            실행 시간: 3분 | 완료: 2025-07-12 13:45
+                        </div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-header">
+                            <div class="task-title">🎞️ 비디오 후처리</div>
+                            <div class="task-status status-failed">실패</div>
+                        </div>
+                        <div class="task-details">
+                            유형: 비디오 처리 | 우선순위: 보통 | 재시도: 2/3<br>
+                            오류: 파일 경로 오류 | 다음 재시도: 2025-07-12 15:00
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 활동 피드 -->
+            <div class="activity-panel">
+                <h2>📈 실시간 활동</h2>
+                
+                <div class="activity-feed">
+                    <div class="activity-item">
+                        <div class="activity-icon activity-success">✅</div>
+                        <div class="activity-content">
+                            <div class="activity-message">썸네일 생성 완료</div>
+                            <div class="activity-time">방금 전</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon activity-info">🔍</div>
+                        <div class="activity-content">
+                            <div class="activity-message">YouTube 검색 시작</div>
+                            <div class="activity-time">2분 전</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon activity-error">❌</div>
+                        <div class="activity-content">
+                            <div class="activity-message">비디오 처리 실패 (재시도 예정)</div>
+                            <div class="activity-time">5분 전</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon activity-success">📤</div>
+                        <div class="activity-content">
+                            <div class="activity-message">YouTube 업로드 완료</div>
+                            <div class="activity-time">8분 전</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-item">
+                        <div class="activity-icon activity-info">💰</div>
+                        <div class="activity-content">
+                            <div class="activity-message">일일 예산 70% 사용</div>
+                            <div class="activity-time">12분 전</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="performance-chart">
+                    실시간 성능 차트<br>
+                    <small>(Chart.js 연동 예정)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 플로팅 액션 버튼 -->
+    <button class="floating-action" onclick="showQuickActions()" title="빠른 작업">
+        ⚡
+    </button>
+
+    <script>
+        // 전역 변수
+        let systemRunning = true;
+        let tasks = [];
+        let activityLog = [];
+
+        // 시스템 토글
+        function toggleSystem() {
+            systemRunning = !systemRunning;
+            const statusEl = document.getElementById('systemStatus');
+            const textEl = document.getElementById('systemStatusText');
+            const toggleBtn = document.getElementById('systemToggle');
+
+            if (systemRunning) {
+                statusEl.className = 'status-indicator running';
+                statusEl.textContent = '⚡';
+                textEl.textContent = '시스템 실행 중';
+                toggleBtn.textContent = '시스템 중지';
+                toggleBtn.className = 'btn btn-danger';
+                addActivity('시스템 시작', 'info');
+            } else {
+                statusEl.className = 'status-indicator stopped';
+                statusEl.textContent = '⏹️';
+                textEl.textContent = '시스템 중지됨';
+                toggleBtn.textContent = '시스템 시작';
+                toggleBtn.className = 'btn btn-success';
+                addActivity('시스템 중지', 'error');
+            }
+        }
+
+        // 작업 추가 폼 표시/숨김
+        function showAddTaskForm() {
+            document.getElementById('addTaskForm').style.display = 'block';
+            updateTaskDataFields();
+        }
+
+        function hideAddTaskForm() {
+            document.getElementById('addTaskForm').style.display = 'none';
+        }
+
+        // 작업 유형에 따른 데이터 필드 업데이트
+        function updateTaskDataFields() {
+            const taskType = document.getElementById('taskType').value;
+            const fieldsContainer = document.getElementById('taskDataFields');
+            
+            let fieldsHTML = '';
+            
+            switch(taskType) {
+                case 'youtube_search':
+                    fieldsHTML = `
+                        <label>검색 키워드</label>
+                        <input type="text" class="form-control" id="searchQuery" placeholder="예: 게임 리뷰">
+                        <label>최대 결과 수</label>
+                        <input type="number" class="form-control" id="maxResults" value="20">
+                    `;
+                    break;
+                case 'youtube_upload':
+                    fieldsHTML = `
+                        <label>비디오 제목</label>
+                        <input type="text" class="form-control" id="videoTitle" placeholder="비디오 제목">
+                        <label>비디오 설명</label>
+                        <textarea class="form-control" id="videoDescription" rows="3" placeholder="비디오 설명"></textarea>
+                        <label>비디오 파일 경로</label>
+                        <input type="text" class="form-control" id="videoPath" placeholder="/path/to/video.mp4">
+                    `;
+                    break;
+                case 'video_processing':
+                    fieldsHTML = `
+                        <label>입력 파일 경로</label>
+                        <input type="text" class="form-control" id="inputPath" placeholder="/path/to/input.mp4">
+                        <label>출력 파일 경로</label>
+                        <input type="text" class="form-control" id="outputPath" placeholder="/path/to/output.mp4">
+                        <label>비디오 길이 (초)</label>
+                        <input type="number" class="form-control" id="videoDuration" value="300">
+                    `;
+                    break;
+                case 'thumbnail_generation':
+                    fieldsHTML = `
+                        <label>비디오 파일 경로</label>
+                        <input type="text" class="form-control" id="videoPath" placeholder="/path/to/video.mp4">
+                        <label>썸네일 출력 경로</label>
+                        <input type="text" class="form-control" id="thumbnailPath" placeholder="/path/to/thumbnail.jpg">
+                    `;
+                    break;
+                case 'transcription':
+                    fieldsHTML = `
+                        <label>오디오 파일 경로</label>
+                        <input type="text" class="form-control" id="audioPath" placeholder="/path/to/audio.mp3">
+                        <label>출력 언어</label>
+                        <select class="form-control" id="outputLanguage">
+                            <option value="ko">한국어</option>
+                            <option value="en">영어</option>
+                            <option value="ja">일본어</option>
+                        </select>
+                    `;
+                    break;
+            }
+            
+            fieldsContainer.innerHTML = fieldsHTML;
+        }
+
+        // 작업 추가
+        function addTask() {
+            const taskType = document.getElementById('taskType').value;
+            const priority = document.getElementById('taskPriority').value;
+            
+            const newTask = {
+                id: Date.now().toString(),
+                type: taskType,
+                priority: priority,
+                status: 'pending',
+                createdAt: new Date().toLocaleString('ko-KR')
+            };
+
+            // 작업 데이터 수집
+            switch(taskType) {
+                case 'youtube_search':
+                    newTask.title = `🔍 ${document.getElementById('searchQuery').value} 검색`;
+                    newTask.details = `검색어: ${document.getElementById('searchQuery').value}, 최대 결과: ${document.getElementById('maxResults').value}`;
+                    break;
+                case 'youtube_upload':
+                    newTask.title = `📤 ${document.getElementById('videoTitle').value}`;
+                    newTask.details = `비디오 업로드: ${document.getElementById('videoPath').value}`;
+                    break;
+                // ... 다른 케이스들
+                default:
+                    newTask.title = `새 ${taskType} 작업`;
+                    newTask.details = `유형: ${taskType}`;
+            }
+
+            tasks.push(newTask);
+            renderTaskList();
+            hideAddTaskForm();
+            addActivity(`새 작업 추가: ${newTask.title}`, 'info');
+            updateMetrics();
+        }
+
+        // 작업 목록 렌더링
+        function renderTaskList() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = tasks.map(task => `
+                <div class="task-item">
+                    <div class="task-header">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-status status-${task.status}">${getStatusText(task.status)}</div>
+                    </div>
+                    <div class="task-details">
+                        ${task.details}<br>
+                        우선순위: ${task.priority} | 생성: ${task.createdAt}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 상태 텍스트 변환
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '대기 중',
+                'running': '실행 중',
+                'completed': '완료',
+                'failed': '실패',
+                'retry': '재시도'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 활동 로그 추가
+        function addActivity(message, type) {
+            const activity = {
+                message: message,
+                type: type,
+                time: new Date().toLocaleString('ko-KR'),
+                timeAgo: '방금 전'
+            };
+            
+            activityLog.unshift(activity);
+            if (activityLog.length > 50) {
+                activityLog.pop();
+            }
+            
+            renderActivityFeed();
+        }
+
+        // 활동 피드 렌더링
+        function renderActivityFeed() {
+            const activityFeed = document.querySelector('.activity-feed');
+            const iconMap = {
+                'success': '✅',
+                'error': '❌',
+                'info': '📋',
+                'warning': '⚠️'
+            };
+
+            activityFeed.innerHTML = activityLog.slice(0, 10).map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon activity-${activity.type}">${iconMap[activity.type]}</div>
+                    <div class="activity-content">
+                        <div class="activity-message">${activity.message}</div>
+                        <div class="activity-time">${activity.timeAgo}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 메트릭 업데이트
+        function updateMetrics() {
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter(t => t.status === 'completed').length;
+            const runningTasks = tasks.filter(t => t.status === 'running').length;
+            const successRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0;
+
+            document.getElementById('totalTasks').textContent = totalTasks;
+            document.getElementById('completedTasks').textContent = completedTasks;
+            document.getElementById('runningTasks').textContent = runningTasks;
+            document.getElementById('successRate').textContent = successRate + '%';
+        }
+
+        // 모든 작업 시작
+        function startAllTasks() {
+            if (!systemRunning) {
+                alert('시스템이 중지되어 있습니다. 먼저 시스템을 시작해주세요.');
+                return;
+            }
+
+            const pendingTasks = tasks.filter(t => t.status === 'pending');
+            pendingTasks.forEach(task => {
+                task.status = 'running';
+                addActivity(`작업 시작: ${task.title}`, 'info');
+                
+                // 시뮬레이션: 랜덤하게 작업 완료
+                setTimeout(() => {
+                    const success = Math.random() > 0.1; // 90% 성공률
+                    task.status = success ? 'completed' : 'failed';
+                    addActivity(`작업 ${success ? '완료' : '실패'}: ${task.title}`, success ? 'success' : 'error');
+                    renderTaskList();
+                    updateMetrics();
+                }, Math.random() * 10000 + 2000); // 2-12초 후 완료
+            });
+
+            renderTaskList();
+            updateMetrics();
+            addActivity(`${pendingTasks.length}개 작업 일괄 시작`, 'info');
+        }
+
+        // 모든 작업 일시 정지
+        function pauseAllTasks() {
+            const runningTasks = tasks.filter(t => t.status === 'running');
+            runningTasks.forEach(task => {
+                task.status = 'pending';
+            });
+
+            renderTaskList();
+            updateMetrics();
+            addActivity(`${runningTasks.length}개 작업 일시 정지`, 'warning');
+        }
+
+        // 완료된 작업 정리
+        function clearCompletedTasks() {
+            const beforeCount = tasks.length;
+            tasks = tasks.filter(t => t.status !== 'completed');
+            const removedCount = beforeCount - tasks.length;
+
+            renderTaskList();
+            updateMetrics();
+            if (removedCount > 0) {
+                addActivity(`${removedCount}개 완료된 작업 정리`, 'info');
+            }
+        }
+
+        // 빠른 작업 메뉴
+        function showQuickActions() {
+            const actions = [
+                '🔍 인기 키워드 검색',
+                '📤 예약 업로드',
+                '🎬 비디오 처리',
+                '🖼️ 썸네일 생성',
+                '📊 성능 보고서'
+            ];
+
+            const selectedAction = prompt('빠른 작업을 선택하세요:\n' + 
+                actions.map((action, i) => `${i+1}. ${action}`).join('\n'));
+
+            if (selectedAction && selectedAction >= 1 && selectedAction <= 5) {
+                const actionName = actions[selectedAction - 1];
+                addActivity(`빠른 작업 실행: ${actionName}`, 'info');
+                
+                // 빠른 작업 추가
+                const quickTask = {
+                    id: Date.now().toString(),
+                    type: 'quick_action',
+                    priority: 'HIGH',
+                    status: 'running',
+                    title: actionName,
+                    details: '빠른 작업으로 실행됨',
+                    createdAt: new Date().toLocaleString('ko-KR')
+                };
+
+                tasks.push(quickTask);
+                renderTaskList();
+                updateMetrics();
+
+                // 자동 완료 (3초 후)
+                setTimeout(() => {
+                    quickTask.status = 'completed';
+                    renderTaskList();
+                    updateMetrics();
+                    addActivity(`빠른 작업 완료: ${actionName}`, 'success');
+                }, 3000);
+            }
+        }
+
+        // 실시간 업데이트 시뮬레이션
+        function simulateRealTimeUpdates() {
+            setInterval(() => {
+                // 예산 업데이트
+                const currentSpend = Math.random() * 100;
+                const remaining = 100 - currentSpend;
+                const usage = Math.round(currentSpend);
+
+                document.getElementById('currentSpend').textContent = `${currentSpend.toFixed(2)}`;
+                document.getElementById('remainingBudget').textContent = `${remaining.toFixed(2)}`;
+                document.getElementById('budgetUsage').textContent = `${usage}%`;
+
+                const progressBar = document.getElementById('budgetProgress');
+                progressBar.style.width = `${usage}%`;
+                
+                // 예산 사용률에 따른 색상 변경
+                progressBar.className = 'progress-fill';
+                if (usage > 80) {
+                    progressBar.classList.add('danger');
+                } else if (usage > 60) {
+                    progressBar.classList.add('warning');
+                }
+
+                // 랜덤 활동 추가
+                if (Math.random() < 0.1) { // 10% 확률
+                    const randomActivities = [
+                        { message: '새 YouTube 영상 발견', type: 'info' },
+                        { message: '썸네일 최적화 완료', type: 'success' },
+                        { message: '트렌드 분석 업데이트', type: 'info' },
+                        { message: '예산 알림: 80% 사용', type: 'warning' }
+                    ];
+                    
+                    const randomActivity = randomActivities[Math.floor(Math.random() * randomActivities.length)];
+                    addActivity(randomActivity.message, randomActivity.type);
+                }
+
+                // 실행 중인 작업 상태 업데이트
+                const runningTasks = tasks.filter(t => t.status === 'running');
+                if (runningTasks.length > 0 && Math.random() < 0.2) { // 20% 확률
+                    const randomTask = runningTasks[Math.floor(Math.random() * runningTasks.length)];
+                    const success = Math.random() > 0.15; // 85% 성공률
+                    
+                    randomTask.status = success ? 'completed' : 'failed';
+                    addActivity(`작업 ${success ? '완료' : '실패'}: ${randomTask.title}`, success ? 'success' : 'error');
+                    renderTaskList();
+                    updateMetrics();
+                }
+
+            }, 5000); // 5초마다 업데이트
+        }
+
+        // 시간 표시 업데이트
+        function updateTimeAgo() {
+            activityLog.forEach((activity, index) => {
+                const timeDiff = Date.now() - new Date(activity.time).getTime();
+                const minutes = Math.floor(timeDiff / 60000);
+                
+                if (minutes < 1) {
+                    activity.timeAgo = '방금 전';
+                } else if (minutes < 60) {
+                    activity.timeAgo = `${minutes}분 전`;
+                } else {
+                    const hours = Math.floor(minutes / 60);
+                    activity.timeAgo = `${hours}시간 전`;
+                }
+            });
+            
+            renderActivityFeed();
+        }
+
+        // 키보드 단축키
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'n':
+                        e.preventDefault();
+                        showAddTaskForm();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        startAllTasks();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        pauseAllTasks();
+                        break;
+                    case 't':
+                        e.preventDefault();
+                        toggleSystem();
+                        break;
+                }
+            }
+        });
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            // 이벤트 리스너 등록
+            document.getElementById('taskType').addEventListener('change', updateTaskDataFields);
+            
+            // 초기 데이터 로드
+            addActivity('YouTube 자동화 시스템 시작', 'success');
+            addActivity('데이터베이스 연결 완료', 'info');
+            addActivity('API 키 검증 완료', 'success');
+            
+            // 샘플 작업 추가
+            tasks = [
+                {
+                    id: '1',
+                    type: 'youtube_search',
+                    priority: 'HIGH',
+                    status: 'running',
+                    title: '🔍 인기 게임 트렌드 검색',
+                    details: '유형: YouTube 검색 | 우선순위: 높음 | 예상 비용: $0.02',
+                    createdAt: '2025-07-12 14:30'
+                },
+                {
+                    id: '2',
+                    type: 'youtube_upload',
+                    priority: 'HIGH',
+                    status: 'pending',
+                    title: '🎬 게임 리뷰 영상 업로드',
+                    details: '유형: YouTube 업로드 | 우선순위: 높음 | 예상 비용: $0.01',
+                    createdAt: '2025-07-12 14:25'
+                },
+                {
+                    id: '3',
+                    type: 'thumbnail_generation',
+                    priority: 'MEDIUM',
+                    status: 'completed',
+                    title: '🖼️ 썸네일 자동 생성',
+                    details: '유형: 썸네일 생성 | 우선순위: 보통 | 실제 비용: $0.005',
+                    createdAt: '2025-07-12 13:45'
+                },
+                {
+                    id: '4',
+                    type: 'video_processing',
+                    priority: 'MEDIUM',
+                    status: 'failed',
+                    title: '🎞️ 비디오 후처리',
+                    details: '유형: 비디오 처리 | 우선순위: 보통 | 재시도: 2/3',
+                    createdAt: '2025-07-12 13:30'
+                }
+            ];
+            
+            renderTaskList();
+            updateMetrics();
+            
+            // 실시간 업데이트 시작
+            simulateRealTimeUpdates();
+            
+            // 시간 표시 업데이트 (1분마다)
+            setInterval(updateTimeAgo, 60000);
+            
+            console.log('🚀 YouTube 자동화 시스템 대시보드 초기화 완료!');
+            console.log('💡 키보드 단축키:');
+            console.log('   Ctrl+N: 새 작업 추가');
+            console.log('   Ctrl+S: 모든 작업 시작');
+            console.log('   Ctrl+P: 모든 작업 일시 정지');
+            console.log('   Ctrl+T: 시스템 토글');
+        });
+
+        // 터치 디바이스 지원
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartY = e.changedTouches[0].screenY;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartY - touchEndY;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // 위로 스와이프 - 새로고침
+                    location.reload();
+                } else {
+                    // 아래로 스와이프 - 빠른 작업
+                    showQuickActions();
+                }
+            }
+        }
+
+        // 알림 시스템
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                max-width: 300px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            `;
+            
+            const colors = {
+                'success': 'linear-gradient(45deg, #4CAF50, #45a049)',
+                'error': 'linear-gradient(45deg, #f44336, #d32f2f)',
+                'warning': 'linear-gradient(45deg, #ff9800, #f57c00)',
+                'info': 'linear-gradient(45deg, #2196F3, #1976D2)'
+            };
+            
+            notification.style.background = colors[type] || colors.info;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // 애니메이션
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // 자동 제거
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 4000);
+        }
+
+        // 전역 오류 처리
+        window.addEventListener('error', (e) => {
+            console.error('시스템 오류:', e.error);
+            showNotification('시스템 오류가 발생했습니다. 다시 시도해주세요.', 'error');
+            addActivity('시스템 오류 발생', 'error');
+        });
+
+        // 성능 모니터링
+        let performanceData = {
+            startTime: Date.now(),
+            interactions: 0,
+            errors: 0
+        };
+
+        document.addEventListener('click', () => {
+            performanceData.interactions++;
+        });
+
+        // 성능 보고서 생성
+        function generatePerformanceReport() {
+            const uptime = Date.now() - performanceData.startTime;
+            const uptimeMinutes = Math.floor(uptime / 60000);
+            
+            return {
+                uptime: uptimeMinutes,
+                interactions: performanceData.interactions,
+                errors: performanceData.errors,
+                totalTasks: tasks.length,
+                systemStatus: systemRunning ? 'active' : 'inactive'
+            };
+        }
