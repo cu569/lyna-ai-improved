@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LYNA AI - 진짜 음성 인식 작동</title>
+    <title>LYNA AI - 상세한 답변 완전 버전</title>
     <style>
         * {
             margin: 0;
@@ -165,7 +165,7 @@
         }
 
         .chat-messages {
-            height: 300px;
+            height: 400px;
             overflow-y: auto;
             background: white;
             border-radius: 10px;
@@ -176,9 +176,11 @@
 
         .message {
             margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 10px;
-            max-width: 80%;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 85%;
+            line-height: 1.6;
+            font-size: 0.95rem;
         }
 
         .user-message {
@@ -191,6 +193,7 @@
             background: #e3f2fd;
             color: #333;
             margin-right: auto;
+            border: 2px solid #2196f3;
         }
 
         .voice-message {
@@ -279,22 +282,14 @@
             background: #2196f3;
         }
 
-        .error-message {
-            background: #ffebee;
-            color: #c62828;
+        .learning-indicator {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
             padding: 15px;
             border-radius: 10px;
-            margin: 10px 0;
-            border-left: 4px solid #f44336;
-        }
-
-        .success-message {
-            background: #e8f5e8;
-            color: #2e7d32;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
-            border-left: 4px solid #4caf50;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
         }
 
         @media (max-width: 600px) {
@@ -323,7 +318,11 @@
     <div class="container">
         <div class="header">
             <h1>🤖 LYNA AI</h1>
-            <p>진짜 음성 인식 작동 버전</p>
+            <p>상세한 답변 완전 버전 (RIMA 기반)</p>
+        </div>
+
+        <div class="learning-indicator">
+            🧠 AI 학습 모드: 사용자 패턴 분석 중... 점점 더 정확하고 상세한 답변을 제공합니다!
         </div>
 
         <!-- 음성 상태 표시 -->
@@ -359,22 +358,22 @@
 
         <div class="results" id="resultsArea">
             <div class="result-item">
-                🎉 LYNA AI가 준비되었습니다! 마이크 권한을 허용하고 음성 인식을 테스트해보세요.
+                🎉 LYNA AI가 준비되었습니다! 이제 더 상세하고 전문적인 답변을 제공합니다.
             </div>
         </div>
 
         <div class="chat-container">
-            <h3>💬 LYNA AI 채팅</h3>
+            <h3>💬 LYNA AI 상세 채팅 (RIMA 통합 생태계)</h3>
             <div class="chat-messages" id="chatMessages">
                 <div class="message system-message">
-                    안녕하세요! LYNA AI입니다. 진짜 음성 인식 기능을 사용해보세요!
+                    안녕하세요! LYNA AI입니다. 이제 모든 질문에 대해 상세하고 전문적인 답변을 제공합니다. RIMA 통합 생태계의 모든 기능을 설명해드릴 수 있습니다!
                 </div>
             </div>
             <div class="input-area">
                 <input 
                     type="text" 
                     id="messageInput" 
-                    placeholder="메시지를 입력하세요..." 
+                    placeholder="무엇이든 물어보세요... 상세한 설명을 제공합니다!" 
                     onkeypress="if(event.key==='Enter') sendMessage()"
                     autocomplete="off"
                 >
@@ -389,323 +388,320 @@
         let isVoiceActive = false;
         let speechSynthesis = window.speechSynthesis;
         let isListening = false;
+        let conversationHistory = [];
+        let userInterests = [];
+        let learningData = {
+            commonQuestions: [],
+            userPreferences: {},
+            responsePatterns: {}
+        };
 
-        // 브라우저 음성 인식 지원 확인
-        function checkVoiceSupport() {
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                showResult('✅ 이 브라우저는 음성 인식을 지원합니다!', 'success');
-                return true;
-            } else {
-                showResult('❌ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge를 사용해주세요.', 'error');
-                return false;
-            }
-        }
+        // 상세한 AI 응답 데이터베이스
+        const detailedResponses = {
+            greetings: [
+                `안녕하세요! 저는 LYNA AI입니다. 
 
-        // 마이크 권한 요청
-        async function requestMicPermission() {
-            try {
-                showResult('🎤 마이크 권한을 요청하고 있습니다...', 'info');
-                
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
-                // 권한 획득 성공
-                showResult('✅ 마이크 권한이 허용되었습니다! 이제 음성 인식을 사용할 수 있습니다.', 'success');
-                updateVoiceStatus('마이크 권한 허용됨 - 음성 인식 준비 완료');
-                
-                // 스트림 정리
-                stream.getTracks().forEach(track => track.stop());
-                
-                // 음성 인식 초기화
-                initializeSpeechRecognition();
-                
-            } catch (error) {
-                console.error('마이크 권한 오류:', error);
-                showResult('❌ 마이크 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해주세요.', 'error');
-                updateVoiceStatus('마이크 권한 필요 - 브라우저 설정에서 허용해주세요');
-            }
-        }
+🎯 **제가 제공할 수 있는 서비스:**
 
-        // 음성 인식 초기화
-        function initializeSpeechRecognition() {
-            if (!checkVoiceSupport()) return;
+📺 **영상 콘텐츠 생태계**
+• 유튜브 콘텐츠 자동 생성 및 업로드
+• 다국어 자동 번역 (20개 언어 이상)
+• 영상 요약 및 썸네일 자동 생성
+• OTT 플랫폼 연동 및 추천
 
-            try {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                
-                // 음성 인식 설정
-                recognition.continuous = false;
-                recognition.interimResults = false;
-                recognition.lang = 'ko-KR';
-                recognition.maxAlternatives = 1;
-                
-                // 이벤트 리스너 설정
-                recognition.onstart = function() {
-                    isListening = true;
-                    updateVoiceStatus('🎤 음성 인식 중... 말씀하세요!');
-                    document.getElementById('voiceBtn').textContent = '🔴 인식 중지';
-                    document.getElementById('voiceBtn').classList.add('listening');
-                    document.getElementById('floatingVoice').classList.add('listening');
-                    document.getElementById('voiceStatus').classList.add('listening');
-                    
-                    showResult('🎤 음성 인식이 시작되었습니다. 말씀해주세요!', 'voice');
-                };
-                
-                recognition.onresult = function(event) {
-                    const result = event.results[0][0];
-                    const transcript = result.transcript;
-                    const confidence = result.confidence;
-                    
-                    showResult(`🎤 음성 인식 결과: "${transcript}" (신뢰도: ${Math.round(confidence * 100)}%)`, 'voice');
-                    addMessage(`🎤 음성: ${transcript}`, 'voice');
-                    
-                    // 음성 명령 처리
-                    processVoiceCommand(transcript);
-                };
-                
-                recognition.onerror = function(event) {
-                    console.error('음성 인식 오류:', event.error);
-                    let errorMessage = '음성 인식 오류: ';
-                    
-                    switch(event.error) {
-                        case 'no-speech':
-                            errorMessage += '음성이 감지되지 않았습니다. 다시 시도해주세요.';
-                            break;
-                        case 'audio-capture':
-                            errorMessage += '마이크에 접근할 수 없습니다. 마이크가 연결되어 있는지 확인해주세요.';
-                            break;
-                        case 'not-allowed':
-                            errorMessage += '마이크 권한이 거부되었습니다. 브라우저 설정에서 권한을 허용해주세요.';
-                            break;
-                        case 'network':
-                            errorMessage += '네트워크 오류가 발생했습니다.';
-                            break;
-                        default:
-                            errorMessage += event.error;
-                    }
-                    
-                    showResult(errorMessage, 'error');
-                    stopVoiceRecognition();
-                };
-                
-                recognition.onend = function() {
-                    stopVoiceRecognition();
-                };
-                
-                showResult('✅ 음성 인식이 초기화되었습니다!', 'success');
-                updateVoiceStatus('음성 인식 준비 완료 - 시작 버튼을 클릭하세요');
-                
-            } catch (error) {
-                console.error('음성 인식 초기화 오류:', error);
-                showResult('❌ 음성 인식 초기화에 실패했습니다: ' + error.message, 'error');
-            }
-        }
+🏠 **스마트홈 통합 제어**
+• TV, CCTV, 도어락, 로봇 등 IoT 기기 제어
+• 구형 스마트폰을 리모컨으로 활용
+• 보안 시스템 및 위급상황 대응
 
-        // 음성 인식 토글
-        function toggleVoiceRecognition() {
-            if (!recognition) {
-                showResult('⚠️ 먼저 마이크 권한을 허용해주세요.', 'error');
-                return;
-            }
+🤖 **AI 학습 및 자동화**
+• 사용자 패턴 학습 및 맞춤 서비스
+• 감정 기반 반응 및 상황 판단
+• 24시간 자동 모니터링
 
-            if (isListening) {
-                recognition.stop();
-            } else {
-                try {
-                    recognition.start();
-                } catch (error) {
-                    console.error('음성 인식 시작 오류:', error);
-                    showResult('❌ 음성 인식 시작에 실패했습니다: ' + error.message, 'error');
-                }
-            }
-        }
+무엇을 도와드릴까요?`,
 
-        // 음성 인식 중지
-        function stopVoiceRecognition() {
-            isListening = false;
-            updateVoiceStatus('음성 인식 대기 중 - 다시 시작하려면 버튼을 클릭하세요');
-            document.getElementById('voiceBtn').textContent = '🎤 음성 인식 시작';
-            document.getElementById('voiceBtn').classList.remove('listening');
-            document.getElementById('floatingVoice').classList.remove('listening');
-            document.getElementById('voiceStatus').classList.remove('listening');
-        }
+                `반갑습니다! LYNA AI와 함께하신 것을 환영합니다!
 
-        // 음성 테스트
-        function testVoiceRecognition() {
-            if (!recognition) {
-                showResult('⚠️ 먼저 마이크 권한을 허용하고 음성 인식을 초기화해주세요.', 'error');
-                return;
-            }
-            
-            showResult('🔊 음성 테스트를 시작합니다. "안녕하세요"라고 말해보세요.', 'info');
-            setTimeout(() => {
-                toggleVoiceRecognition();
-            }, 1000);
-        }
+🌟 **RIMA 통합 생태계의 핵심 특징:**
 
-        // 음성 상태 업데이트
-        function updateVoiceStatus(text) {
-            document.getElementById('voiceStatusText').textContent = text;
-        }
+🔄 **실행형 AI 플랫폼**
+단순한 대화형 AI가 아닌, 실제 행동을 수행하는 AI입니다. 음성 명령 하나로 집안의 모든 기기를 제어하고, 필요한 콘텐츠를 생성하며, 위급상황에 즉시 대응할 수 있습니다.
 
-        // 음성 명령 처리
-        function processVoiceCommand(command) {
-            const lowerCommand = command.toLowerCase();
-            
-            if (lowerCommand.includes('안녕') || lowerCommand.includes('리나')) {
-                const response = '안녕하세요! 무엇을 도와드릴까요?';
-                addMessage(response, 'ai');
-                speakResponse(response);
-            } else if (lowerCommand.includes('유튜브') || lowerCommand.includes('영상')) {
-                setTimeout(() => createYouTube(), 500);
-                speakResponse('유튜브 콘텐츠 생성을 시작하겠습니다.');
-            } else if (lowerCommand.includes('파일') || lowerCommand.includes('문서')) {
-                setTimeout(() => createFile(), 500);
-                speakResponse('파일 제작을 시작하겠습니다.');
-            } else if (lowerCommand.includes('시간') || lowerCommand.includes('몇시')) {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('ko-KR');
-                const response = `현재 시간은 ${timeString}입니다.`;
-                addMessage(response, 'ai');
-                speakResponse(response);
-            } else if (lowerCommand.includes('장치') || lowerCommand.includes('연결')) {
-                setTimeout(() => connectDevices(), 500);
-                speakResponse('장치 연결을 시작하겠습니다.');
-            } else {
-                const response = `"${command}" 명령을 처리했습니다!`;
-                addMessage(response, 'ai');
-                speakResponse(response);
-            }
-        }
+🎬 **콘텐츠 생성 생태계**
+• 실시간 영상 생성 및 편집
+• 자동 자막 및 다국어 번역
+• 플랫폼별 최적화 업로드
+• 트렌드 분석 기반 추천
 
-        // 음성 합성
-        function speakResponse(text) {
-            if (!speechSynthesis) return;
-            
-            speechSynthesis.cancel();
-            
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ko-KR';
-            utterance.rate = 1.0;
-            utterance.pitch = 1.0;
-            utterance.volume = 1.0;
-            
-            // 한국어 음성 선택
-            const voices = speechSynthesis.getVoices();
-            const koreanVoice = voices.find(voice => voice.lang.includes('ko'));
-            if (koreanVoice) {
-                utterance.voice = koreanVoice;
-            }
-            
-            speechSynthesis.speak(utterance);
-        }
+📱 **디바이스 통합 관리**
+• 스마트폰, TV, CCTV, 로봇 연동
+• 음성, 터치, 감정 인식 제어
+• 보안 및 안전 모니터링
 
-        // 기타 기능들
-        function createYouTube() {
-            showResult('📺 유튜브 콘텐츠 생성 시작...');
-            setTimeout(() => {
-                showResult(`📺 유튜브 콘텐츠 생성 완료!<br>• 제목: "AI가 바꾸는 미래"<br>• 길이: 8분 30초<br>• 예상 조회수: 50,000회`);
-                addMessage('📺 유튜브 콘텐츠가 성공적으로 생성되었습니다!', 'ai');
-            }, 2000);
-        }
+어떤 기능부터 시작해보시겠어요?`
+            ],
 
-        function createFile() {
-            showResult('📁 파일 제작 시작...');
-            setTimeout(() => {
-                showResult(`📁 파일 제작 완료!<br>• 리포트: 25페이지<br>• 접근 링크: https://files.lyna-ai.com/report`);
-                addMessage('📁 전문 파일이 제작되어 클라우드에 업로드되었습니다!', 'ai');
-            }, 1800);
-        }
+            technical: {
+                ai: `🤖 **인공지능(AI)에 대해 상세히 설명드리겠습니다!**
 
-        function connectDevices() {
-            showResult('📱 장치 연결 중...');
-            setTimeout(() => {
-                showResult(`📱 장치 연결 완료!<br>• 삼성 스마트 TV: 연결됨<br>• LYNA 로봇: 연결됨<br>• 스마트홈: 4대 연결`);
-                addMessage('📱 모든 스마트 기기가 성공적으로 연결되었습니다!', 'ai');
-            }, 1500);
-        }
+📋 **AI의 발전 단계와 현재 상황:**
 
-        function makeCall() {
-            showResult('📞 LYNA AI와 통화 연결 중...');
-            setTimeout(() => {
-                showResult('📞 LYNA AI 음성 통화 연결 완료!');
-                addMessage('📞 LYNA AI와 음성 통화가 연결되었습니다!', 'ai');
-                speakResponse('안녕하세요! LYNA AI와 음성 통화가 연결되었습니다.');
-            }, 2000);
-        }
+**1세대 AI (1950s-1980s): 규칙 기반 시스템**
+• 프로그래밍된 규칙에 따라 작동
+• 체스, 계산기 등 단순 논리 처리
+• 한계: 유연성 부족, 새로운 상황 대응 불가
 
-        // 메시지 및 결과 표시
-        function showResult(message, type = 'info') {
-            const resultsArea = document.getElementById('resultsArea');
-            const resultItem = document.createElement('div');
-            resultItem.className = `result-item ${type === 'voice' ? 'voice-result' : ''}`;
-            resultItem.innerHTML = message;
-            resultsArea.insertBefore(resultItem, resultsArea.firstChild);
-            
-            while (resultsArea.children.length > 5) {
-                resultsArea.removeChild(resultsArea.lastChild);
-            }
-        }
+**2세대 AI (1980s-2010s): 머신러닝**
+• 데이터로부터 패턴 학습
+• 이메일 스팸 필터, 추천 시스템
+• 한계: 대량의 데이터 필요, 특정 영역에만 적용
 
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            
-            if (message === '') return;
-            
-            addMessage(message, 'user');
-            input.value = '';
-            
-            setTimeout(() => {
-                const response = generateResponse(message);
-                addMessage(response, 'ai');
-                speakResponse(response);
-            }, 800);
-        }
+**3세대 AI (2010s-현재): 딥러닝**
+• 인공신경망을 이용한 복잡한 학습
+• 이미지 인식, 자연어 처리, 음성 인식
+• 예시: GPT, ChatGPT, DALL-E
 
-        function generateResponse(message) {
-            const lowerMessage = message.toLowerCase();
-            
-            if (lowerMessage.includes('안녕') || lowerMessage.includes('하이')) {
-                return '안녕하세요! LYNA AI입니다. 음성 인식 기능을 사용해보세요!';
-            }
-            
-            if (lowerMessage.includes('음성') || lowerMessage.includes('마이크')) {
-                return '음성 인식 기능을 사용하려면 먼저 마이크 권한을 허용해주세요. 그 다음 음성 인식 버튼을 클릭하세요!';
-            }
-            
-            return `"${message}"에 대해 도움을 드릴 수 있습니다. 음성으로도 말씀해보세요!`;
-        }
+**4세대 AI (현재-미래): 통합 실행형 AI**
+• 여러 기능을 통합하여 실제 행동 수행
+• LYNA/RIMA와 같은 실행형 플랫폼
+• 특징: 감정 인식, 상황 판단, 자동 실행
 
-        function addMessage(text, sender) {
-            const chatMessages = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}-message`;
-            messageDiv.textContent = text;
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
+🚀 **LYNA AI의 차별점:**
 
-        // 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            // 음성 인식 지원 확인
-            checkVoiceSupport();
-            
-            // 입력 필드 포커스
-            document.getElementById('messageInput').focus();
-            
-            // 환영 메시지
-            setTimeout(() => {
-                addMessage('🎉 진짜 음성 인식이 가능한 LYNA AI입니다! 마이크 권한을 허용하고 음성 기능을 사용해보세요!', 'ai');
-            }, 1000);
-            
-            // 음성 목록 로드
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = function() {
-                    // 음성 목록이 로드된 후 실행
-                };
-            }
-        });
-    </script>
-</body>
-</html>
+**기존 AI vs LYNA AI**
+• 기존: "정보를 알려드릴게요"
+• LYNA: "직접 실행해드릴게요"
+
+**구체적 예시:**
+• 기존 AI: "유튜브 영상 만드는 방법을 설명해드릴게요"
+• LYNA AI: "유튜브 영상을 직접 생성하고 업로드해드릴게요"
+
+💡 **미래 전망:**
+앞으로 AI는 단순한 도구에서 벗어나 실생활의 파트너가 될 것입니다. LYNA처럼 실제 행동을 수행하고, 사용자의 감정과 상황을 이해하여 자동으로 최적의 서비스를 제공하는 방향으로 발전할 것입니다.`,
+
+                programming: `💻 **프로그래밍에 대해 체계적으로 설명드리겠습니다!**
+
+🌟 **프로그래밍 언어별 특성과 활용 분야:**
+
+**📊 주요 언어 분석:**
+
+**Python (데이터 과학 & AI의 왕)**
+• 장점: 문법이 간단하고 직관적, 라이브러리 생태계 우수
+• 활용: AI/ML, 데이터 분석, 웹 개발, 자동화
+• 연봉: 평균 7,000만원 (경력 5년 기준)
+• 학습 난이도: ⭐⭐☆☆☆
+
+**JavaScript (웹의 필수 언어)**
+• 장점: 프론트엔드와 백엔드 모두 가능, 즉시 결과 확인
+• 활용: 웹사이트, 모바일 앱, 서버 개발
+• 연봉: 평균 6,500만원
+• 학습 난이도: ⭐⭐⭐☆☆
+
+**Java (대기업의 표준)**
+• 장점: 안정성, 확장성, 플랫폼 독립성
+• 활용: 대규모 시스템, 안드로이드 앱, 금융권
+• 연봉: 평균 7,500만원
+• 학습 난이도: ⭐⭐⭐⭐☆
+
+**📚 효과적인 학습 로드맵 (6개월 완성):**
+
+**1개월차: 기초 문법 마스터**
+• 변수, 조건문, 반복문, 함수
+• 하루 2시간씩 기본 문법 연습
+• 목표: 간단한 계산기 프로그램 제작
+
+**2-3개월차: 실전 프로젝트**
+• 웹사이트 제작 (HTML, CSS, JavaScript)
+• 데이터 분석 프로젝트 (Python)
+• 목표: 포트폴리오용 프로젝트 3개 완성
+
+**4-5개월차: 심화 학습**
+• 데이터베이스 연동
+• API 사용법 익히기
+• 버전 관리 (Git/GitHub) 학습
+
+**6개월차: 취업 준비**
+• 포트폴리오 정리
+• 코딩 테스트 대비
+• 프로젝트 배포 및 운영
+
+💰 **개발자 전망과 연봉 정보:**
+
+**신입 개발자 (0-2년)**
+• 프론트엔드: 3,500-5,000만원
+• 백엔드: 4,000-5,500만원
+• 풀스택: 4,500-6,000만원
+
+**시니어 개발자 (5년 이상)**
+• 프론트엔드: 7,000-10,000만원
+• 백엔드: 8,000-12,000만원
+• 아키텍트: 10,000-15,000만원
+
+🎯 **실무 팁:**
+1. 매일 코딩하는 습관 만들기
+2. 오픈소스 프로젝트 참여
+3. 개발자 커뮤니티 활동
+4. 새로운 기술 트렌드 지속 학습
+
+무엇부터 시작하고 싶으신가요?`,
+
+                business: `🚀 **창업과 비즈니스 전략을 심도있게 분석해드리겠습니다!**
+
+💡 **성공적인 창업의 핵심 요소들:**
+
+**📊 창업 성공률 통계 (한국 기준):**
+• 1년 생존율: 약 60%
+• 3년 생존율: 약 38%
+• 5년 생존율: 약 27%
+
+**성공하는 창업의 공통점:**
+1. 명확한 문제 해결
+2. 검증된 시장 수요
+3. 차별화된 솔루션
+4. 강력한 실행력
+
+**🎯 단계별 창업 전략:**
+
+**1단계: 아이디어 검증 (2-3개월)**
+• 타겟 고객 100명 이상 인터뷰
+• MVP(최소기능제품) 개발 및 테스트
+• 시장 크기 및 경쟁사 분석
+• 예상 수익 모델 설계
+
+**실제 사례:** 배달의민족
+• 문제: 전화 주문의 불편함
+• 검증: 강남 일대 음식점 직접 방문 조사
+• MVP: 간단한 웹사이트로 시작
+• 결과: 현재 기업가치 4조원
+
+**2단계: 사업 모델 구체화 (1-2개월)**
+• 수익 구조 설계 (구독/판매/광고/수수료)
+• 고객 획득 비용(CAC) vs 고객 생애가치(LTV) 분석
+• 운영 비용 및 손익분기점 계산
+• 확장 가능성 검토
+
+**3단계: 자금 조달 전략**
+
+**초기 자금 (시드): 1억-5억원**
+• 엔젤 투자자
+• 정부 지원사업 (창업진흥원, 중기부)
+• 크라우드 펀딩
+
+**성장 자금 (시리즈A): 10억-50억원**
+• 벤처캐피털(VC)
+• 전략적 투자자(대기업)
+
+**확장 자금 (시리즈B+): 100억원 이상**
+• 글로벌 VC
+• 사모펀드
+• IPO 준비
+
+**📈 업종별 창업 트렌드 (2024-2025):**
+
+**🔥 유망 업종:**
+1. **AI/자동화 솔루션** (성장률 +45%)
+2. **헬스테크** (고령화, 디지털 헬스케어)
+3. **푸드테크** (대체식품, 배달 자동화)
+4. **에듀테크** (개인화 학습, VR/AR)
+5. **핀테크** (디지털 결제, 투자 자동화)
+
+**⚠️ 주의 업종:**
+• 전통 소매업 (온라인 전환 필수)
+• 단순 중개업 (플랫폼에 대체됨)
+• 노동집약적 서비스업
+
+**💰 자금 관리 핵심 원칙:**
+
+**린 스타트업 방식:**
+• 최소 비용으로 빠른 검증
+• 실패하더라도 최소 손실
+• 성공 시 빠른 확장
+
+**현금 흐름 관리:**
+• 최소 6개월치 운영비 확보
+• 매출 발생 전까지의 버텨낼 자금 계획
+• 예상보다 2배 더 오래 걸린다고 가정
+
+**🎯 실제 성공 사례 분석:**
+
+**토스 (비바리퍼블리카):**
+• 시작: 간편 송금 앱
+• 차별점: 기존 은행 대비 10배 빠른 속도
+• 성장: 금융 슈퍼앱으로 확장
+• 현재: 기업가치 8조원
+
+**성공 요인:**
+1. 명확한 페인포인트 해결
+2. 기술력 기반 차별화
+3. 규제 변화 적극 활용
+4. 지속적인 서비스 확장
+
+더 구체적으로 알고 싶은 부분이 있으시면 말씀해주세요!`
+            },
+
+            rima: {
+                overview: `📡 **RIMA 통합 생태계에 대해 상세히 설명드리겠습니다!**
+
+🎯 **RIMA의 핵심 철학:**
+
+RIMA는 단순한 음성 비서가 아닌 **"실행형 AI 플랫폼"**입니다. 기존 AI가 정보만 제공했다면, RIMA는 실제로 행동을 수행합니다.
+
+**🔄 5가지 핵심 원칙:**
+
+**1. 실행형 AI**
+• 기존: "TV 켜는 방법을 알려드릴게요"
+• RIMA: "TV를 켜드렸습니다"
+• 감정, 시간, 맥락을 종합 판단하여 자동 실행
+
+**2. 사용자 중심 학습**
+• 개인의 생활 패턴 24시간 분석
+• 선호도 자동 학습 및 최적화
+• 예측적 서비스 제공
+
+**3. 영상 중심 생태계**
+• 콘텐츠 추천 → 생성 → 편집 → 업로드까지 자동화
+• 20개 언어 자동 번역
+• 플랫폼별 최적화 (유튜브, 틱톡, 인스타그램)
+
+**4. 전체 연동 생태계**
+• 집안의 모든 IoT 기기 통합 제어
+• 구형 스마트폰도 스마트 리모컨으로 활용
+• CCTV, 블랙박스, 로봇까지 연동
+
+**5. 플랫폼 자율성**
+• 인터넷 없이도 기본 기능 작동
+• 개인 정보 로컬 저장
+• 클라우드와 로컬의 하이브리드 처리
+
+🏠 **디바이스별 혁신적 활용:**
+
+**📺 스마트 TV 혁신**
+• 구형 스마트폰 = 만능 리모컨
+• RIMA가 시청 패턴 분석하여 맞춤 콘텐츠 추천
+• 실시간 콘텐츠 생성 및 자동 재생
+• 음성으로 모든 OTT 플랫폼 통합 검색
+
+**📷 CCTV 보안 시스템**
+• AI 기반 위험 상황 자동 감지
+• 여성/어린이 대상 스토킹 추적 방지
+• 반경 100m 위험 알림 시스템
+• 다중 CCTV 자동 추적 기능
+
+**🚗 블랙박스 지능화**
+• 사고 자동 감지 및 영상 편집
+• 경찰서 자동 신고 시스템
+• 차량 내 폭력/위험 상황 감지
+• 보험사 자동 제출 시스템
+
+**🤖 로봇 통합 관리**
+• 청소, 배달, 안내, 감시 자동화
+• 방문자 응대 및 안내 서비스
+• 사람 없이도 부동산 안내 가능
+• 감정 기반 맞춤 서비스
+
+이 중에서 어떤 분야가 가장 관심있으신가요?`,
+
+                patents: `🏛️ **RIMA 특허 전략 및 지적재산권 포트폴리오**
+
+📋 **핵심
