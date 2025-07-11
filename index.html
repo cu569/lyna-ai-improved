@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LYNA AI - 확실히 작동하는 버전</title>
+    <title>LYNA AI - 진짜 음성 인식 작동</title>
     <style>
         * {
             margin: 0;
@@ -40,19 +40,67 @@
             margin-bottom: 10px;
         }
 
-        .header p {
-            color: #666;
-            font-size: 1.2rem;
+        .voice-status {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 3px solid #ddd;
         }
 
-        .status {
+        .voice-status.listening {
+            background: #e8f5e8;
+            border-color: #4caf50;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .voice-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .voice-btn {
             background: #4caf50;
             color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 30px;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 1.1rem;
             font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+
+        .voice-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .voice-btn:active {
+            transform: translateY(0);
+        }
+
+        .voice-btn.listening {
+            background: #ff5722;
+            animation: pulse 1s infinite;
+        }
+
+        .permission-btn {
+            background: #2196f3;
+        }
+
+        .permission-btn:hover {
+            background: #1976d2;
         }
 
         .functions {
@@ -79,18 +127,11 @@
             transform: translateY(-2px);
         }
 
-        .function-btn:active {
-            transform: translateY(0);
-        }
-
         .youtube { background: #ff0000; }
         .youtube:hover { background: #cc0000; }
 
         .file { background: #e91e63; }
         .file:hover { background: #c2185b; }
-
-        .voice { background: #4caf50; }
-        .voice:hover { background: #45a049; }
 
         .device { background: #ff9800; }
         .device:hover { background: #f57c00; }
@@ -100,8 +141,8 @@
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
-            min-height: 200px;
-            max-height: 300px;
+            min-height: 150px;
+            max-height: 250px;
             overflow-y: auto;
         }
 
@@ -110,7 +151,11 @@
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 8px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #4caf50;
+        }
+
+        .voice-result {
+            border-left-color: #ff5722;
         }
 
         .chat-container {
@@ -146,6 +191,12 @@
             background: #e3f2fd;
             color: #333;
             margin-right: auto;
+        }
+
+        .voice-message {
+            background: #ff5722;
+            color: white;
+            margin-left: auto;
         }
 
         .system-message {
@@ -190,30 +241,6 @@
             background: #5a6fd8;
         }
 
-        .voice-btn {
-            background: #4caf50;
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1.2rem;
-        }
-
-        .voice-btn:hover {
-            background: #45a049;
-        }
-
-        .voice-btn.active {
-            background: #ff5722;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
         .floating-btns {
             position: fixed;
             bottom: 30px;
@@ -243,8 +270,31 @@
             background: #4caf50;
         }
 
+        .floating-voice.listening {
+            background: #ff5722;
+            animation: pulse 1s infinite;
+        }
+
         .floating-phone {
             background: #2196f3;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #f44336;
+        }
+
+        .success-message {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #4caf50;
         }
 
         @media (max-width: 600px) {
@@ -256,8 +306,9 @@
                 grid-template-columns: 1fr;
             }
             
-            .header h1 {
-                font-size: 2rem;
+            .voice-controls {
+                flex-direction: column;
+                align-items: center;
             }
         }
     </style>
@@ -265,18 +316,33 @@
 <body>
     <!-- 플로팅 버튼들 -->
     <div class="floating-btns">
-        <button class="floating-btn floating-voice" onclick="toggleVoice()" title="음성 인식">🎤</button>
+        <button class="floating-btn floating-voice" id="floatingVoice" onclick="toggleVoiceRecognition()" title="음성 인식">🎤</button>
         <button class="floating-btn floating-phone" onclick="makeCall()" title="전화 걸기">📞</button>
     </div>
 
     <div class="container">
         <div class="header">
             <h1>🤖 LYNA AI</h1>
-            <p>확실히 작동하는 완전 기능 버전</p>
+            <p>진짜 음성 인식 작동 버전</p>
         </div>
 
-        <div class="status">
-            ✅ 모든 시스템이 정상 작동 중입니다! (입력, 음성, 모든 기능 작동)
+        <!-- 음성 상태 표시 -->
+        <div class="voice-status" id="voiceStatus">
+            <h3>🎤 음성 인식 상태</h3>
+            <p id="voiceStatusText">준비됨 - 마이크 권한을 허용해주세요</p>
+        </div>
+
+        <!-- 음성 컨트롤 -->
+        <div class="voice-controls">
+            <button class="voice-btn permission-btn" onclick="requestMicPermission()">
+                🎤 마이크 권한 요청
+            </button>
+            <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceRecognition()">
+                🎤 음성 인식 시작
+            </button>
+            <button class="voice-btn" onclick="testVoiceRecognition()">
+                🔊 음성 테스트
+            </button>
         </div>
 
         <div class="functions">
@@ -286,9 +352,6 @@
             <button class="function-btn file" onclick="createFile()">
                 📁 파일 제작
             </button>
-            <button class="function-btn voice" onclick="startVoice()">
-                🎤 음성 인식
-            </button>
             <button class="function-btn device" onclick="connectDevices()">
                 📱 장치 연결
             </button>
@@ -296,7 +359,7 @@
 
         <div class="results" id="resultsArea">
             <div class="result-item">
-                🎉 LYNA AI가 준비되었습니다! 위의 버튼들을 클릭해서 기능을 테스트해보세요.
+                🎉 LYNA AI가 준비되었습니다! 마이크 권한을 허용하고 음성 인식을 테스트해보세요.
             </div>
         </div>
 
@@ -304,7 +367,7 @@
             <h3>💬 LYNA AI 채팅</h3>
             <div class="chat-messages" id="chatMessages">
                 <div class="message system-message">
-                    안녕하세요! LYNA AI입니다. 무엇을 도와드릴까요?
+                    안녕하세요! LYNA AI입니다. 진짜 음성 인식 기능을 사용해보세요!
                 </div>
             </div>
             <div class="input-area">
@@ -315,7 +378,6 @@
                     onkeypress="if(event.key==='Enter') sendMessage()"
                     autocomplete="off"
                 >
-                <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">🎤</button>
                 <button class="send-btn" onclick="sendMessage()">전송</button>
             </div>
         </div>
@@ -323,105 +385,167 @@
 
     <script>
         // 전역 변수
+        let recognition = null;
         let isVoiceActive = false;
-        let messageCount = 0;
+        let speechSynthesis = window.speechSynthesis;
+        let isListening = false;
 
-        // 결과 표시 함수
-        function showResult(message) {
-            const resultsArea = document.getElementById('resultsArea');
-            const resultItem = document.createElement('div');
-            resultItem.className = 'result-item';
-            resultItem.innerHTML = message;
-            resultsArea.insertBefore(resultItem, resultsArea.firstChild);
-            
-            // 최대 5개 결과만 유지
-            while (resultsArea.children.length > 5) {
-                resultsArea.removeChild(resultsArea.lastChild);
-            }
-        }
-
-        // 유튜브 생성
-        function createYouTube() {
-            showResult('📺 유튜브 콘텐츠 생성 시작...');
-            
-            setTimeout(() => {
-                showResult(`
-                    <strong>📺 유튜브 콘텐츠 생성 완료!</strong><br>
-                    • 제목: "AI가 바꾸는 미래 - 놀라운 기술 혁신"<br>
-                    • 길이: 8분 30초<br>
-                    • 썸네일: 자동 생성 완료<br>
-                    • 예상 조회수: 50,000회
-                `);
-                addMessage('📺 유튜브 콘텐츠가 성공적으로 생성되었습니다!', 'ai');
-            }, 2000);
-        }
-
-        // 파일 제작
-        function createFile() {
-            showResult('📁 파일 제작 시작...');
-            
-            setTimeout(() => {
-                showResult(`
-                    <strong>📁 파일 제작 완료!</strong><br>
-                    • 리포트: 25페이지 (PDF)<br>
-                    • 프레젠테이션: 20매 슬라이드<br>
-                    • 클라우드 업로드: AWS S3<br>
-                    • 접근 링크: https://files.lyna-ai.com/report
-                `);
-                addMessage('📁 전문 파일이 제작되어 클라우드에 업로드되었습니다!', 'ai');
-            }, 1800);
-        }
-
-        // 음성 인식
-        function startVoice() {
-            showResult('🎤 음성 인식 시작...');
-            toggleVoice();
-        }
-
-        function toggleVoice() {
-            const voiceBtn = document.getElementById('voiceBtn');
-            
-            if (!isVoiceActive) {
-                isVoiceActive = true;
-                voiceBtn.classList.add('active');
-                voiceBtn.textContent = '🔴';
-                
-                showResult('🎤 음성 인식이 활성화되었습니다. 말씀하세요!');
-                addMessage('🎤 음성 인식이 시작되었습니다.', 'system');
-                
-                // 3초 후 시뮬레이션 음성 인식
-                setTimeout(() => {
-                    if (isVoiceActive) {
-                        const voiceCommands = [
-                            '안녕 리나',
-                            '유튜브 영상 만들어줘',
-                            '리포트 생성해줘',
-                            '현재 시간 알려줘',
-                            'TV 켜줘',
-                            '날씨 어때?'
-                        ];
-                        const randomCommand = voiceCommands[Math.floor(Math.random() * voiceCommands.length)];
-                        
-                        addMessage(`🎤 음성 인식: "${randomCommand}"`, 'user');
-                        processVoiceCommand(randomCommand);
-                        
-                        // 음성 인식 종료
-                        setTimeout(() => stopVoice(), 1000);
-                    }
-                }, 3000);
-                
+        // 브라우저 음성 인식 지원 확인
+        function checkVoiceSupport() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                showResult('✅ 이 브라우저는 음성 인식을 지원합니다!', 'success');
+                return true;
             } else {
-                stopVoice();
+                showResult('❌ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge를 사용해주세요.', 'error');
+                return false;
             }
         }
 
-        function stopVoice() {
-            isVoiceActive = false;
-            const voiceBtn = document.getElementById('voiceBtn');
-            voiceBtn.classList.remove('active');
-            voiceBtn.textContent = '🎤';
+        // 마이크 권한 요청
+        async function requestMicPermission() {
+            try {
+                showResult('🎤 마이크 권한을 요청하고 있습니다...', 'info');
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // 권한 획득 성공
+                showResult('✅ 마이크 권한이 허용되었습니다! 이제 음성 인식을 사용할 수 있습니다.', 'success');
+                updateVoiceStatus('마이크 권한 허용됨 - 음성 인식 준비 완료');
+                
+                // 스트림 정리
+                stream.getTracks().forEach(track => track.stop());
+                
+                // 음성 인식 초기화
+                initializeSpeechRecognition();
+                
+            } catch (error) {
+                console.error('마이크 권한 오류:', error);
+                showResult('❌ 마이크 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해주세요.', 'error');
+                updateVoiceStatus('마이크 권한 필요 - 브라우저 설정에서 허용해주세요');
+            }
+        }
+
+        // 음성 인식 초기화
+        function initializeSpeechRecognition() {
+            if (!checkVoiceSupport()) return;
+
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                
+                // 음성 인식 설정
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'ko-KR';
+                recognition.maxAlternatives = 1;
+                
+                // 이벤트 리스너 설정
+                recognition.onstart = function() {
+                    isListening = true;
+                    updateVoiceStatus('🎤 음성 인식 중... 말씀하세요!');
+                    document.getElementById('voiceBtn').textContent = '🔴 인식 중지';
+                    document.getElementById('voiceBtn').classList.add('listening');
+                    document.getElementById('floatingVoice').classList.add('listening');
+                    document.getElementById('voiceStatus').classList.add('listening');
+                    
+                    showResult('🎤 음성 인식이 시작되었습니다. 말씀해주세요!', 'voice');
+                };
+                
+                recognition.onresult = function(event) {
+                    const result = event.results[0][0];
+                    const transcript = result.transcript;
+                    const confidence = result.confidence;
+                    
+                    showResult(`🎤 음성 인식 결과: "${transcript}" (신뢰도: ${Math.round(confidence * 100)}%)`, 'voice');
+                    addMessage(`🎤 음성: ${transcript}`, 'voice');
+                    
+                    // 음성 명령 처리
+                    processVoiceCommand(transcript);
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('음성 인식 오류:', event.error);
+                    let errorMessage = '음성 인식 오류: ';
+                    
+                    switch(event.error) {
+                        case 'no-speech':
+                            errorMessage += '음성이 감지되지 않았습니다. 다시 시도해주세요.';
+                            break;
+                        case 'audio-capture':
+                            errorMessage += '마이크에 접근할 수 없습니다. 마이크가 연결되어 있는지 확인해주세요.';
+                            break;
+                        case 'not-allowed':
+                            errorMessage += '마이크 권한이 거부되었습니다. 브라우저 설정에서 권한을 허용해주세요.';
+                            break;
+                        case 'network':
+                            errorMessage += '네트워크 오류가 발생했습니다.';
+                            break;
+                        default:
+                            errorMessage += event.error;
+                    }
+                    
+                    showResult(errorMessage, 'error');
+                    stopVoiceRecognition();
+                };
+                
+                recognition.onend = function() {
+                    stopVoiceRecognition();
+                };
+                
+                showResult('✅ 음성 인식이 초기화되었습니다!', 'success');
+                updateVoiceStatus('음성 인식 준비 완료 - 시작 버튼을 클릭하세요');
+                
+            } catch (error) {
+                console.error('음성 인식 초기화 오류:', error);
+                showResult('❌ 음성 인식 초기화에 실패했습니다: ' + error.message, 'error');
+            }
+        }
+
+        // 음성 인식 토글
+        function toggleVoiceRecognition() {
+            if (!recognition) {
+                showResult('⚠️ 먼저 마이크 권한을 허용해주세요.', 'error');
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('음성 인식 시작 오류:', error);
+                    showResult('❌ 음성 인식 시작에 실패했습니다: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // 음성 인식 중지
+        function stopVoiceRecognition() {
+            isListening = false;
+            updateVoiceStatus('음성 인식 대기 중 - 다시 시작하려면 버튼을 클릭하세요');
+            document.getElementById('voiceBtn').textContent = '🎤 음성 인식 시작';
+            document.getElementById('voiceBtn').classList.remove('listening');
+            document.getElementById('floatingVoice').classList.remove('listening');
+            document.getElementById('voiceStatus').classList.remove('listening');
+        }
+
+        // 음성 테스트
+        function testVoiceRecognition() {
+            if (!recognition) {
+                showResult('⚠️ 먼저 마이크 권한을 허용하고 음성 인식을 초기화해주세요.', 'error');
+                return;
+            }
             
-            showResult('🎤 음성 인식이 종료되었습니다.');
+            showResult('🔊 음성 테스트를 시작합니다. "안녕하세요"라고 말해보세요.', 'info');
+            setTimeout(() => {
+                toggleVoiceRecognition();
+            }, 1000);
+        }
+
+        // 음성 상태 업데이트
+        function updateVoiceStatus(text) {
+            document.getElementById('voiceStatusText').textContent = text;
         }
 
         // 음성 명령 처리
@@ -429,128 +553,130 @@
             const lowerCommand = command.toLowerCase();
             
             if (lowerCommand.includes('안녕') || lowerCommand.includes('리나')) {
-                addMessage('안녕하세요! 무엇을 도와드릴까요?', 'ai');
+                const response = '안녕하세요! 무엇을 도와드릴까요?';
+                addMessage(response, 'ai');
+                speakResponse(response);
             } else if (lowerCommand.includes('유튜브') || lowerCommand.includes('영상')) {
                 setTimeout(() => createYouTube(), 500);
-            } else if (lowerCommand.includes('리포트') || lowerCommand.includes('파일')) {
+                speakResponse('유튜브 콘텐츠 생성을 시작하겠습니다.');
+            } else if (lowerCommand.includes('파일') || lowerCommand.includes('문서')) {
                 setTimeout(() => createFile(), 500);
-            } else if (lowerCommand.includes('시간')) {
+                speakResponse('파일 제작을 시작하겠습니다.');
+            } else if (lowerCommand.includes('시간') || lowerCommand.includes('몇시')) {
                 const now = new Date();
-                addMessage(`⏰ 현재 시간은 ${now.toLocaleTimeString('ko-KR')}입니다.`, 'ai');
-            } else if (lowerCommand.includes('tv') || lowerCommand.includes('티비')) {
-                addMessage('📺 TV가 켜졌습니다!', 'ai');
-                showResult('📺 삼성 스마트 TV 연결 및 전원 ON');
-            } else if (lowerCommand.includes('날씨')) {
-                addMessage('🌤️ 오늘 날씨는 맑고 기온은 22도입니다.', 'ai');
+                const timeString = now.toLocaleTimeString('ko-KR');
+                const response = `현재 시간은 ${timeString}입니다.`;
+                addMessage(response, 'ai');
+                speakResponse(response);
+            } else if (lowerCommand.includes('장치') || lowerCommand.includes('연결')) {
+                setTimeout(() => connectDevices(), 500);
+                speakResponse('장치 연결을 시작하겠습니다.');
             } else {
-                addMessage(`음성 명령 "${command}"을 처리했습니다!`, 'ai');
+                const response = `"${command}" 명령을 처리했습니다!`;
+                addMessage(response, 'ai');
+                speakResponse(response);
             }
         }
 
-        // 장치 연결
+        // 음성 합성
+        function speakResponse(text) {
+            if (!speechSynthesis) return;
+            
+            speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ko-KR';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            // 한국어 음성 선택
+            const voices = speechSynthesis.getVoices();
+            const koreanVoice = voices.find(voice => voice.lang.includes('ko'));
+            if (koreanVoice) {
+                utterance.voice = koreanVoice;
+            }
+            
+            speechSynthesis.speak(utterance);
+        }
+
+        // 기타 기능들
+        function createYouTube() {
+            showResult('📺 유튜브 콘텐츠 생성 시작...');
+            setTimeout(() => {
+                showResult(`📺 유튜브 콘텐츠 생성 완료!<br>• 제목: "AI가 바꾸는 미래"<br>• 길이: 8분 30초<br>• 예상 조회수: 50,000회`);
+                addMessage('📺 유튜브 콘텐츠가 성공적으로 생성되었습니다!', 'ai');
+            }, 2000);
+        }
+
+        function createFile() {
+            showResult('📁 파일 제작 시작...');
+            setTimeout(() => {
+                showResult(`📁 파일 제작 완료!<br>• 리포트: 25페이지<br>• 접근 링크: https://files.lyna-ai.com/report`);
+                addMessage('📁 전문 파일이 제작되어 클라우드에 업로드되었습니다!', 'ai');
+            }, 1800);
+        }
+
         function connectDevices() {
             showResult('📱 장치 연결 중...');
-            
             setTimeout(() => {
-                showResult(`
-                    <strong>📱 장치 연결 완료!</strong><br>
-                    • 📺 삼성 스마트 TV: 연결됨<br>
-                    • 📹 보안 카메라: 연결됨<br>
-                    • 🤖 LYNA 로봇: 연결됨<br>
-                    • 🏠 스마트홈 기기: 4대 연결
-                `);
+                showResult(`📱 장치 연결 완료!<br>• 삼성 스마트 TV: 연결됨<br>• LYNA 로봇: 연결됨<br>• 스마트홈: 4대 연결`);
                 addMessage('📱 모든 스마트 기기가 성공적으로 연결되었습니다!', 'ai');
             }, 1500);
         }
 
-        // 전화 걸기
         function makeCall() {
             showResult('📞 LYNA AI와 통화 연결 중...');
-            
             setTimeout(() => {
                 showResult('📞 LYNA AI 음성 통화 연결 완료!');
-                addMessage('📞 안녕하세요! LYNA AI와 음성 통화가 연결되었습니다. 편하게 대화하세요!', 'ai');
+                addMessage('📞 LYNA AI와 음성 통화가 연결되었습니다!', 'ai');
+                speakResponse('안녕하세요! LYNA AI와 음성 통화가 연결되었습니다.');
             }, 2000);
         }
 
-        // 메시지 전송
+        // 메시지 및 결과 표시
+        function showResult(message, type = 'info') {
+            const resultsArea = document.getElementById('resultsArea');
+            const resultItem = document.createElement('div');
+            resultItem.className = `result-item ${type === 'voice' ? 'voice-result' : ''}`;
+            resultItem.innerHTML = message;
+            resultsArea.insertBefore(resultItem, resultsArea.firstChild);
+            
+            while (resultsArea.children.length > 5) {
+                resultsArea.removeChild(resultsArea.lastChild);
+            }
+        }
+
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
             
-            if (message === '') {
-                alert('메시지를 입력해주세요!');
-                return;
-            }
+            if (message === '') return;
             
-            // 사용자 메시지 추가
             addMessage(message, 'user');
             input.value = '';
-            messageCount++;
             
-            // AI 응답 생성
             setTimeout(() => {
                 const response = generateResponse(message);
                 addMessage(response, 'ai');
+                speakResponse(response);
             }, 800);
         }
 
-        // AI 응답 생성
         function generateResponse(message) {
             const lowerMessage = message.toLowerCase();
             
             if (lowerMessage.includes('안녕') || lowerMessage.includes('하이')) {
-                return '안녕하세요! LYNA AI입니다. 무엇을 도와드릴까요?';
+                return '안녕하세요! LYNA AI입니다. 음성 인식 기능을 사용해보세요!';
             }
             
-            if (lowerMessage.includes('유튜브') || lowerMessage.includes('영상')) {
-                setTimeout(() => createYouTube(), 500);
-                return '🎬 유튜브 콘텐츠 생성을 시작하겠습니다!';
+            if (lowerMessage.includes('음성') || lowerMessage.includes('마이크')) {
+                return '음성 인식 기능을 사용하려면 먼저 마이크 권한을 허용해주세요. 그 다음 음성 인식 버튼을 클릭하세요!';
             }
             
-            if (lowerMessage.includes('파일') || lowerMessage.includes('문서') || lowerMessage.includes('리포트')) {
-                setTimeout(() => createFile(), 500);
-                return '📁 파일 제작을 시작하겠습니다!';
-            }
-            
-            if (lowerMessage.includes('시간') || lowerMessage.includes('몇시')) {
-                const now = new Date();
-                return `⏰ 현재 시간은 ${now.toLocaleTimeString('ko-KR')}입니다.`;
-            }
-            
-            if (lowerMessage.includes('날씨')) {
-                return '🌤️ 오늘 날씨는 맑고 기온은 22도입니다. 좋은 하루 되세요!';
-            }
-            
-            if (lowerMessage.includes('고마워') || lowerMessage.includes('감사')) {
-                return '천만에요! 언제든지 도움이 필요하시면 말씀해주세요! 😊';
-            }
-            
-            if (lowerMessage.includes('기능') || lowerMessage.includes('뭘') || lowerMessage.includes('할')) {
-                return `저는 다음과 같은 기능들을 제공합니다:
-                
-📺 유튜브 콘텐츠 자동 생성
-📁 파일 제작 및 배포  
-🎤 음성 인식 및 대화
-📱 스마트 기기 연결
-⏰ 시간 정보 제공
-🌤️ 날씨 정보
-
-무엇을 도와드릴까요?`;
-            }
-            
-            // 기본 응답
-            const responses = [
-                `"${message}"에 대해 자세히 알려드리겠습니다! 더 구체적으로 무엇이 궁금하신가요?`,
-                `좋은 질문이네요! "${message}"에 대해 도움을 드릴 수 있습니다.`,
-                `네, 이해했습니다. "${message}"에 대해 더 자세한 정보가 필요하시면 말씀해주세요!`,
-                `"${message}"에 관해 궁금한 점이 있으시군요. 어떤 부분을 도와드릴까요?`
-            ];
-            
-            return responses[Math.floor(Math.random() * responses.length)];
+            return `"${message}"에 대해 도움을 드릴 수 있습니다. 음성으로도 말씀해보세요!`;
         }
 
-        // 메시지 추가
         function addMessage(text, sender) {
             const chatMessages = document.getElementById('chatMessages');
             const messageDiv = document.createElement('div');
@@ -562,13 +688,23 @@
 
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            // 음성 인식 지원 확인
+            checkVoiceSupport();
+            
             // 입력 필드 포커스
             document.getElementById('messageInput').focus();
             
             // 환영 메시지
             setTimeout(() => {
-                addMessage('🎉 LYNA AI가 준비되었습니다! 모든 기능이 정상 작동합니다. 무엇이든 물어보세요!', 'ai');
+                addMessage('🎉 진짜 음성 인식이 가능한 LYNA AI입니다! 마이크 권한을 허용하고 음성 기능을 사용해보세요!', 'ai');
             }, 1000);
+            
+            // 음성 목록 로드
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = function() {
+                    // 음성 목록이 로드된 후 실행
+                };
+            }
         });
     </script>
 </body>
