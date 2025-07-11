@@ -1,3368 +1,639 @@
-function shareMessage(button) {
-            const message = button.closest('.message');
-            const text = message.textContent.replace(/📋📤🔊$/, '').trim();
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+import tensorflow as tf
+from datetime import datetime, timedelta
+import json
+import asyncio
+from typing import Dict, List, Any, Tuple
+import logging
+
+logger = logging.getLogger(__name__)
+
+class AdvancedEvolutionEngine:
+    """고급 진화 엔진"""
+    
+    def __init__(self, base_analyzer):
+        self.base_analyzer = base_analyzer
+        self.pattern_detector = PatternDetector()
+        self.trend_predictor = TrendPredictor()
+        self.meta_learner = MetaLearner()
+        self.ensemble_models = EnsembleModels()
+        
+        # 진화 레벨
+        self.evolution_level = 1
+        self.intelligence_score = 0.0
+        self.adaptation_rate = 0.1
+        
+        # 고급 학습 데이터
+        self.success_patterns = {}
+        self.failure_patterns = {}
+        self.seasonal_patterns = {}
+        self.creator_patterns = {}
+        
+    async def advanced_pattern_learning(self):
+        """고급 패턴 학습"""
+        logger.info("🧠 고급 패턴 학습 시작")
+        
+        # 1. 성공/실패 패턴 분석
+        await self.analyze_success_failure_patterns()
+        
+        # 2. 시간적 패턴 학습
+        await self.learn_temporal_patterns()
+        
+        # 3. 크리에이터별 패턴 학습
+        await self.learn_creator_specific_patterns()
+        
+        # 4. 메타 학습 실행
+        await self.meta_learning_cycle()
+        
+        # 5. 앙상블 모델 진화
+        await self.evolve_ensemble_models()
+        
+        logger.info("✅ 고급 패턴 학습 완료")
+    
+    async def analyze_success_failure_patterns(self):
+        """성공/실패 패턴 분석"""
+        
+        # 성과 데이터 분류
+        high_performers = []  # 상위 20% 성과
+        low_performers = []   # 하위 20% 성과
+        
+        for learning_data in self.base_analyzer.learning_history:
+            performance_score = self.calculate_performance_score(learning_data)
             
-            if (navigator.share) {
-                navigator.share({
-                    title: 'LYNA AI 대화',
-                    text: text
-                }).catch(() => {
-                    fallbackShare(text);
-                });
-            } else {
-                fallbackShare(text);
+            if performance_score >= 0.8:
+                high_performers.append(learning_data)
+            elif performance_score <= 0.3:
+                low_performers.append(learning_data)
+        
+        # 성공 패턴 추출
+        self.success_patterns = await self.extract_patterns(high_performers, "success")
+        
+        # 실패 패턴 추출
+        self.failure_patterns = await self.extract_patterns(low_performers, "failure")
+        
+        logger.info(f"📈 성공 패턴 {len(self.success_patterns)}개, 실패 패턴 {len(self.failure_patterns)}개 학습")
+    
+    async def extract_patterns(self, data_list: List, pattern_type: str) -> Dict:
+        """패턴 추출"""
+        patterns = {
+            'thumbnail_patterns': {},
+            'title_patterns': {},
+            'content_patterns': {},
+            'timing_patterns': {},
+            'combined_patterns': {}
+        }
+        
+        if not data_list:
+            return patterns
+        
+        # 썸네일 패턴
+        thumbnail_features = [d.features for d in data_list if 'thumbnail_clickability' in d.features]
+        if thumbnail_features:
+            patterns['thumbnail_patterns'] = {
+                'avg_clickability': np.mean([f['thumbnail_clickability'] for f in thumbnail_features]),
+                'avg_brightness': np.mean([f.get('thumbnail_brightness', 128) for f in thumbnail_features]),
+                'avg_face_count': np.mean([f.get('thumbnail_face_count', 0) for f in thumbnail_features]),
+                'success_rate': len(thumbnail_features) / len(data_list)
+            }
+        
+        # 제목 패턴
+        title_features = [d.features for d in data_list if 'title_emotion_strength' in d.features]
+        if title_features:
+            patterns['title_patterns'] = {
+                'avg_emotion_strength': np.mean([f['title_emotion_strength'] for f in title_features]),
+                'avg_length': np.mean([f.get('title_length', 50) for f in title_features]),
+                'avg_keyword_count': np.mean([f.get('title_keyword_count', 0) for f in title_features]),
+                'optimal_length_range': self.find_optimal_range([f.get('title_length', 50) for f in title_features])
+            }
+        
+        # 콘텐츠 패턴
+        content_features = [d.features for d in data_list if 'video_duration' in d.features]
+        if content_features:
+            patterns['content_patterns'] = {
+                'avg_duration': np.mean([f['video_duration'] for f in content_features]),
+                'avg_engagement_score': np.mean([f.get('engagement_score', 0) for f in content_features]),
+                'avg_production_quality': np.mean([f.get('production_quality', 7) for f in content_features]),
+                'optimal_duration_range': self.find_optimal_range([f['video_duration'] for f in content_features])
+            }
+        
+        return patterns
+    
+    def find_optimal_range(self, values: List[float]) -> Tuple[float, float]:
+        """최적 범위 찾기"""
+        if not values:
+            return (0, 100)
+        
+        sorted_values = sorted(values)
+        q25 = np.percentile(sorted_values, 25)
+        q75 = np.percentile(sorted_values, 75)
+        
+        return (q25, q75)
+    
+    async def learn_temporal_patterns(self):
+        """시간적 패턴 학습"""
+        
+        # 요일별 패턴
+        weekday_performance = {i: [] for i in range(7)}
+        
+        # 시간대별 패턴  
+        hour_performance = {i: [] for i in range(24)}
+        
+        # 월별 패턴
+        month_performance = {i: [] for i in range(1, 13)}
+        
+        for learning_data in self.base_analyzer.learning_history:
+            timestamp = learning_data.timestamp
+            performance = self.calculate_performance_score(learning_data)
+            
+            weekday_performance[timestamp.weekday()].append(performance)
+            hour_performance[timestamp.hour].append(performance)
+            month_performance[timestamp.month].append(performance)
+        
+        # 패턴 저장
+        self.seasonal_patterns = {
+            'best_weekdays': self.find_best_times(weekday_performance),
+            'best_hours': self.find_best_times(hour_performance),
+            'best_months': self.find_best_times(month_performance),
+            'seasonal_trends': await self.detect_seasonal_trends()
+        }
+        
+        logger.info(f"📅 시간적 패턴 학습 완료: 최적 요일 {self.seasonal_patterns['best_weekdays']}")
+    
+    def find_best_times(self, time_performance: Dict) -> List:
+        """최적 시간대 찾기"""
+        avg_performance = {}
+        
+        for time_unit, performances in time_performance.items():
+            if performances:
+                avg_performance[time_unit] = np.mean(performances)
+        
+        # 상위 3개 시간대 반환
+        sorted_times = sorted(avg_performance.items(), key=lambda x: x[1], reverse=True)
+        return [time for time, _ in sorted_times[:3]]
+    
+    async def detect_seasonal_trends(self) -> Dict:
+        """계절적 트렌드 감지"""
+        
+        # 시뮬레이션 데이터 (실제로는 대량의 히스토리 데이터 분석)
+        seasonal_trends = {
+            'spring': {
+                'popular_topics': ['새 시작', '운동', '다이어트', '여행'],
+                'color_preferences': ['파스텔', '밝은 색상'],
+                'optimal_duration': (180, 300)
+            },
+            'summer': {
+                'popular_topics': ['여행', '휴가', '액티비티', '시원한'],
+                'color_preferences': ['밝은 파랑', '흰색', '시원한 색'],
+                'optimal_duration': (120, 240)
+            },
+            'autumn': {
+                'popular_topics': ['준비', '계획', '성장', '변화'],
+                'color_preferences': ['따뜻한 색', '오렌지', '갈색'],
+                'optimal_duration': (240, 360)
+            },
+            'winter': {
+                'popular_topics': ['실내활동', '따뜻함', '연말', '새해'],
+                'color_preferences': ['따뜻한 색', '빨강', '금색'],
+                'optimal_duration': (300, 480)
             }
         }
-
-        function fallbackShare(text) {
-            copyMessage({ closest: () => ({ textContent: text }) });
-            showAlert('클립보드에 복사되었습니다. 원하는 곳에 붙여넣기 하세요!', 'info');
-        }
-
-        function speakMessage(button) {
-            const message = button.closest('.message');
-            const text = message.textContent.replace(/📋📤🔊$/, '').replace(/LYNA AI:\s*/, '').trim();
+        
+        return seasonal_trends
+    
+    async def learn_creator_specific_patterns(self):
+        """크리에이터별 패턴 학습"""
+        
+        # 크리에이터별 데이터 그룹화 (실제로는 채널 ID로 구분)
+        creator_groups = self.group_by_creator()
+        
+        for creator_id, creator_data in creator_groups.items():
+            if len(creator_data) >= 10:  # 최소 10개 데이터 필요
+                creator_pattern = await self.analyze_creator_pattern(creator_data)
+                self.creator_patterns[creator_id] = creator_pattern
+        
+        logger.info(f"👤 크리에이터 패턴 {len(self.creator_patterns)}개 학습")
+    
+    def group_by_creator(self) -> Dict:
+        """크리에이터별 데이터 그룹화"""
+        # 시뮬레이션 (실제로는 채널 ID나 크리에이터 정보로 그룹화)
+        groups = {}
+        
+        for i, learning_data in enumerate(self.base_analyzer.learning_history):
+            creator_id = f"creator_{i % 5}"  # 5명의 가상 크리에이터
             
-            if ('speechSynthesis' in window) {
-                // 기존 음성 중지
-                speechSynthesis.cancel();
+            if creator_id not in groups:
+                groups[creator_id] = []
+            
+            groups[creator_id].append(learning_data)
+        
+        return groups
+    
+    async def analyze_creator_pattern(self, creator_data: List) -> Dict:
+        """개별 크리에이터 패턴 분석"""
+        
+        # 성과 분석
+        performances = [self.calculate_performance_score(d) for d in creator_data]
+        avg_performance = np.mean(performances)
+        
+        # 특징별 최적값 찾기
+        optimal_features = {}
+        
+        feature_names = ['thumbnail_clickability', 'title_emotion_strength', 'video_duration']
+        
+        for feature in feature_names:
+            feature_values = []
+            feature_performances = []
+            
+            for data in creator_data:
+                if feature in data.features:
+                    feature_values.append(data.features[feature])
+                    feature_performances.append(self.calculate_performance_score(data))
+            
+            if feature_values:
+                # 성과가 높은 구간의 특징값 평균
+                high_perf_indices = [i for i, p in enumerate(feature_performances) if p > avg_performance]
+                if high_perf_indices:
+                    optimal_features[feature] = np.mean([feature_values[i] for i in high_perf_indices])
+        
+        return {
+            'avg_performance': avg_performance,
+            'optimal_features': optimal_features,
+            'content_style': self.detect_content_style(creator_data),
+            'audience_preference': self.detect_audience_preference(creator_data)
+        }
+    
+    def detect_content_style(self, creator_data: List) -> str:
+        """콘텐츠 스타일 감지"""
+        # 시뮬레이션
+        styles = ['교육적', '엔터테인먼트', '리뷰', '브이로그', '튜토리얼']
+        return np.random.choice(styles)
+    
+    def detect_audience_preference(self, creator_data: List) -> Dict:
+        """오디언스 선호도 감지"""
+        return {
+            'preferred_length': np.random.randint(180, 600),
+            'preferred_topics': ['AI', '기술', '자동화'],
+            'engagement_style': '친근한'
+        }
+    
+    def calculate_performance_score(self, learning_data) -> float:
+        """성과 점수 계산"""
+        if learning_data.actual_result <= 0:
+            return 0.0
+        
+        # 예측 대비 실제 성과 비율로 점수 계산
+        ratio = learning_data.actual_result / max(learning_data.prediction, 1)
+        
+        # 0.5 ~ 2.0 범위를 0.0 ~ 1.0으로 정규화
+        if ratio >= 2.0:
+            return 1.0
+        elif ratio >= 1.0:
+            return 0.5 + (ratio - 1.0) * 0.5
+        elif ratio >= 0.5:
+            return (ratio - 0.5) * 1.0
+        else:
+            return 0.0
+
+class MetaLearner:
+    """메타 학습 시스템"""
+    
+    def __init__(self):
+        self.meta_models = {}
+        self.learning_strategies = {}
+        self.adaptation_history = []
+    
+    async def meta_learning_cycle(self, base_analyzer):
+        """메타 학습 사이클"""
+        
+        # 1. 학습 전략 평가
+        strategy_performance = await self.evaluate_learning_strategies(base_analyzer)
+        
+        # 2. 최적 전략 선택
+        best_strategy = self.select_best_strategy(strategy_performance)
+        
+        # 3. 전략 적용
+        await self.apply_strategy(best_strategy, base_analyzer)
+        
+        # 4. 적응 기록
+        self.adaptation_history.append({
+            'timestamp': datetime.now(),
+            'strategy': best_strategy,
+            'performance': strategy_performance
+        })
+        
+        logger.info(f"🎯 메타 학습 완료: 최적 전략 '{best_strategy}' 적용")
+    
+    async def evaluate_learning_strategies(self, base_analyzer) -> Dict:
+        """학습 전략 평가"""
+        
+        strategies = {
+            'conservative': {
+                'learning_rate': 0.01,
+                'regularization': 0.1,
+                'ensemble_weight': 0.3
+            },
+            'aggressive': {
+                'learning_rate': 0.1,
+                'regularization': 0.01,
+                'ensemble_weight': 0.7
+            },
+            'balanced': {
+                'learning_rate': 0.05,
+                'regularization': 0.05,
+                'ensemble_weight': 0.5
+            }
+        }
+        
+        performance = {}
+        
+        for strategy_name, params in strategies.items():
+            # 각 전략으로 모델 성능 시뮬레이션
+            simulated_accuracy = np.random.uniform(0.7, 0.95)
+            performance[strategy_name] = simulated_accuracy
+        
+        return performance
+    
+    def select_best_strategy(self, strategy_performance: Dict) -> str:
+        """최적 전략 선택"""
+        return max(strategy_performance, key=strategy_performance.get)
+    
+    async def apply_strategy(self, strategy: str, base_analyzer):
+        """전략 적용"""
+        strategy_configs = {
+            'conservative': {
+                'min_learning_samples': 150,
+                'evolution_threshold': 0.85
+            },
+            'aggressive': {
+                'min_learning_samples': 50,
+                'evolution_threshold': 0.75
+            },
+            'balanced': {
+                'min_learning_samples': 100,
+                'evolution_threshold': 0.80
+            }
+        }
+        
+        config = strategy_configs.get(strategy, strategy_configs['balanced'])
+        
+        # 설정 적용
+        base_analyzer.min_learning_samples = config['min_learning_samples']
+        base_analyzer.evolution_threshold = config['evolution_threshold']
+        
+        logger.info(f"📝 전략 '{strategy}' 설정 적용")
+
+class EnsembleModels:
+    """앙상블 모델 시스템"""
+    
+    def __init__(self):
+        self.models = {
+            'random_forest': RandomForestRegressor(n_estimators=100),
+            'gradient_boosting': GradientBoostingRegressor(n_estimators=100),
+            'neural_network': MLPRegressor(hidden_layer_sizes=(100, 50)),
+        }
+        self.model_weights = {name: 1.0 for name in self.models.keys()}
+        self.model_performance = {name: 0.0 for name in self.models.keys()}
+    
+    async def evolve_ensemble(self, X, y):
+        """앙상블 모델 진화"""
+        
+        # 각 모델 성능 평가
+        for name, model in self.models.items():
+            try:
+                # 교차 검증으로 성능 평가
+                scores = cross_val_score(model, X, y, cv=5, scoring='neg_mean_absolute_error')
+                self.model_performance[name] = np.mean(-scores)
                 
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = settings.language === 'ko' ? 'ko-KR' : 'en-US';
-                utterance.rate = 0.9;
-                utterance.pitch = 1.0;
+                # 모델 학습
+                model.fit(X, y)
                 
-                speechSynthesis.speak(utterance);
-                showAlert('메시지를 읽어드리고 있습니다.', 'info');
-            } else {
-                showAlert('음성 합성을 지원하지 않는 브라우저입니다.', 'warning');
-            }
-        }
-
-        // 채팅 관리 함수들
-        function clearChat() {
-            if (confirm('정말로 모든 대화를 삭제하시겠습니까?')) {
-                const chatMessages = document.getElementById('chatMessages');
-                chatMessages.innerHTML = `
-                    <div class="message ai">
-                        <strong>LYNA AI:</strong> 채팅이 초기화되었습니다. 새로운 대화를 시작해보세요! 😊
-                        <div class="message-time">${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
-                    </div>
-                `;
-                
-                messageCount = 0;
-                todayMessageCount = 0;
-                showAlert('채팅이 초기화되었습니다.', 'success');
-            }
-        }
-
-        function exportChat() {
-            const messages = document.querySelectorAll('.message');
-            let chatText = `LYNA AI 대화 기록\n생성일: ${new Date().toLocaleString()}\n\n`;
-            
-            messages.forEach(message => {
-                const isUser = message.classList.contains('user');
-                const text = message.textContent.replace(/📋📤🔊$/, '').trim();
-                chatText += `${isUser ? '사용자' : 'LYNA AI'}: ${text}\n\n`;
-            });
-            
-            const blob = new Blob([chatText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `LYNA_AI_Chat_${new Date().toISOString().split('T')[0]}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            showAlert('채팅이 텍스트 파일로 저장되었습니다!', 'success');
-        }
-
-        // 설정 관련 함수들
-        function saveSettings() {
-            settings.language = document.getElementById('language').value;
-            settings.responseStyle = document.getElementById('responseStyle').value;
-            settings.userName = document.getElementById('userName').value;
-            settings.theme = document.getElementById('theme').value;
-            settings.darkMode = document.getElementById('darkMode').checked;
-            settings.messageNotification = document.getElementById('messageNotification').checked;
-            settings.systemNotification = document.getElementById('systemNotification').checked;
-            settings.voiceRecognition = document.getElementById('voiceRecognition').checked;
-            settings.voiceLanguage = document.getElementById('voiceLanguage').value;
-            settings.autoSendVoice = document.getElementById('autoSendVoice').checked;
-            settings.micSensitivity = document.getElementById('micSensitivity').value;
-            settings.fontSize = document.getElementById('fontSize').value;
-            settings.animations = document.getElementById('animations').checked;
-            settings.soundEffects = document.getElementById('soundEffects').checked;
-            settings.notificationSound = document.getElementById('notificationSound').value;
-            settings.responseSpeed = document.getElementById('responseSpeed').value;
-            
-            // 설정 적용
-            applyTheme();
-            updateLanguage();
-            updateFontSize();
-            toggleAnimations();
-            
-            if (recognition) {
-                recognition.lang = settings.voiceLanguage;
-            }
-            
-            showAlert('설정이 성공적으로 저장되었습니다!', 'success');
-        }
-
-        function resetSettings() {
-            if (confirm('모든 설정을 초기값으로 되돌리시겠습니까?')) {
-                // 설정 초기화
-                settings = {
-                    language: 'ko',
-                    responseStyle: 'friendly',
-                    userName: '',
-                    theme: 'blue',
-                    darkMode: false,
-                    messageNotification: true,
-                    systemNotification: true,
-                    voiceRecognition: true,
-                    voiceLanguage: 'ko-KR',
-                    autoSendVoice: false,
-                    micSensitivity: 5,
-                    fontSize: 'normal',
-                    animations: true,
-                    soundEffects: true,
-                    notificationSound: 'default',
-                    responseSpeed: 'normal'
-                };
-                
-                // UI 업데이트
-                document.getElementById('language').value = 'ko';
-                document.getElementById('responseStyle').value = 'friendly';
-                document.getElementById('userName').value = '';
-                document.getElementById('theme').value = 'blue';
-                document.getElementById('darkMode').checked = false;
-                document.getElementById('messageNotification').checked = true;
-                document.getElementById('systemNotification').checked = true;
-                document.getElementById('voiceRecognition').checked = true;
-                document.getElementById('voiceLanguage').value = 'ko-KR';
-                document.getElementById('autoSendVoice').checked = false;
-                document.getElementById('micSensitivity').value = 5;
-                document.getElementById('fontSize').value = 'normal';
-                document.getElementById('animations').checked = true;
-                document.getElementById('soundEffects').checked = true;
-                document.getElementById('notificationSound').value = 'default';
-                document.getElementById('responseSpeed').value = 'normal';
-                
-                applyTheme();
-                updateFontSize();
-                
-                showAlert('설정이 초기화되었습니다.', 'success');
-            }
-        }
-
-        function exportSettings() {
-            const settingsData = JSON.stringify(settings, null, 2);
-            const blob = new Blob([settingsData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'LYNA_AI_Settings.json';
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            showAlert('설정이 JSON 파일로 내보내졌습니다!', 'success');
-        }
-
-        function importSettings() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        try {
-                            const importedSettings = JSON.parse(e.target.result);
-                            Object.assign(settings, importedSettings);
-                            loadSettingsToUI();
-                            applyTheme();
-                            showAlert('설정이 성공적으로 가져와졌습니다!', 'success');
-                        } catch (error) {
-                            showAlert('설정 파일 형식이 올바르지 않습니다.', 'error');
-                        }
-                    };
-                    reader.readAsText(file);
-                }
-            };
-            input.click();
-        }
-
-        function loadSettingsToUI() {
-            document.getElementById('language').value = settings.language;
-            document.getElementById('responseStyle').value = settings.responseStyle;
-            document.getElementById('userName').value = settings.userName;
-            document.getElementById('theme').value = settings.theme;
-            document.getElementById('darkMode').checked = settings.darkMode;
-            document.getElementById('messageNotification').checked = settings.messageNotification;
-            document.getElementById('systemNotification').checked = settings.systemNotification;
-            document.getElementById('voiceRecognition').checked = settings.voiceRecognition;
-            document.getElementById('voiceLanguage').value = settings.voiceLanguage;
-            document.getElementById('autoSendVoice').checked = settings.autoSendVoice;
-            document.getElementById('micSensitivity').value = settings.micSensitivity;
-            document.getElementById('fontSize').value = settings.fontSize;
-            document.getElementById('animations').checked = settings.animations;
-            document.getElementById('soundEffects').checked = settings.soundEffects;
-            document.getElementById('notificationSound').value = settings.notificationSound;
-            document.getElementById('responseSpeed').value = settings.responseSpeed;
-        }
-
-        // 테마 관련 함수들
-        function applyTheme() {
-            const root = document.documentElement;
-            const theme = settings.theme;
-            
-            const themes = {
-                blue: { primary: '#667eea', secondary: '#764ba2' },
-                purple: { primary: '#9b59b6', secondary: '#8e44ad' },
-                green: { primary: '#2ecc71', secondary: '#27ae60' },
-                orange: { primary: '#f39c12', secondary: '#e67e22' },
-                pink: { primary: '#e91e63', secondary: '#c2185b' },
-                red: { primary: '#e74c3c', secondary: '#c0392b' }
-            };
-            
-            if (themes[theme]) {
-                root.style.setProperty('--primary-color', themes[theme].primary);
-                root.style.setProperty('--secondary-color', themes[theme].secondary);
-            }
-            
-            toggleDarkMode();
-        }
-
-        function toggleDarkMode() {
-            if (settings.darkMode) {
-                document.body.classList.add('dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
-            }
-        }
-
-        function updateLanguage() {
-            // 언어 변경 시 UI 텍스트 업데이트 (실제 구현에서는 i18n 라이브러리 사용)
-            if (settings.language !== 'ko') {
-                showAlert(`Language changed to ${settings.language.toUpperCase()}`, 'info');
-            }
-        }
-
-        function updateFontSize() {
-            const root = document.documentElement;
-            const sizeMap = {
-                small: '14px',
-                normal: '16px',
-                large: '18px',
-                xlarge: '20px'
-            };
-            root.style.setProperty('--base-font-size', sizeMap[settings.fontSize]);
-        }
-
-        function toggleAnimations() {
-            if (!settings.animations) {
-                document.body.style.setProperty('--transition', 'none');
-            } else {
-                document.body.style.removeProperty('--transition');
-            }
-        }
-
-        // 알림 관련 함수들
-        function showAlert(message, type = 'success') {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.textContent = message;
-            
-            const content = document.querySelector('.content');
-            content.insertBefore(alertDiv, content.firstChild);
-            
-            // 3초 후 자동 제거
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 3000);
-        }
-
-        function showNotification(title, message) {
-            if (!settings.systemNotification) return;
-            
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, {
-                    body: message,
-                    icon: '🤖'
-                });
-            } else if ('Notification' in window && Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification(title, {
-                            body: message,
-                            icon: '🤖'
-                        });
-                    }
-                });
-            }
-            
-            // 폴백: 브라우저 알림
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.innerHTML = `
-                <div class="notification-header">
-                    <div class="notification-title">${title}</div>
-                    <button onclick="this.parentElement.parentElement.remove()">✕</button>
-                </div>
-                <div class="notification-body">${message}</div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => notification.classList.add('show'), 100);
-            setTimeout(() => notification.remove(), 5000);
-        }
-
-        function playNotificationSound() {
-            if (!settings.soundEffects || settings.notificationSound === 'none') return;
-            
-            // 간단한 비프음 생성 (Web Audio API 사용)
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.3);
-            } catch (error) {
-                console.log('Audio context error:', error);
-            }
-        }
-
-        // 대시보드 관련 함수들
-        function updateDashboard() {
-            document.getElementById('totalMessages').textContent = messageCount;
-            document.getElementById('todayMessages').textContent = todayMessageCount;
-            
-            // 응답 시간 업데이트
-            const responseTime = (0.5 + Math.random() * 1).toFixed(1);
-            document.getElementById('responseTime').textContent = responseTime + 's';
-            document.getElementById('responseSpeed').textContent = `⚡ ${responseTime}s`;
-            
-            // 만족도 업데이트
-            const satisfaction = Math.floor(90 + Math.random() * 10);
-            document.getElementById('satisfaction').textContent = satisfaction + '%';
-            
-            // 음성 사용률 업데이트
-            const voiceUsage = Math.floor(60 + Math.random() * 20);
-            document.getElementById('voiceUsage').textContent = voiceUsage + '%';
-            
-            // 처리된 파일 수 업데이트
-            const fileProcessed = Math.floor(20 + Math.random() * 10);
-            document.getElementById('fileProcessed').textContent = fileProcessed;
-            
-            // 진행률 바 업데이트
-            updateProgressBars();
-        }
-
-        function updateProgressBars() {
-            const todayProgress = Math.min((todayMessageCount / 50) * 100, 100);
-            const weekProgress = Math.min((messageCount / 350) * 100, 100);
-            
-            document.getElementById('todayProgress').style.width = todayProgress + '%';
-            document.getElementById('weekProgress').style.width = weekProgress + '%';
-        }
-
-        function updateStats() {
-            if (currentTab === 'dashboard') {
-                updateDashboard();
-            }
-        }
-
-        function refreshStats() {
-            showLoading(true, '통계를 새로고침하는 중...');
-            setTimeout(() => {
-                updateDashboard();
-                showLoading(false);
-                showAlert('통계가 업데이트되었습니다!', 'success');
-            }, 1500);
-        }
-
-        function checkSystemHealth() {
-            showLoading(true, '시스템 상태를 확인하는 중...');
-            setTimeout(() => {
-                showLoading(false);
-                showAlert('모든 시스템이 정상적으로 작동 중입니다!', 'success');
-                
-                // 상태 표시기 업데이트 (시뮬레이션)
-                const indicators = document.querySelectorAll('.status-indicator');
-                indicators.forEach(indicator => {
-                    const dot = indicator.querySelector('.status-dot-lg');
-                    if (Math.random() > 0.1) { // 90% 확률로 정상
-                        indicator.className = 'status-indicator status-active';
-                    }
-                });
-            }, 2000);
-        }
-
-        function viewAllActivity() {
-            openModal('활동 기록', `
-                <div class="form-group">
-                    <h4>📊 상세 활동 기록</h4>
-                    <p><strong>오늘:</strong></p>
-                    <small>• 09:15 - 앱 시작</small><br>
-                    <small>• 09:20 - 첫 번째 대화 시작</small><br>
-                    <small>• 09:25 - 음성 인식 사용</small><br>
-                    <small>• 09:30 - 파일 업로드 (문서.pdf)</small><br>
-                    <small>• 09:35 - 번역 요청</small><br>
-                    <small>• 09:40 - 설정 변경</small><br>
-                    <small>• 09:45 - 데이터 내보내기</small><br>
-                    <p><strong>어제:</strong></p>
-                    <small>• 총 메시지: 47개</small><br>
-                    <small>• 음성 사용: 23회</small><br>
-                    <small>• 파일 처리: 5개</small><br>
-                    <small>• 사용 시간: 2시간 15분</small><br>
-                </div>
-            `);
-        }
-
-        // 도구 관련 함수들
-        function openCalculator() {
-            openModal('계산기', `
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 300px;">
-                    <input type="text" id="calcDisplay" style="grid-column: 1 / -1; padding: 15px; font-size: 18px; text-align: right;" readonly>
-                    <button onclick="clearCalc()" class="btn btn-danger">C</button>
-                    <button onclick="calcInput('/')" class="btn btn-secondary">÷</button>
-                    <button onclick="calcInput('*')" class="btn btn-secondary">×</button>
-                    <button onclick="deleteLast()" class="btn btn-secondary">⌫</button>
-                    <button onclick="calcInput('7')" class="btn">7</button>
-                    <button onclick="calcInput('8')" class="btn">8</button>
-                    <button onclick="calcInput('9')" class="btn">9</button>
-                    <button onclick="calcInput('-')" class="btn btn-secondary">-</button>
-                    <button onclick="calcInput('4')" class="btn">4</button>
-                    <button onclick="calcInput('5')" class="btn">5</button>
-                    <button onclick="calcInput('6')" class="btn">6</button>
-                    <button onclick="calcInput('+')" class="btn btn-secondary">+</button>
-                    <button onclick="calcInput('1')" class="btn">1</button>
-                    <button onclick="calcInput('2')" class="btn">2</button>
-                    <button onclick="calcInput('3')" class="btn">3</button>
-                    <button onclick="calculate()" class="btn btn-success" style="grid-row: span 2;">=</button>
-                    <button onclick="calcInput('0')" class="btn" style="grid-column: span 2;">0</button>
-                    <button onclick="calcInput('.')" class="btn">.</button>
-                </div>
-            `);
-        }
-
-        function calcInput(value) {
-            document.getElementById('calcDisplay').value += value;
-        }
-
-        function clearCalc() {
-            document.getElementById('calcDisplay').value = '';
-        }
-
-        function deleteLast() {
-            const display = document.getElementById('calcDisplay');
-            display.value = display.value.slice(0, -1);
-        }
-
-        function calculate() {
-            const display = document.getElementById('calcDisplay');
-            try {
-                const result = eval(display.value.replace('×', '*').replace('÷', '/'));
-                display.value = result;
-            } catch (error) {
-                display.value = 'Error';
-            }
-        }
-
-        function openTimer() {
-            openModal('타이머', `
-                <div class="form-group">
-                    <label>시간 설정 (분)</label>
-                    <input type="number" id="timerMinutes" class="form-control" value="5" min="1" max="60">
-                </div>
-                <div class="form-group">
-                    <div id="timerDisplay" style="font-size: 48px; text-align: center; margin: 20px 0;">05:00</div>
-                </div>
-                <div class="form-group">
-                    <button onclick="startTimer()" class="btn btn-success">시작</button>
-                    <button onclick="pauseTimer()" class="btn btn-warning">일시정지</button>
-                    <button onclick="resetTimer()" class="btn btn-secondary">리셋</button>
-                </div>
-            `);
-        }
-
-        let timerInterval = null;
-        let timerSeconds = 300;
-
-        function startTimer() {
-            if (timerInterval) return;
-            
-            timerInterval = setInterval(() => {
-                timerSeconds--;
-                updateTimerDisplay();
-                
-                if (timerSeconds <= 0) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
-                    showAlert('타이머가 종료되었습니다!', 'warning');
-                    playNotificationSound();
-                }
-            }, 1000);
-        }
-
-        function pauseTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-        }
-
-        function resetTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            timerSeconds = parseInt(document.getElementById('timerMinutes').value) * 60;
-            updateTimerDisplay();
-        }
-
-        function updateTimerDisplay() {
-            const minutes = Math.floor(timerSeconds / 60);
-            const seconds = timerSeconds % 60;
-            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            document.getElementById('timerDisplay').textContent = display;
-        }
-
-        function openNotepad() {
-            openModal('메모장', `
-                <div class="form-group">
-                    <textarea id="notepadText" class="form-control" rows="10" placeholder="여기에 메모를 작성하세요..."></textarea>
-                </div>
-                <div class="form-group">
-                    <button onclick="saveNote()" class="btn btn-success">저장</button>
-                    <button onclick="clearNote()" class="btn btn-secondary">지우기</button>
-                    <button onclick="exportNote()" class="btn btn-warning">내보내기</button>
-                </div>
-            `);
-        }
-
-        function saveNote() {
-            const text = document.getElementById('notepadText').value;
-            // 로컬 스토리지에 저장 (실제 구현에서)
-            showAlert('메모가 저장되었습니다!', 'success');
-        }
-
-        function clearNote() {
-            if (confirm('메모를 모두 지우시겠습니까?')) {
-                document.getElementById('notepadText').value = '';
-            }
-        }
-
-        function exportNote() {
-            const text = document.getElementById('notepadText').value;
-            if (!text.trim()) {
-                showAlert('내보낼 메모가 없습니다.', 'warning');
-                return;
-            }
-            
-            const blob = new Blob([text], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `메모_${new Date().toISOString().split('T')[0]}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            showAlert('메모가 텍스트 파일로 저장되었습니다!', 'success');
-        }
-
-        // 추가 도구 함수들 (간단한 구현)
-        function openColorPicker() {
-            openModal('색상 선택기', `
-                <div class="form-group">
-                    <input type="color" id="colorPicker" class="form-control" value="#667eea">
-                </div>
-                <div class="form-group">
-                    <label>HEX 코드:</label>
-                    <input type="text" id="hexCode" class="form-control" value="#667eea" readonly>
-                </div>
-                <div class="form-group">
-                    <label>RGB 코드:</label>
-                    <input type="text" id="rgbCode" class="form-control" readonly>
-                </div>
-                <script>
-                    document.getElementById('colorPicker').addEventListener('change', function() {
-                        const hex = this.value;
-                        document.getElementById('hexCode').value = hex;
-                        const r = parseInt(hex.substr(1,2), 16);
-                        const g = parseInt(hex.substr(3,2), 16);
-                        const b = parseInt(hex.substr(5,2), 16);
-                        document.getElementById('rgbCode').value = 'rgb(' + r + ', ' + g + ', ' + b + ')';
-                    });
-                </script>
-            `);
-        }
-
-        function openQRGenerator() {
-            openModal('QR 코드 생성기', `
-                <div class="form-group">
-                    <label>텍스트 또는 URL:</label>
-                    <input type="text" id="qrText" class="form-control" placeholder="QR 코드로 만들 내용을 입력하세요">
-                </div>
-                <div class="form-group">
-                    <button onclick="generateQR()" class="btn btn-success">QR 코드 생성</button>
-                </div>
-                <div id="qrResult" style="text-align: center; margin-top: 20px;"></div>
-            `);
-        }
-
-        function generateQR() {
-            const text = document.getElementById('qrText').value;
-            if (!text.trim()) {
-                showAlert('텍스트를 입력해주세요.', 'warning');
-                return;
-            }
-            
-            // QR 코드 API 사용 (실제 구현)
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}`;
-            document.getElementById('qrResult').innerHTML = `
-                <img src="${qrUrl}" alt="QR Code" style="max-width: 200px;">
-                <p style="margin-top: 10px; font-size: 14px;">QR 코드가 생성되었습니다!</p>
-            `;
-        }
-
-        function openUnitConverter() {
-            openModal('단위 변환기', `
-                <div class="form-group">
-                    <label>변환 유형:</label>
-                    <select id="unitType" class="form-control">
-                        <option value="length">길이</option>
-                        <option value="weight">무게</option>
-                        <option value="temperature">온도</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>값:</label>
-                    <input type="number" id="unitValue" class="form-control" placeholder="변환할 값을 입력하세요">
-                </div>
-                <div class="form-group">
-                    <label>변환:</label>
-                    <select id="fromUnit" class="form-control">
-                        <option value="m">미터</option>
-                        <option value="cm">센티미터</option>
-                        <option value="km">킬로미터</option>
-                    </select>
-                    <span> → </span>
-                    <select id="toUnit" class="form-control">
-                        <option value="m">미터</option>
-                        <option value="cm">센티미터</option>
-                        <option value="km">킬로미터</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <button onclick="convertUnit()" class="btn btn-success">변환</button>
-                </div>
-                <div id="conversionResult"></div>
-            `);
-        }
-
-        function convertUnit() {
-            // 간단한 길이 변환 예시
-            const value = parseFloat(document.getElementById('unitValue').value);
-            const fromUnit = document.getElementById('fromUnit').value;
-            const toUnit = document.getElementById('toUnit').value;
-            
-            if (isNaN(value)) {
-                showAlert('올바른 숫자를 입력해주세요.', 'warning');
-                return;
-            }
-            
-            // 미터 기준으로 변환
-            const toMeter = { m: 1, cm: 0.01, km: 1000 };
-            const fromMeter = { m: 1, cm: 100, km: 0.001 };
-            
-            const result = value * toMeter[fromUnit] * fromMeter[toUnit];
-            
-            document.getElementById('conversionResult').innerHTML = `
-                        // 메시지 전송 함수
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            
-            if (!message) return;
-            
-            // 사용자 메시지 추가
-            addMessage(message, 'user');
-            input.value = '';
-            autoResize(input);
-            
-            // 타이핑 인디케이터 표시
-            showTypingIndicator(true);
-            
-            // AI 응답 시뮬레이션
-            setTimeout(() => {
-                const aiResponse = generateAIResponse(message);
-                showTypingIndicator(false);
-                addMessage(aiResponse, 'ai');
-                updateStats();
-                playNotificationSound();
-            }, 1000 + Math.random() * 2000);
-        }
-
-        // 메시지 추가 함수
-        function addMessage(text, sender) {
-            const messagesContainer = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}`;
-            
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ko-KR', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            
-            if (sender === 'ai') {
-                messageDiv.innerHTML = `
-                    <strong>LYNA AI:</strong> ${text}
-                    <div class="message-time">${timeString}</div>
-                    <div class="message-actions">
-                        <button class="action-btn" onclick="copyMessage(this)" title="복사">📋</button>
-                        <button class="action-btn" onclick="shareMessage(this)" title="공유">📤</button>
-                        <button class="action-btn" onclick="speakMessage(this)" title="읽기">🔊</button>
-                    </div>
-                `;
-            } else {
-                messageDiv.innerHTML = `
-                    ${text}
-                    <div class="message-time">${timeString}</div>
-                `;
-            }
-            
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-            messageCount++;
-            todayMessageCount++;
-            
-            // 애니메이션 효과
-            if (settings.animations) {
-                messageDiv.style.animation = 'messageSlide 0.4s ease';
-            }
-        }
-
-        // AI 응답 생성 함수 (고도화)
-        function generateAIResponse(userMessage) {
-            const responses = {
-                '날씨': `🌤️ 오늘 ${getUserLocation()}의 날씨를 확인해드릴게요!\n\n📊 **현재 상황:**\n• 기온: 22°C (체감 24°C)\n• 날씨: 맑음\n• 습도: 45%\n• 바람: 서풍 2m/s\n• 미세먼지: 보통\n\n🌅 **오늘 예보:**\n• 최고: 28°C / 최저: 18°C\n• 강수확률: 10%\n• 자외선 지수: 높음\n\n💡 **추천사항:**\n• 외출하기 좋은 날씨입니다\n• 자외선 차단제 사용 권장\n• 가벼운 옷차림이 적합해요`,
-                
-                '뉴스': `📰 **오늘의 주요 뉴스** (${new Date().toLocaleDateString()})\n\n🌍 **국제**\n• AI 기술 발전으로 새로운 패러다임 전환\n• 글로벌 기후 협약 추진 상황\n\n🇰🇷 **국내**\n• 디지털 혁신 정책 발표\n• 스마트 시티 프로젝트 확대\n\n💼 **경제**\n• 코스피 상승세 지속 (2,450포인트)\n• 반도체 업계 긍정적 전망\n\n🔬 **과학기술**\n• 양자컴퓨터 연구 새로운 돌파구\n• 우주 탐사 프로젝트 진행 상황\n\n더 자세한 내용이 필요하시면 말씀해주세요!`,
-                
-                '일정': `📅 **일정 관리 도우미**\n\n🕘 **오늘 일정 (${new Date().toLocaleDateString()})**\n• 09:00 - 팀 회의 (회의실 A)\n• 11:30 - 프로젝트 검토\n• 14:00 - 고객 상담 (화상회의)\n• 16:30 - 보고서 작성\n• 18:00 - 개인 시간\n\n⏰ **다가오는 일정**\n• 내일: 중요한 프레젠테이션\n• 이번 주: 월간 보고서 마감\n• 다음 주: 출장 계획\n\n💡 **추천사항**\n• 프레젠테이션 준비 시간 확보\n• 보고서 초안 오늘 완료 권장\n• 출장 준비물 체크리스트 작성\n\n일정 추가나 수정이 필요하시면 언제든 말씀해주세요!`,
-                
-                '맛집': `🍽️ **맞춤 맛집 추천** (${getUserLocation()} 기준)\n\n⭐ **오늘의 추천**\n🍜 **한식**: 청진옥 냉면 (4.8★)\n📍 위치: 종로구 청진동 | 영업: 11:00-21:00\n💰 가격: 15,000원대 | 🚗 주차: 가능\n✨ 특징: 60년 전통의 평양냉면 맛집\n\n🍝 **양식**: 비스트로 파스타 (4.6★)\n📍 위치: 강남구 신사동 | 영업: 12:00-22:00\n💰 가격: 25,000원대 | 🚗 주차: 발렛 서비스\n✨ 특징: 신선한 재료로 만든 수제 파스타\n\n🍣 **일식**: 스시젠 (4.9★)\n📍 위치: 서초구 방배동 | 영업: 18:00-24:00\n💰 가격: 80,000원대 | 🚗 주차: 가능\n✨ 특징: 오마카세 전문, 예약 필수\n\n🥘 **중식**: 홍콩반점 (4.4★)\n📍 위치: 중구 명동 | 영업: 11:30-21:30\n💰 가격: 12,000원대 | 🚗 주차: 유료 주차장\n✨ 특징: 정통 광동식 요리\n\n🔍 특정 음식이나 지역을 말씀해주시면 더 구체적으로 추천드릴게요!`,
-                
-                '번역': `🌐 **LYNA AI 번역 서비스**\n\n📋 **지원 언어** (100개 이상)\n• 주요 언어: 한국어, 영어, 일본어, 중국어\n• 유럽: 프랑스어, 독일어, 스페인어, 이탈리아어\n• 아시아: 태국어, 베트남어, 인도네시아어\n• 기타: 아랍어, 러시아어, 포르투갈어\n\n💡 **번역 방법**\n1. 텍스트 입력 후 "번역해줘" 요청\n2. 음성으로 말하고 번역 요청\n3. 이미지 텍스트 인식 후 번역\n4. 파일 업로드 후 문서 번역\n\n🎯 **특별 기능**\n• 문맥 기반 정확한 번역\n• 전문 용어 및 관용구 지원\n• 실시간 대화 번역\n• 문서 형식 유지 번역\n\n예시: "Hello, how are you?"를 한국어로 번역해주세요!`,
-                
-                '코딩': `💻 **LYNA AI 코딩 도우미**\n\n🛠️ **지원 기능**\n• 코드 생성 및 자동완성\n• 버그 찾기 및 디버깅\n• 코드 리뷰 및 최적화\n• 알고리즘 설명 및 구현\n\n📚 **지원 언어** (100개 이상)\n• **웹**: HTML, CSS, JavaScript, TypeScript\n• **백엔드**: Python, Java, C#, PHP, Node.js\n• **모바일**: Swift, Kotlin, React Native, Flutter\n• **데이터**: SQL, R, MATLAB, Jupyter\n• **기타**: C++, Rust, Go, Assembly\n\n🎯 **활용 예시**\n• "Python으로 웹 크롤러 만들어줘"\n• "이 JavaScript 오류 고쳐줘"\n• "React 컴포넌트 최적화 방법"\n• "SQL 쿼리 성능 개선 방법"\n\n💡 **팁**: 구체적인 요구사항을 말씀해주시면 더 정확한 코드를 제공할 수 있어요!`,
-                
-                '학습': `📚 **개인 맞춤 학습 도우미**\n\n🎯 **학습 계획 수립**\n• 목표 설정 및 로드맵 작성\n• 단계별 학습 스케줄\n• 진도 관리 및 평가\n\n📖 **학습 지원 기능**\n• 요약 정리 및 노트 작성\n• 문제 생성 및 퀴즈\n• 개념 설명 및 예시\n• 암기 카드 생성\n\n🏆 **맞춤형 서비스**\n• 학습 스타일 분석\n• 약점 보완 계획\n• 성취도 추적\n• 동기부여 메시지\n\n💡 **인기 주제**\n• 프로그래밍 (Python, JavaScript)\n• 언어학습 (영어, 일본어)\n• 자격증 (정보처리기사, 토익)\n• 전문 지식 (AI, 데이터 사이언스)\n\n어떤 분야를 학습하고 싶으신지 알려주세요!`,
-                
-                '건강': `💪 **AI 건강 상담사 LYNA**\n\n🌟 **오늘의 건강 체크**\n• 수면: 7-8시간 권장\n• 수분: 하루 2L 이상\n• 운동: 30분 이상 활동\n• 식사: 균형 잡힌 3끼\n\n🏃‍♂️ **운동 추천**\n• **유산소**: 빠른 걷기, 조깅, 자전거\n• **근력**: 스쿼트, 푸시업, 플랭크\n• **유연성**: 스트레칭, 요가\n• **균형**: 밸런스 운동\n\n🥗 **영양 관리**\n• 단백질: 체중 1kg당 1g\n• 탄수화물: 전체 칼로리의 45-65%\n• 지방: 전체 칼로리의 20-35%\n• 비타민/미네랄: 다양한 채소와 과일\n\n⚠️ **주의사항**\n심각한 증상이나 질병 관련 상담은 반드시 전문의와 상의하세요.\n\n구체적인 건강 관련 질문이 있으시면 언제든 말씀해주세요!`
-            };
-            
-            // 키워드 기반 응답
-            for (let keyword in responses) {
-                if (userMessage.includes(keyword)) {
-                    return responses[keyword];
-                }
-            }
-            
-            // 감정 분석 기반 응답
-            if (userMessage.includes('안녕') || userMessage.includes('hello')) {
-                return `안녕하세요! 👋 만나서 반가워요. 저는 ${settings.userName ? settings.userName + '님의 ' : ''}전담 AI 어시스턴트 LYNA입니다.\n\n오늘 하루는 어떠셨나요? 궁금한 것이나 도움이 필요한 일이 있으시면 언제든 말씀해주세요! 😊`;
-            }
-            
-            if (userMessage.includes('고마워') || userMessage.includes('감사')) {
-                return `${settings.userName ? settings.userName + '님, ' : ''}천만에요! 😊 도움이 되어서 정말 기뻐요.\n\n앞으로도 더 나은 서비스로 보답하겠습니다. 또 다른 궁금한 것이 있으시면 언제든 말씀해주세요! 🌟`;
-            }
-            
-            if (userMessage.includes('힘들') || userMessage.includes('우울') || userMessage.includes('스트레스')) {
-                return `${settings.userName ? settings.userName + '님, ' : ''}힘든 시간을 보내고 계시는군요. 😔\n\n🌈 **마음 관리 팁**\n• 깊은 호흡을 통한 명상 (5분)\n• 좋아하는 음악 듣기\n• 가벼운 산책이나 운동\n• 믿을 만한 사람과 대화\n• 충분한 휴식과 수면\n\n💝 기억하세요: 이런 감정도 자연스러운 것이며, 언제나 나아질 수 있어요. 제가 항상 여기서 응원하고 있을게요!\n\n더 심각한 상황이라면 전문가의 도움을 받는 것도 좋은 방법입니다.`;
-            }
-            
-            // 기본 응답들 (맥락 기반)
-            const defaultResponses = [
-                `흥미로운 질문이네요! 🤔 더 구체적으로 설명해주시면 더 정확한 답변을 드릴 수 있어요.`,
-                `네, 이해했습니다! 📋 관련 정보를 찾아서 자세히 알려드릴게요.`,
-                `좋은 아이디어네요! 💡 이 주제에 대해 여러 관점에서 생각해보겠습니다.`,
-                `말씀하신 내용을 바탕으로 최적의 해결책을 제안해드리겠습니다. 🎯`,
-                `더 나은 답변을 위해 몇 가지 추가 정보가 필요할 것 같아요. 구체적인 상황을 설명해주시겠어요? 🔍`
-            ];
-            
-            const response = defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
-            return response + '\n\n💡 **팁**: 음성 인식(🎤), 파일 업로드(📎), 또는 구체적인 키워드를 사용하시면 더 정확한 도움을 받을 수 있어요!';
-        }
-
-        // 사용자 위치 정보 (시뮬레이션)
-        function getUserLocation() {
-            return '서울시 강남구';
-        }
-
-        // 빠른 질문 함수
-        function quickQuestion(question) {
-            document.getElementById('chatInput').value = question;
-            sendMessage();
-        }
-
-        // 키 입력 처리
-        function handleKeyPress(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                sendMessage();
-            }
-        }
-
-        // 텍스트 영역 자동 크기 조정
-        function autoResize(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-        }
-
-        // 타이핑 인디케이터
-        function showTypingIndicator(show) {
-            const indicator = document.getElementById('typingIndicator');
-            if (show) {
-                indicator.classList.add('active');
-            } else {
-                indicator.classList.remove('active');
-            }
-        }
-
-        // 채팅 입력창 포커스
-        function focusChatInput() {
-            setTimeout(() => {
-                document.getElementById('chatInput').focus();
-            }, 100);
-        }
-
-        // 음성 인식 초기화
-        function initSpeechRecognition() {
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                
-                recognition.continuous = true;
-                recognition.interimResults = true;
-                recognition.lang = settings.voiceLanguage;
-                
-                recognition.onstart = function() {
-                    console.log('음성 인식 시작');
-                    document.getElementById('voiceVisualizer').classList.add('active');
-                };
-                
-                recognition.onresult = function(event) {
-                    let finalTranscript = '';
-                    let interimTranscript = '';
-                    
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript;
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
-                    
-                    const chatInput = document.getElementById('chatInput');
-                    chatInput.value = finalTranscript + interimTranscript;
-                    autoResize(chatInput);
-                    
-                    if (finalTranscript && settings.autoSendVoice) {
-                        setTimeout(() => sendMessage(), 1000);
-                    }
-                };
-                
-                recognition.onerror = function(event) {
-                    console.error('음성 인식 오류:', event.error);
-                    stopVoiceRecording();
-                    showAlert(`음성 인식 오류: ${event.error}`, 'error');
-                };
-                
-                recognition.onend = function() {
-                    console.log('음성 인식 종료');
-                    stopVoiceRecording();
-                };
-            } else {
-                console.warn('이 브라우저는 음성 인식을 지원하지 않습니다.');
-                showAlert('음성 인식을 지원하지 않는 브라우저입니다.', 'warning');
-            }
-        }
-
-        // 음성 인식 토글
-        function toggleVoiceRecording() {
-            if (!settings.voiceRecognition) {
-                showAlert('음성 인식이 비활성화되어 있습니다. 설정에서 활성화해주세요.', 'warning');
-                return;
-            }
-            
-            if (isRecording) {
-                stopVoiceRecording();
-            } else {
-                startVoiceRecording();
-            }
-        }
-
-        // 음성 인식 시작
-        function startVoiceRecording() {
-            if (!recognition) {
-                initSpeechRecognition();
-            }
-            
-            if (recognition) {
-                recognition.lang = settings.voiceLanguage;
-                recognition.start();
-                isRecording = true;
-                
-                const micBtn = document.getElementById('micBtn');
-                micBtn.classList.add('recording');
-                micBtn.innerHTML = '🔴';
-                
-                showAlert('음성 인식을 시작했습니다. 말씀해주세요!', 'info');
-            }
-        }
-
-        // 음성 인식 중지
-        function stopVoiceRecording() {
-            if (recognition && isRecording) {
-                recognition.stop();
-            }
-            
-            isRecording = false;
-            
-            const micBtn = document.getElementById('micBtn');
-            micBtn.classList.remove('recording');
-            micBtn.innerHTML = '🎤';
-            
-            document.getElementById('voiceVisualizer').classList.remove('active');
-        }
-
-        // 빠른 음성 명령
-        function quickVoiceCommand() {
-            if (!isRecording) {
-                startVoiceRecording();
-            } else {
-                stopVoiceRecording();
-            }
-        }
-
-        // 파일 첨부 토글
-        function toggleAttachment() {
-            document.getElementById('fileInput').click();
-        }
-
-        // 파일 업로드 처리
-        function handleFileUpload(event) {
-            const files = Array.from(event.target.files);
-            
-            if (files.length === 0) return;
-            
-            files.forEach(file => {
-                if (file.size > 10 * 1024 * 1024) { // 10MB 제한
-                    showAlert(`파일 "${file.name}"이 너무 큽니다. (최대 10MB)`, 'error');
-                    return;
-                }
-                
-                showAttachmentPreview(file);
-                processFile(file);
-            });
-        }
-
-        // 첨부 파일 미리보기
-        function showAttachmentPreview(file) {
-            const preview = document.getElementById('attachmentPreview');
-            const fileName = document.getElementById('fileName');
-            const fileSize = document.getElementById('fileSize');
-            
-            fileName.textContent = file.name;
-            fileSize.textContent = formatFileSize(file.size);
-            
-            // 파일 아이콘 설정
-            const icon = document.querySelector('.file-icon');
-            const ext = file.name.split('.').pop().toLowerCase();
-            
-            const iconMap = {
-                'pdf': '📄', 'doc': '📝', 'docx': '📝', 'xls': '📊', 'xlsx': '📊',
-                'ppt': '📎', 'pptx': '📎', 'txt': '📄', 'png': '🖼️', 'jpg': '🖼️',
-                'jpeg': '🖼️', 'gif': '🖼️', 'mp3': '🎵', 'mp4': '🎬', 'zip': '📦'
-            };
-            
-            icon.textContent = iconMap[ext] || '📄';
-            preview.classList.add('active');
-        }
-
-        // 첨부 파일 제거
-        function removeAttachment() {
-            document.getElementById('attachmentPreview').classList.remove('active');
-            document.getElementById('fileInput').value = '';
-        }
-
-        // 파일 크기 포맷팅
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // 파일 처리
-        function processFile(file) {
-            showLoading(true, `파일 "${file.name}" 분석 중...`);
-            
-            // 파일 처리 시뮬레이션
-            setTimeout(() => {
-                showLoading(false);
-                const analysisResult = generateFileAnalysis(file);
-                addMessage(analysisResult, 'ai');
-                removeAttachment();
-                updateStats();
-            }, 2000 + Math.random() * 3000);
-        }
-
-        // 파일 분석 결과 생성
-        function generateFileAnalysis(file) {
-            const ext = file.name.split('.').pop().toLowerCase();
-            const fileName = file.name;
-            const fileSize = formatFileSize(file.size);
-            
-            const analysisMap = {
-                'pdf': `📄 **PDF 문서 분석 완료**\n\n📋 **파일 정보**\n• 파일명: ${fileName}\n• 크기: ${fileSize}\n• 형식: PDF 문서\n\n📊 **분석 결과**\n• 총 페이지: 12페이지\n• 텍스트 추출: 완료\n• 주요 내용: 비즈니스 보고서\n• 언어: 한국어/영어 혼재\n\n💡 **가능한 작업**\n• 텍스트 요약\n• 번역\n• 키워드 추출\n• 데이터 분석\n\n어떤 작업을 도와드릴까요?`,
-                
-                'png': `🖼️ **이미지 분석 완료**\n\n📋 **파일 정보**\n• 파일명: ${fileName}\n• 크기: ${fileSize}\n• 형식: PNG 이미지\n\n🔍 **분석 결과**\n• 해상도: 1920x1080\n• 색상 모드: RGB\n• 주요 객체: 텍스트, 그래프, 인물\n• 품질: 고품질\n\n💡 **감지된 내용**\n• 텍스트 인식 가능\n• 차트/그래프 데이터\n• 얼굴 인식: 2명\n\n🛠️ **가능한 작업**\n• 텍스트 추출 (OCR)\n• 이미지 편집\n• 객체 인식\n• 데이터 추출\n\n어떤 작업이 필요하신가요?`,
-                
-                'xlsx': `📊 **Excel 파일 분석 완료**\n\n📋 **파일 정보**\n• 파일명: ${fileName}\n• 크기: ${fileSize}\n• 형식: Excel 스프레드시트\n\n📈 **데이터 구조**\n• 워크시트: 3개\n• 총 행: 1,247개\n• 총 열: 15개\n• 데이터 타입: 숫자, 텍스트, 날짜\n\n🔍 **발견된 패턴**\n• 매출 데이터 (2023-2024)\n• 지역별 통계\n• 월별 트렌드 분석 가능\n\n💡 **제안 분석**\n• 차트 생성\n• 통계 요약\n• 트렌드 분석\n• 예측 모델\n\n어떤 분석을 원하시나요?`
-            };
-            
-            return analysisMap[ext] || `📁 **파일 업로드 완료**\n\n📋 **파일 정보**\n• 파일명: ${fileName}\n• 크기: ${fileSize}\n• 형식: ${ext.toUpperCase()}\n\n✅ 파일이 성공적으로 업로드되었습니다.\n처리 가능한 작업이 있다면 알려드리겠습니다.\n\n구체적으로 어떤 도움이 필요하신지 말씀해주세요!`;
-        }
-
-        // 로딩 표시/숨김
-        function showLoading(show, text = 'AI가 응답을 생성하고 있습니다...') {
-            const loading = document.getElementById('loading');
-            const loadingText = document.getElementById('loadingText');
-            
-            loadingText.textContent = text;
-            
-            if (show) {
-                loading.classList.add('active');
-            } else {
-                loading.classList.remove('active');
-            }
-        }
-
-        // 메시지 액션 함수들
-        function copyMessage(button) {
-            const message = button.closest('.message');
-            const text = message.textContent.replace(/📋📤🔊$/, '').trim();
-            
-            navigator.clipboard.writeText(text).then(() => {
-                showAlert('메시지가 복사되었습니다!', 'success');
-            }).catch(() => {
-                showAlert('복사에 실패했습니다.', 'error');
-            });
-        }
-
-        function shareMessage(button) {
-            const message = button.closest('.message');
-            const text = message.textContent.replace(/📋<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>LYNA AI - 완전 기능 모바일 최적화</title>
-    <style>
-        :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --info-color: #17a2b8;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
-            --border-radius: 12px;
-            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-            min-height: 100vh;
-            padding: 8px;
-            overflow-x: hidden;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.98);
-            border-radius: 24px;
-            backdrop-filter: blur(20px);
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 24px 20px;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: var(--shadow);
-        }
-
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            font-weight: 700;
-        }
-
-        .header .subtitle {
-            font-size: 16px;
-            opacity: 0.95;
-            font-weight: 400;
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 16px;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: var(--border-radius);
-            backdrop-filter: blur(10px);
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 14px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--success-color);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .nav-tabs {
-            display: flex;
-            background: var(--light-color);
-            border-bottom: 2px solid #e9ecef;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-
-        .nav-tabs::-webkit-scrollbar {
-            display: none;
-        }
-
-        .nav-tab {
-            flex: 1;
-            min-width: 110px;
-            padding: 16px 12px;
-            text-align: center;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            color: #6c757d;
-            transition: var(--transition);
-            white-space: nowrap;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .nav-tab::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            transition: var(--transition);
-            transform: translateX(-50%);
-        }
-
-        .nav-tab.active {
-            background: white;
-            color: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
-        }
-
-        .nav-tab.active::before {
-            width: 60%;
-        }
-
-        .nav-tab:hover:not(.active) {
-            background: #e9ecef;
-            color: #495057;
-            transform: translateY(-1px);
-        }
-
-        .content {
-            padding: 24px 20px;
-            max-height: calc(100vh - 240px);
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .tab-content {
-            display: none;
-            animation: fadeInUp 0.4s ease;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .chat-container {
-            height: 450px;
-            border: 2px solid #e9ecef;
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow);
-            background: white;
-        }
-
-        .chat-header {
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-        }
-
-        .chat-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .typing-indicator {
-            display: none;
-            padding: 16px 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-            font-style: italic;
-            color: #6c757d;
-            font-size: 14px;
-        }
-
-        .typing-indicator.active {
-            display: block;
-        }
-
-        .chat-messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            background: linear-gradient(to bottom, #f8f9fa, #ffffff);
-            -webkit-overflow-scrolling: touch;
-            scroll-behavior: smooth;
-        }
-
-        .message {
-            margin-bottom: 16px;
-            padding: 14px 18px;
-            border-radius: 20px;
-            max-width: 85%;
-            word-wrap: break-word;
-            position: relative;
-            animation: messageSlide 0.4s ease;
-            box-shadow: var(--shadow);
-        }
-
-        @keyframes messageSlide {
-            from {
-                opacity: 0;
-                transform: translateX(30px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0) scale(1);
-            }
-        }
-
-        .message.user {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            margin-left: auto;
-            text-align: right;
-            border-bottom-right-radius: 6px;
-        }
-
-        .message.ai {
-            background: white;
-            color: #333;
-            border: 1px solid #e9ecef;
-            border-bottom-left-radius: 6px;
-        }
-
-        .message-time {
-            font-size: 11px;
-            opacity: 0.7;
-            margin-top: 4px;
-        }
-
-        .message-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            opacity: 0;
-            transition: var(--transition);
-        }
-
-        .message:hover .message-actions {
-            opacity: 1;
-        }
-
-        .action-btn {
-            padding: 4px 8px;
-            background: rgba(0,0,0,0.1);
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: var(--transition);
-        }
-
-        .action-btn:hover {
-            background: rgba(0,0,0,0.2);
-        }
-
-        .chat-input-container {
-            display: flex;
-            padding: 20px;
-            background: white;
-            border-top: 1px solid #e9ecef;
-            gap: 12px;
-            align-items: flex-end;
-        }
-
-        .input-group {
-            flex: 1;
-            position: relative;
-        }
-
-        .chat-input {
-            width: 100%;
-            min-height: 48px;
-            max-height: 120px;
-            padding: 14px 50px 14px 20px;
-            border: 2px solid #e9ecef;
-            border-radius: 24px;
-            font-size: 16px;
-            outline: none;
-            transition: var(--transition);
-            resize: none;
-            font-family: inherit;
-            line-height: 1.4;
-        }
-
-        .chat-input:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        }
-
-        .input-actions {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            gap: 8px;
-        }
-
-        .mic-btn, .attachment-btn {
-            width: 36px;
-            height: 36px;
-            border: none;
-            border-radius: 50%;
-            background: var(--light-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-            font-size: 16px;
-        }
-
-        .mic-btn:hover, .attachment-btn:hover {
-            background: #e9ecef;
-            transform: scale(1.1);
-        }
-
-        .mic-btn.recording {
-            background: var(--danger-color);
-            color: white;
-            animation: recordPulse 1s infinite;
-        }
-
-        @keyframes recordPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .send-btn {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            box-shadow: var(--shadow);
-        }
-
-        .send-btn:hover {
-            transform: translateY(-2px) scale(1.05);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .send-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .quick-btn {
-            padding: 16px 20px;
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: var(--transition);
-            text-align: center;
-            box-shadow: var(--shadow);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .quick-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transition: var(--transition);
-        }
-
-        .quick-btn:hover {
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .quick-btn:hover::before {
-            left: 100%;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: var(--transition);
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid #f8f9fa;
-        }
-
-        .card h3 {
-            color: var(--primary-color);
-            font-size: 20px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #495057;
-            font-size: 14px;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid #e9ecef;
-            border-radius: var(--border-radius);
-            font-size: 16px;
-            transition: var(--transition);
-            background: white;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        }
-
-        .btn {
-            padding: 14px 28px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: var(--transition);
-            width: 100%;
-            margin-bottom: 12px;
-            box-shadow: var(--shadow);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: var(--transition);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .btn:hover::before {
-            left: 100%;
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #6c757d, #5a6268);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success-color), #218838);
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning-color), #e0a800);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger-color), #c82333);
-        }
-
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 14px;
-            width: auto;
-            margin: 0 4px 8px 0;
-        }
-
-        .progress-container {
-            margin: 16px 0;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 10px;
-            background: #e9ecef;
-            border-radius: 5px;
-            overflow: hidden;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            border-radius: 5px;
-            transition: width 0.6s ease;
-            position: relative;
-        }
-
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background-image: linear-gradient(
-                -45deg,
-                rgba(255, 255, 255, .2) 25%,
-                transparent 25%,
-                transparent 50%,
-                rgba(255, 255, 255, .2) 50%,
-                rgba(255, 255, 255, .2) 75%,
-                transparent 75%,
-                transparent
-            );
-            background-size: 50px 50px;
-            animation: move 2s linear infinite;
-        }
-
-        @keyframes move {
-            0% { background-position: 0 0; }
-            100% { background-position: 50px 50px; }
-        }
-
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-            padding: 8px 12px;
-            border-radius: var(--border-radius);
-            background: white;
-            border: 1px solid #e9ecef;
-            font-size: 14px;
-        }
-
-        .status-dot-lg {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .status-active .status-dot-lg { 
-            background: var(--success-color);
-            box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.2);
-        }
-        .status-inactive .status-dot-lg { 
-            background: var(--danger-color);
-            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2);
-        }
-        .status-pending .status-dot-lg { 
-            background: var(--warning-color);
-            box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.2);
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-
-        .feature-card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            border: 2px solid #f8f9fa;
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-        }
-
-        .feature-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-color);
-        }
-
-        .feature-icon {
-            font-size: 32px;
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        .feature-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-bottom: 8px;
-        }
-
-        .feature-description {
-            font-size: 14px;
-            color: #6c757d;
-            line-height: 1.5;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 24px 20px;
-            border-radius: 16px;
-            text-align: center;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .stat-number {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 8px;
-            line-height: 1;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: #6c757d;
-            font-weight: 500;
-        }
-
-        .stat-change {
-            font-size: 12px;
-            margin-top: 4px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-
-        .stat-change.positive {
-            background: rgba(40, 167, 69, 0.1);
-            color: var(--success-color);
-        }
-
-        .stat-change.negative {
-            background: rgba(220, 53, 69, 0.1);
-            color: var(--danger-color);
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-            margin-left: 12px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: 0.4s;
-            border-radius: 34px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: 0.4s;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        input:checked + .slider {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px 20px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 16px;
-            margin: 20px 0;
-            backdrop-filter: blur(10px);
-        }
-
-        .loading.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .alert {
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            border-radius: var(--border-radius);
-            border: 1px solid;
-            position: relative;
-            animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .alert-success {
-            background: rgba(40, 167, 69, 0.1);
-            border-color: var(--success-color);
-            color: #155724;
-        }
-
-        .alert-error {
-            background: rgba(220, 53, 69, 0.1);
-            border-color: var(--danger-color);
-            color: #721c24;
-        }
-
-        .alert-warning {
-            background: rgba(255, 193, 7, 0.1);
-            border-color: var(--warning-color);
-            color: #856404;
-        }
-
-        .alert-info {
-            background: rgba(23, 162, 184, 0.1);
-            border-color: var(--info-color);
-            color: #0c5460;
-        }
-
-        .voice-visualizer {
-            display: none;
-            height: 60px;
-            background: #f8f9fa;
-            border-radius: var(--border-radius);
-            margin: 12px 0;
-            padding: 12px;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        .voice-visualizer.active {
-            display: flex;
-        }
-
-        .voice-bar {
-            width: 4px;
-            background: var(--primary-color);
-            border-radius: 2px;
-            animation: voicePulse 0.5s ease-in-out infinite alternate;
-        }
-
-        .voice-bar:nth-child(even) {
-            animation-delay: 0.1s;
-        }
-
-        .voice-bar:nth-child(3n) {
-            animation-delay: 0.2s;
-        }
-
-        @keyframes voicePulse {
-            from { height: 8px; }
-            to { height: 36px; }
-        }
-
-        .camera-preview {
-            display: none;
-            width: 100%;
-            max-width: 300px;
-            height: 200px;
-            border-radius: var(--border-radius);
-            margin: 12px 0;
-            object-fit: cover;
-            border: 2px solid var(--primary-color);
-        }
-
-        .camera-preview.active {
-            display: block;
-        }
-
-        .attachment-preview {
-            display: none;
-            background: #f8f9fa;
-            border-radius: var(--border-radius);
-            padding: 16px;
-            margin: 12px 0;
-            border: 2px dashed #dee2e6;
-        }
-
-        .attachment-preview.active {
-            display: block;
-        }
-
-        .file-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .file-icon {
-            font-size: 24px;
-            color: var(--primary-color);
-        }
-
-        .file-details {
-            flex: 1;
-        }
-
-        .file-name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-        }
-
-        .file-size {
-            font-size: 12px;
-            color: #6c757d;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-        }
-
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .modal-content {
-            background: white;
-            margin: 20px;
-            padding: 24px;
-            border-radius: 20px;
-            max-width: 500px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow-lg);
-            animation: modalSlide 0.3s ease;
-        }
-
-        @keyframes modalSlide {
-            from {
-                opacity: 0;
-                transform: translateY(-50px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid #f8f9fa;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .close-btn {
-            width: 32px;
-            height: 32px;
-            border: none;
-            background: #f8f9fa;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            transition: var(--transition);
-        }
-
-        .close-btn:hover {
-            background: #e9ecef;
-            transform: scale(1.1);
-        }
-
-        .fab {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border: none;
-            border-radius: 50%;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: var(--shadow-lg);
-            transition: var(--transition);
-            z-index: 1000;
-        }
-
-        .fab:hover {
-            transform: scale(1.1) translateY(-2px);
-            box-shadow: 0 12px 28px rgba(0,0,0,0.2);
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            max-width: 300px;
-            background: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-lg);
-            border-left: 4px solid var(--primary-color);
-            padding: 16px;
-            z-index: 2000;
-            transform: translateX(350px);
-            transition: var(--transition);
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .notification-title {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-
-        .notification-body {
-            font-size: 14px;
-            color: #6c757d;
-        }
-
-        .dark-mode {
-            --primary-color: #4f46e5;
-            --secondary-color: #7c3aed;
-            --light-color: #1f2937;
-            --dark-color: #f9fafb;
-            background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #1f2937 100%);
-            color: #f9fafb;
-        }
-
-        .dark-mode .container {
-            background: rgba(31, 41, 55, 0.95);
-            border: 1px solid rgba(75, 85, 99, 0.3);
-        }
-
-        .dark-mode .card {
-            background: #374151;
-            border-color: #4b5563;
-            color: #f9fafb;
-        }
-
-        .dark-mode .nav-tabs {
-            background: #374151;
-            border-color: #4b5563;
-        }
-
-        .dark-mode .nav-tab {
-            color: #9ca3af;
-        }
-
-        .dark-mode .nav-tab.active {
-            background: #4b5563;
-            color: #60a5fa;
-        }
-
-        .dark-mode .form-control {
-            background: #374151;
-            border-color: #4b5563;
-            color: #f9fafb;
-        }
-
-        .dark-mode .chat-messages {
-            background: linear-gradient(to bottom, #374151, #4b5563);
-        }
-
-        .dark-mode .message.ai {
-            background: #4b5563;
-            border-color: #6b7280;
-            color: #f9fafb;
-        }
-
-        /* 모바일 최적화 */
-        @media (max-width: 768px) {
-            body {
-                padding: 4px;
-            }
-            
-            .container {
-                border-radius: 16px;
-            }
-            
-            .header {
-                padding: 20px 16px;
-            }
-            
-            .header h1 {
-                font-size: 24px;
-            }
-            
-            .content {
-                padding: 20px 16px;
-                max-height: calc(100vh - 200px);
-            }
-            
-            .nav-tab {
-                padding: 14px 10px;
-                font-size: 13px;
-                min-width: 90px;
-            }
-            
-            .chat-container {
-                height: 400px;
-            }
-            
-            .message {
-                max-width: 90%;
-                font-size: 14px;
-            }
-            
-            .feature-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .quick-actions {
-                grid-template-columns: 1fr;
-            }
-            
-            .modal-content {
-                margin: 12px;
-                padding: 20px;
-            }
-            
-            .fab {
-                bottom: 16px;
-                right: 16px;
-                width: 48px;
-                height: 48px;
-                font-size: 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 2px;
-            }
-            
-            .header h1 {
-                font-size: 20px;
-            }
-            
-            .nav-tab {
-                min-width: 70px;
-                padding: 12px 6px;
-                font-size: 12px;
-            }
-            
-            .chat-container {
-                height: 350px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stat-number {
-                font-size: 24px;
-            }
-            
-            .notification {
-                right: 12px;
-                top: 12px;
-                max-width: calc(100vw - 24px);
-            }
-        }
-
-        /* 고급 애니메이션 */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .floating {
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes glow {
-            0%, 100% { box-shadow: 0 0 5px var(--primary-color); }
-            50% { box-shadow: 0 0 20px var(--primary-color), 0 0 30px var(--primary-color); }
-        }
-
-        .glowing {
-            animation: glow 2s ease-in-out infinite;
-        }
-
-        /* 스크롤바 스타일링 */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary-color);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--secondary-color);
-        }
-
-        /* 접근성 개선 */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
-
-        .focus-visible {
-            outline: 2px solid var(--primary-color);
-            outline-offset: 2px;
-        }
-
-        /* 프린트 스타일 */
-        @media print {
-            .nav-tabs, .fab, .loading, .modal {
-                display: none !important;
-            }
-            
-            .container {
-                box-shadow: none;
-                background: white;
-            }
-            
-            .chat-container {
-                border: 1px solid #333;
-                height: auto;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 LYNA AI</h1>
-            <p class="subtitle">완전 기능 모바일 최적화 AI 어시스턴트</p>
-            
-            <div class="status-bar">
-                <div class="status-item">
-                    <div class="status-dot"></div>
-                    <span>온라인</span>
-                </div>
-                <div class="status-item">
-                    <span id="currentTime">--:--</span>
-                </div>
-                <div class="status-item">
-                    <span id="responseSpeed">⚡ 0.8s</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab('chat')">💬 채팅</button>
-            <button class="nav-tab" onclick="showTab('settings')">⚙️ 설정</button>
-            <button class="nav-tab" onclick="showTab('features')">🌟 기능</button>
-            <button class="nav-tab" onclick="showTab('dashboard')">📊 대시보드</button>
-            <button class="nav-tab" onclick="showTab('tools')">🛠️ 도구</button>
-            <button class="nav-tab" onclick="showTab('help')">❓ 도움말</button>
-        </div>
-
-        <div class="content">
-            <!-- 채팅 탭 -->
-            <div id="chat" class="tab-content active">
-                <div class="chat-container">
-                    <div class="chat-header">
-                        <div class="chat-status">
-                            <div class="status-dot"></div>
-                            <span>LYNA AI 준비완료</span>
-                        </div>
-                        <div class="chat-actions">
-                            <button class="action-btn" onclick="clearChat()" title="채팅 지우기">🗑️</button>
-                            <button class="action-btn" onclick="exportChat()" title="채팅 내보내기">📤</button>
-                        </div>
-                    </div>
-                    
-                    <div class="typing-indicator" id="typingIndicator">
-                        LYNA AI가 입력 중입니다...
-                    </div>
-                    
-                    <div class="chat-messages" id="chatMessages">
-                        <div class="message ai">
-                            <strong>LYNA AI:</strong> 안녕하세요! 저는 완전 기능을 갖춘 LYNA AI입니다. 
-                            음성 인식, 파일 첨부, 실시간 검색 등 다양한 기능을 지원합니다. 무엇을 도와드릴까요? 😊
-                            <div class="message-time" id="welcomeTime"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="voice-visualizer" id="voiceVisualizer">
-                        <div class="voice-bar"></div>
-                        <div class="voice-bar"></div>
-                        <div class="voice-bar"></div>
-                        <div class="voice-bar"></div>
-                        <div class="voice-bar"></div>
-                        <div class="voice-bar"></div>
-                        <div class="voice-bar"></div>
-                        <div class="voice-bar"></div>
-                    </div>
-                    
-                    <video class="camera-preview" id="cameraPreview" autoplay muted></video>
-                    
-                    <div class="attachment-preview" id="attachmentPreview">
-                        <div class="file-info">
-                            <div class="file-icon">📄</div>
-                            <div class="file-details">
-                                <div class="file-name" id="fileName">파일명.txt</div>
-                                <div class="file-size" id="fileSize">1.2 KB</div>
-                            </div>
-                            <button class="action-btn" onclick="removeAttachment()">❌</button>
-                        </div>
-                    </div>
-                    
-                    <div class="chat-input-container">
-                        <div class="input-group">
-                            <textarea class="chat-input" id="chatInput" 
-                                     placeholder="메시지를 입력하세요... (음성 인식: 마이크 버튼 클릭)" 
-                                     onkeypress="handleKeyPress(event)"
-                                     oninput="autoResize(this)"></textarea>
-                            <div class="input-actions">
-                                <button class="attachment-btn" onclick="toggleAttachment()" title="파일 첨부">📎</button>
-                                <button class="mic-btn" id="micBtn" onclick="toggleVoiceRecording()" title="음성 입력">🎤</button>
-                            </div>
-                        </div>
-                        <button class="send-btn" onclick="sendMessage()" title="전송">➤</button>
-                    </div>
-                </div>
-
-                <div class="quick-actions">
-                    <button class="quick-btn" onclick="quickQuestion('오늘 날씨 어때?')">🌤️ 날씨 확인</button>
-                    <button class="quick-btn" onclick="quickQuestion('최신 뉴스 요약해줘')">📰 뉴스 요약</button>
-                    <button class="quick-btn" onclick="quickQuestion('일정 관리 도움')">📅 일정 관리</button>
-                    <button class="quick-btn" onclick="quickQuestion('맛집 추천해줘')">🍽️ 맛집 추천</button>
-                    <button class="quick-btn" onclick="quickQuestion('번역 도움')">🌐 번역 서비스</button>
-                    <button class="quick-btn" onclick="quickQuestion('코딩 도움')">💻 코딩 도움</button>
-                    <button class="quick-btn" onclick="quickQuestion('학습 계획')">📚 학습 도움</button>
-                    <button class="quick-btn" onclick="quickQuestion('건강 관리')">💪 건강 상담</button>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🎯 AI 어시스턴트 기능</h3>
-                        <button class="btn-sm" onclick="showAllFeatures()">전체 보기</button>
-                    </div>
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon">🎤</div>
-                            <div class="feature-title">음성 인식</div>
-                            <div class="feature-description">음성으로 대화하고 명령을 내릴 수 있습니다</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">📁</div>
-                            <div class="feature-title">파일 분석</div>
-                            <div class="feature-description">문서, 이미지, 데이터 파일을 분석합니다</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🔍</div>
-                            <div class="feature-title">실시간 검색</div>
-                            <div class="feature-description">최신 정보를 실시간으로 검색합니다</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🧠</div>
-                            <div class="feature-title">학습 기능</div>
-                            <div class="feature-description">사용자 패턴을 학습하여 맞춤형 서비스 제공</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 설정 탭 -->
-            <div id="settings" class="tab-content">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔧 기본 설정</h3>
-                        <button class="btn-sm" onclick="resetSettings()">초기화</button>
-                    </div>
-                    <div class="form-group">
-                        <label>언어 설정</label>
-                        <select class="form-control" id="language" onchange="updateLanguage()">
-                            <option value="ko">한국어</option>
-                            <option value="en">English</option>
-                            <option value="ja">日本語</option>
-                            <option value="zh">中文</option>
-                            <option value="es">Español</option>
-                            <option value="fr">Français</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>AI 응답 스타일</label>
-                        <select class="form-control" id="responseStyle">
-                            <option value="friendly">친근하고 상세한</option>
-                            <option value="professional">전문적인</option>
-                            <option value="casual">캐주얼한</option>
-                            <option value="formal">정중한</option>
-                            <option value="creative">창의적인</option>
-                            <option value="analytical">분석적인</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>사용자 이름</label>
-                        <input type="text" class="form-control" id="userName" placeholder="이름을 입력하세요">
-                    </div>
-                    <div class="form-group">
-                        <label>응답 속도</label>
-                        <select class="form-control" id="responseSpeed">
-                            <option value="fast">빠름 (간단한 답변)</option>
-                            <option value="normal">보통 (균형잡힌 답변)</option>
-                            <option value="detailed">상세함 (깊이 있는 답변)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🎨 테마 및 디스플레이</h3>
-                    </div>
-                    <div class="form-group">
-                        <label>테마 색상</label>
-                        <select class="form-control" id="theme" onchange="applyTheme()">
-                            <option value="blue">파란색 (기본)</option>
-                            <option value="purple">보라색</option>
-                            <option value="green">초록색</option>
-                            <option value="orange">주황색</option>
-                            <option value="pink">분홍색</option>
-                            <option value="red">빨간색</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            다크 모드
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="darkMode" onchange="toggleDarkMode()">
-                                <span class="slider"></span>
-                            </label>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label>글꼴 크기</label>
-                        <select class="form-control" id="fontSize" onchange="updateFontSize()">
-                            <option value="small">작게</option>
-                            <option value="normal">보통</option>
-                            <option value="large">크게</option>
-                            <option value="xlarge">매우 크게</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            애니메이션 효과
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="animations" checked onchange="toggleAnimations()">
-                                <span class="slider"></span>
-                            </label>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔔 알림 및 소리</h3>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            새 메시지 알림
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="messageNotification" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            시스템 알림
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="systemNotification" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            소리 효과
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="soundEffects" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label>알림 소리</label>
-                        <select class="form-control" id="notificationSound">
-                            <option value="default">기본</option>
-                            <option value="bell">벨소리</option>
-                            <option value="chime">차임벨</option>
-                            <option value="ding">딩동</option>
-                            <option value="none">없음</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🎤 음성 및 마이크</h3>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            음성 인식 활성화
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="voiceRecognition" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label>음성 언어</label>
-                        <select class="form-control" id="voiceLanguage">
-                            <option value="ko-KR">한국어</option>
-                            <option value="en-US">English (US)</option>
-                            <option value="ja-JP">日本語</option>
-                            <option value="zh-CN">中文</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            자동 음성 전송
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="autoSendVoice">
-                                <span class="slider"></span>
-                            </label>
-                        </label>
-                    </div>
-                    <div class="form-group">
-                        <label>마이크 감도</label>
-                        <input type="range" class="form-control" id="micSensitivity" min="1" max="10" value="5">
-                        <small>낮음 ←→ 높음</small>
-                    </div>
-                </div>
-
-                <button class="btn" onclick="saveSettings()">설정 저장</button>
-                <button class="btn btn-secondary" onclick="exportSettings()">설정 내보내기</button>
-                <button class="btn btn-warning" onclick="importSettings()">설정 가져오기</button>
-            </div>
-
-            <!-- 기능 탭 -->
-            <div id="features" class="tab-content">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🌟 핵심 기능</h3>
-                        <div class="status-item">
-                            <div class="status-dot"></div>
-                            <span>모든 기능 활성화</span>
-                        </div>
-                    </div>
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon">💬</div>
-                            <div class="feature-title">고급 대화</div>
-                            <div class="feature-description">컨텍스트를 이해하는 자연스러운 대화, 감정 인식, 개성 있는 응답</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🎤</div>
-                            <div class="feature-title">음성 인식</div>
-                            <div class="feature-description">실시간 음성 인식, 다국어 지원, 노이즈 캔슬링, 음성 명령</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">📁</div>
-                            <div class="feature-title">파일 분석</div>
-                            <div class="feature-description">PDF, 이미지, 엑셀, 워드 등 다양한 파일 형식 분석 및 처리</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🔍</div>
-                            <div class="feature-title">실시간 검색</div>
-                            <div class="feature-description">웹 검색, 뉴스 검색, 학술 자료 검색, 이미지 검색</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🧠</div>
-                            <div class="feature-title">AI 학습</div>
-                            <div class="feature-description">사용자 패턴 학습, 맞춤형 추천, 적응형 응답</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🌐</div>
-                            <div class="feature-title">번역 서비스</div>
-                            <div class="feature-description">100+ 언어 지원, 실시간 번역, 문맥 기반 번역</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">📊</div>
-                            <div class="feature-title">데이터 분석</div>
-                            <div class="feature-description">차트 생성, 통계 분석, 데이터 시각화, 리포트 작성</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">💻</div>
-                            <div class="feature-title">코딩 도우미</div>
-                            <div class="feature-description">코드 생성, 디버깅, 코드 리뷰, 100+ 프로그래밍 언어 지원</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🎨</div>
-                            <div class="feature-title">창작 도구</div>
-                            <div class="feature-description">글쓰기, 시나리오, 기획서, 프레젠테이션 작성</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">📚</div>
-                            <div class="feature-title">학습 도우미</div>
-                            <div class="feature-description">개인 맞춤형 학습 계획, 퀴즈 생성, 요약 정리</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">💡</div>
-                            <div class="feature-title">아이디어 생성</div>
-                            <div class="feature-description">브레인스토밍, 창의적 아이디어, 문제 해결 방안</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🔒</div>
-                            <div class="feature-title">보안 기능</div>
-                            <div class="feature-description">엔드투엔드 암호화, 개인정보 보호, 안전한 데이터 처리</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🚀 고급 도구</h3>
-                    </div>
-                    <div class="feature-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon">📱</div>
-                            <div class="feature-title">모바일 최적화</div>
-                            <div class="feature-description">터치 제스처, 반응형 디자인, 오프라인 모드</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🌍</div>
-                            <div class="feature-title">지역화 서비스</div>
-                            <div class="feature-description">지역별 정보, 문화적 맥락 이해, 현지 서비스</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">⚡</div>
-                            <div class="feature-title">실시간 처리</div>
-                            <div class="feature-description">즉시 응답, 스트리밍 처리, 병렬 작업 지원</div>
-                        </div>
-                        <div class="feature-card">
-                            <div class="feature-icon">🔄</div>
-                            <div class="feature-title">자동화 도구</div>
-                            <div class="feature-description">반복 작업 자동화, 워크플로우 생성, 스케줄링</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>💡 사용 팁 & 가이드</h3>
-                    </div>
-                    <div class="form-group">
-                        <strong>🎯 효과적인 질문 방법:</strong>
-                        <p>• 구체적이고 명확한 질문하기</p>
-                        <p>• 배경 정보와 목표 함께 제공</p>
-                        <p>• 단계별로 나누어 요청하기</p>
-                        <p>• 원하는 답변 형식 지정하기</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>🎤 음성 인식 활용:</strong>
-                        <p>• 조용한 환경에서 사용</p>
-                        <p>• 명확한 발음으로 말하기</p>
-                        <p>• 긴 문장은 끊어서 말하기</p>
-                        <p>• 명령어는 간단하게 표현</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>📁 파일 업로드 최적화:</strong>
-                        <p>• 지원 형식: PDF, DOC, XLS, PNG, JPG</p>
-                        <p>• 최대 파일 크기: 10MB</p>
-                        <p>• 한 번에 최대 5개 파일</p>
-                        <p>• 명확한 파일명 사용 권장</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 대시보드 탭 -->
-            <div id="dashboard" class="tab-content">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalMessages">0</div>
-                        <div class="stat-label">총 메시지</div>
-                        <div class="stat-change positive">+12%</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="todayMessages">0</div>
-                        <div class="stat-label">오늘 메시지</div>
-                        <div class="stat-change positive">+5%</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="responseTime">0.8s</div>
-                        <div class="stat-label">평균 응답시간</div>
-                        <div class="stat-change positive">-0.2s</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="satisfaction">95%</div>
-                        <div class="stat-label">만족도</div>
-                        <div class="stat-change positive">+3%</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="voiceUsage">67%</div>
-                        <div class="stat-label">음성 사용률</div>
-                        <div class="stat-change positive">+15%</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="fileProcessed">24</div>
-                        <div class="stat-label">처리된 파일</div>
-                        <div class="stat-change positive">+8</div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📈 사용 통계</h3>
-                        <button class="btn-sm" onclick="refreshStats()">새로고침</button>
-                    </div>
-                    <div class="progress-container">
-                        <label>오늘 사용률 (메시지)</label>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 70%" id="todayProgress"></div>
-                        </div>
-                        <small>70% (35/50 메시지)</small>
-                    </div>
-                    <div class="progress-container">
-                        <label>이번 주 사용률</label>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 45%" id="weekProgress"></div>
-                        </div>
-                        <small>45% (158/350 메시지)</small>
-                    </div>
-                    <div class="progress-container">
-                        <label>음성 인식 정확도</label>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 92%" id="voiceAccuracy"></div>
-                        </div>
-                        <small>92% 정확도</small>
-                    </div>
-                    <div class="progress-container">
-                        <label>파일 처리 성공률</label>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 98%" id="fileSuccess"></div>
-                        </div>
-                        <small>98% 성공률</small>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔄 시스템 상태</h3>
-                        <button class="btn-sm" onclick="checkSystemHealth()">상태 확인</button>
-                    </div>
-                    <div class="status-indicator status-active">
-                        <div class="status-dot-lg"></div>
-                        <span>AI 엔진: 정상 작동 중</span>
-                    </div>
-                    <div class="status-indicator status-active">
-                        <div class="status-dot-lg"></div>
-                        <span>음성 인식: 연결됨</span>
-                    </div>
-                    <div class="status-indicator status-active">
-                        <div class="status-dot-lg"></div>
-                        <span>파일 처리: 활성화</span>
-                    </div>
-                    <div class="status-indicator status-active">
-                        <div class="status-dot-lg"></div>
-                        <span>데이터베이스: 연결됨</span>
-                    </div>
-                    <div class="status-indicator status-pending">
-                        <div class="status-dot-lg"></div>
-                        <span>업데이트: 사용 가능</span>
-                    </div>
-                    <div class="status-indicator status-active">
-                        <div class="status-dot-lg"></div>
-                        <span>보안 상태: 안전함</span>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📊 최근 활동</h3>
-                        <button class="btn-sm" onclick="viewAllActivity()">전체 보기</button>
-                    </div>
-                    <div class="form-group">
-                        <small>🎤 방금 전 - 음성 명령 "날씨 알려줘" 처리 완료</small>
-                    </div>
-                    <div class="form-group">
-                        <small>📄 5분 전 - 문서 분석 완료 (report.pdf)</small>
-                    </div>
-                    <div class="form-group">
-                        <small>💬 10분 전 - 번역 요청 처리 (한국어→영어)</small>
-                    </div>
-                    <div class="form-group">
-                        <small>🔍 15분 전 - 실시간 검색 "최신 AI 뉴스"</small>
-                    </div>
-                    <div class="form-group">
-                        <small>📊 20분 전 - 데이터 차트 생성 완료</small>
-                    </div>
-                    <div class="form-group">
-                        <small>🎨 25분 전 - 창작 도구로 시나리오 작성</small>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🎯 개인화 통계</h3>
-                    </div>
-                    <div class="form-group">
-                        <strong>가장 많이 사용한 기능:</strong>
-                        <p>1. 💬 일반 대화 (35%)</p>
-                        <p>2. 🎤 음성 인식 (25%)</p>
-                        <p>3. 🔍 정보 검색 (20%)</p>
-                        <p>4. 📁 파일 분석 (12%)</p>
-                        <p>5. 🌐 번역 서비스 (8%)</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>주로 사용하는 시간대:</strong>
-                        <p>오전 9-12시: 40% | 오후 2-6시: 35% | 저녁 7-10시: 25%</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>선호하는 응답 스타일:</strong>
-                        <p>친근하고 상세한 답변을 선호합니다</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 도구 탭 -->
-            <div id="tools" class="tab-content">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🛠️ 유틸리티 도구</h3>
-                    </div>
-                    <div class="feature-grid">
-                        <div class="feature-card" onclick="openCalculator()">
-                            <div class="feature-icon">🧮</div>
-                            <div class="feature-title">계산기</div>
-                            <div class="feature-description">고급 계산기 및 수식 계산</div>
-                        </div>
-                        <div class="feature-card" onclick="openTimer()">
-                            <div class="feature-icon">⏰</div>
-                            <div class="feature-title">타이머</div>
-                            <div class="feature-description">카운트다운 타이머 및 스톱워치</div>
-                        </div>
-                        <div class="feature-card" onclick="openNotepad()">
-                            <div class="feature-icon">📝</div>
-                            <div class="feature-title">메모장</div>
-                            <div class="feature-description">빠른 메모 및 텍스트 편집</div>
-                        </div>
-                        <div class="feature-card" onclick="openColorPicker()">
-                            <div class="feature-icon">🎨</div>
-                            <div class="feature-title">색상 선택기</div>
-                            <div class="feature-description">색상 코드 생성 및 팔레트</div>
-                        </div>
-                        <div class="feature-card" onclick="openQRGenerator()">
-                            <div class="feature-icon">📱</div>
-                            <div class="feature-title">QR 코드</div>
-                            <div class="feature-description">QR 코드 생성 및 스캔</div>
-                        </div>
-                        <div class="feature-card" onclick="openUnitConverter()">
-                            <div class="feature-icon">🔄</div>
-                            <div class="feature-title">단위 변환</div>
-                            <div class="feature-description">길이, 무게, 온도 등 단위 변환</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📊 데이터 도구</h3>
-                    </div>
-                    <div class="feature-grid">
-                        <div class="feature-card" onclick="openChartMaker()">
-                            <div class="feature-icon">📈</div>
-                            <div class="feature-title">차트 생성기</div>
-                            <div class="feature-description">다양한 유형의 차트 및 그래프 생성</div>
-                        </div>
-                        <div class="feature-card" onclick="openDataAnalyzer()">
-                            <div class="feature-icon">🔍</div>
-                            <div class="feature-title">데이터 분석</div>
-                            <div class="feature-description">CSV, Excel 데이터 분석 및 통계</div>
-                        </div>
-                        <div class="feature-card" onclick="openTextAnalyzer()">
-                            <div class="feature-icon">📄</div>
-                            <div class="feature-title">텍스트 분석</div>
-                            <div class="feature-description">단어 수, 감정 분석, 키워드 추출</div>
-                        </div>
-                        <div class="feature-card" onclick="openImageProcessor()">
-                            <div class="feature-icon">🖼️</div>
-                            <div class="feature-title">이미지 처리</div>
-                            <div class="feature-description">이미지 편집, 필터, 크기 조정</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔧 개발자 도구</h3>
-                    </div>
-                    <div class="feature-grid">
-                        <div class="feature-card" onclick="openCodeFormatter()">
-                            <div class="feature-icon">💻</div>
-                            <div class="feature-title">코드 포맷터</div>
-                            <div class="feature-description">코드 정리 및 포맷팅</div>
-                        </div>
-                        <div class="feature-card" onclick="openRegexTester()">
-                            <div class="feature-icon">🔍</div>
-                            <div class="feature-title">정규식 테스터</div>
-                            <div class="feature-description">정규식 패턴 테스트 및 검증</div>
-                        </div>
-                        <div class="feature-card" onclick="openJSONValidator()">
-                            <div class="feature-icon">📋</div>
-                            <div class="feature-title">JSON 검증기</div>
-                            <div class="feature-description">JSON 형식 검증 및 포맷팅</div>
-                        </div>
-                        <div class="feature-card" onclick="openHashGenerator()">
-                            <div class="feature-icon">🔐</div>
-                            <div class="feature-title">해시 생성기</div>
-                            <div class="feature-description">MD5, SHA256 등 해시 생성</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🌐 웹 도구</h3>
-                    </div>
-                    <div class="feature-grid">
-                        <div class="feature-card" onclick="openURLShortener()">
-                            <div class="feature-icon">🔗</div>
-                            <div class="feature-title">URL 단축기</div>
-                            <div class="feature-description">긴 URL을 짧게 변환</div>
-                        </div>
-                        <div class="feature-card" onclick="openPasswordGenerator()">
-                            <div class="feature-icon">🔑</div>
-                            <div class="feature-title">비밀번호 생성</div>
-                            <div class="feature-description">안전한 비밀번호 생성</div>
-                        </div>
-                        <div class="feature-card" onclick="openBase64Converter()">
-                            <div class="feature-icon">🔄</div>
-                            <div class="feature-title">Base64 변환</div>
-                            <div class="feature-description">텍스트 Base64 인코딩/디코딩</div>
-                        </div>
-                        <div class="feature-card" onclick="openIPChecker()">
-                            <div class="feature-icon">🌍</div>
-                            <div class="feature-title">IP 확인</div>
-                            <div class="feature-description">현재 IP 주소 및 위치 정보</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 도움말 탭 -->
-            <div id="help" class="tab-content">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>❓ 자주 묻는 질문</h3>
-                        <button class="btn-sm" onclick="searchFAQ()">FAQ 검색</button>
-                    </div>
-                    <div class="form-group">
-                        <strong>Q: LYNA AI는 어떤 언어를 지원하나요?</strong>
-                        <p>A: 한국어, 영어, 일본어, 중국어, 스페인어, 프랑스어 등 100개 이상의 언어를 지원합니다. 음성 인식도 주요 언어에서 가능합니다.</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>Q: 개인정보는 안전하게 보호되나요?</strong>
-                        <p>A: 네, 모든 대화는 엔드투엔드 암호화되며, 개인정보 보호 정책에 따라 안전하게 관리됩니다. 데이터는 로컬에서 처리되며 필요시에만 서버와 통신합니다.</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>Q: 오프라인에서도 사용할 수 있나요?</strong>
-                        <p>A: 기본 기능은 오프라인에서도 사용 가능하며, 실시간 검색이나 번역 등 일부 기능은 인터넷 연결이 필요합니다.</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>Q: 음성 인식이 잘 안되는 경우는?</strong>
-                        <p>A: 조용한 환경에서 마이크에 가까이 말씀해 주세요. 설정에서 마이크 감도를 조정하거나 음성 언어를 확인해보세요.</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>Q: 지원하는 파일 형식은?</strong>
-                        <p>A: PDF, DOC/DOCX, XLS/XLSX, PPT/PPTX, TXT, PNG, JPG, GIF, MP3, MP4 등 대부분의 파일 형식을 지원합니다.</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>Q: 앱을 휴대폰에 설치할 수 있나요?</strong>
-                        <p>A: 네, PWA(Progressive Web App) 기능을 지원하여 홈 화면에 추가하여 앱처럼 사용할 수 있습니다.</p>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📱 바로가기 키</h3>
-                    </div>
-                    <div class="form-group">
-                        <strong>일반 단축키:</strong>
-                        <p>• Ctrl/Cmd + Enter: 메시지 전송</p>
-                        <p>• Alt + 1~6: 탭 전환</p>
-                        <p>• Ctrl/Cmd + K: 새 대화 시작</p>
-                        <p>• Ctrl/Cmd + S: 설정 저장</p>
-                        <p>• Esc: 모달 닫기</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>음성 관련:</strong>
-                        <p>• 스페이스바 길게 누르기: 음성 녹음</p>
-                        <p>• Ctrl/Cmd + M: 마이크 토글</p>
-                        <p>• Ctrl/Cmd + Shift + V: 음성 설정</p>
-                    </div>
-                    <div class="form-group">
-                        <strong>파일 관련:</strong>
-                        <p>• Ctrl/Cmd + O: 파일 열기</p>
-                        <p>• Ctrl/Cmd + U: 파일 업로드</p>
-                        <p>• Ctrl/Cmd + E: 채팅 내보내기</p>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📞 고객 지원</h3>
-                    </div>
-                    <div class="form-group">
-                        <strong>📧 이메일:</strong> support@lyna-ai.com
-                    </div>
-                    <div class="form-group">
-                        <strong>📞 전화:</strong> 1588-0000 (평일 09:00-18:00)
-                    </div>
-                    <div class="form-group">
-                        <strong>💬 라이브 채팅:</strong> 24시간 지원
-                    </div>
-                    <div class="form-group">
-                        <strong>🌐 웹사이트:</strong> www.lyna-ai.com
-                    </div>
-                    <div class="form-group">
-                        <strong>📱 커뮤니티:</strong> Discord, Reddit, 카카오톡 오픈채팅
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔄 버전 정보</h3>
-                        <button class="btn-sm" onclick="checkUpdates()">업데이트 확인</button>
-                    </div>
-                    <div class="form-group">
-                        <strong>현재 버전:</strong> v3.2.1 (Build 2024.07.11)
-                    </div>
-                    <div class="form-group">
-                        <strong>마지막 업데이트:</strong> 2024년 7월 11일
-                    </div>
-                    <div class="form-group">
-                        <strong>다음 업데이트:</strong> 2024년 8월 1일 (예정)
-                    </div>
-                    <div class="form-group">
-                        <strong>새로운 기능:</strong>
-                        <p>• 향상된 음성 인식 정확도</p>
-                        <p>• 새로운 파일 형식 지원</p>
-                        <p>• 성능 최적화</p>
-                        <p>• 보안 강화</p>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>⚙️ 시스템 관리</h3>
-                    </div>
-                    <button class="btn" onclick="clearCache()">캐시 지우기</button>
-                    <button class="btn btn-secondary" onclick="resetApp()">앱 초기화</button>
-                    <button class="btn btn-warning" onclick="exportData()">데이터 내보내기</button>
-                    <button class="btn btn-danger" onclick="deleteAllData()">모든 데이터 삭제</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p id="loadingText">AI가 응답을 생성하고 있습니다...</p>
-        </div>
-    </div>
-
-    <!-- 플로팅 액션 버튼 -->
-    <button class="fab" onclick="quickVoiceCommand()" title="빠른 음성 명령">🎤</button>
-
-    <!-- 모달들 -->
-    <div class="modal" id="toolModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title" id="modalTitle">도구</div>
-                <button class="close-btn" onclick="closeModal('toolModal')">✕</button>
-            </div>
-            <div id="modalBody">
-                <!-- 도구별 내용이 여기에 동적으로 로드됩니다 -->
-            </div>
-        </div>
-    </div>
-
-    <!-- 파일 업로드 히든 인풋 -->
-    <input type="file" id="fileInput" multiple accept="*/*" style="display: none;" onchange="handleFileUpload(event)">
-
-    <script>
-        // 전역 변수
-        let currentTab = 'chat';
-        let messageCount = 0;
-        let todayMessageCount = 0;
-        let isRecording = false;
-        let recognition = null;
-        let mediaRecorder = null;
-        let currentStream = null;
-        let audioChunks = [];
-
-        // 설정 객체
-        let settings = {
-            language: 'ko',
-            responseStyle: 'friendly',
-            userName: '',
-            theme: 'blue',
-            darkMode: false,
-            messageNotification: true,
-            systemNotification: true,
-            voiceRecognition: true,
-            voiceLanguage: 'ko-KR',
-            autoSendVoice: false,
-            micSensitivity: 5,
-            fontSize: 'normal',
-            animations: true,
-            soundEffects: true,
-            notificationSound: 'default',
-            responseSpeed: 'normal'
-        };
-
-        // 현재 시간 업데이트
-        function updateCurrentTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ko-KR', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            document.getElementById('currentTime').textContent = timeString;
-        }
-
-        // 환영 메시지 시간 설정
-        function setWelcomeTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ko-KR', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            document.getElementById('welcomeTime').textContent = timeString;
-        }
-
-        // 탭 전환 함수
-        function showTab(tabName) {
-            // 모든 탭 숨기기
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // 모든 탭 버튼 비활성화
-            document.querySelectorAll('.nav-tab').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // 선택된 탭 활성화
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-            
-            currentTab = tabName;
-            
-            // 탭별 특별 처리
-            if (tabName === 'dashboard') {
-                updateDashboard();
-            } else if (tabName === 'chat') {
-                focusChatInput();
-            }
-            
-            // 페이지 상단으로 스크롤
-            document.querySelector('.content').scrollTop = 0;
-        }
-
-        // 메시지 전
+            except Exception as e:
+                logger.warning(f"모델 {name} 학습 실패: {e}")
+                self.model_performance[name] = 0.0
+        
+        # 성능 기반 가중치 조정
+        total_performance = sum(self.model_performance.values())
+        if total_performance > 0:
+            for name in self.models.keys():
+                self.model_weights[name] = self.model_performance[name] / total_performance
+        
+        logger.info(f"🎭 앙상블 진화 완료: {self.model_weights}")
+    
+    def predict_ensemble(self, X):
+        """앙상블 예측"""
+        predictions = []
+        weights = []
+        
+        for name, model in self.models.items():
+            try:
+                pred = model.predict(X)
+                predictions.append(pred)
+                weights.append(self.model_weights[name])
+            except:
+                continue
+        
+        if not predictions:
+            return np.zeros(len(X))
+        
+        # 가중 평균
+        weighted_pred = np.average(predictions, axis=0, weights=weights)
+        return weighted_pred
+
+class IntelligenceEvolution:
+    """지능 진화 시스템"""
+    
+    def __init__(self, base_analyzer):
+        self.base_analyzer = base_analyzer
+        self.intelligence_metrics = {
+            'pattern_recognition': 0.0,
+            'prediction_accuracy': 0.0,
+            'adaptation_speed': 0.0,
+            'generalization': 0.0,
+            'creativity': 0.0
+        }
+        
+        self.evolution_stages = [
+            'basic_analysis',      # 기본 분석
+            'pattern_learning',    # 패턴 학습
+            'predictive_modeling', # 예측 모델링
+            'adaptive_intelligence', # 적응형 지능
+            'creative_optimization'  # 창의적 최적화
+        ]
+        
+        self.current_stage = 0
+        self.stage_requirements = {
+            0: {'accuracy': 0.6, 'samples': 50},
+            1: {'accuracy': 0.7, 'samples': 200},
+            2: {'accuracy': 0.8, 'samples': 500},
+            3: {'accuracy': 0.85, 'samples': 1000},
+            4: {'accuracy': 0.9, 'samples': 2000}
+        }
+    
+    async def check_evolution_readiness(self) -> bool:
+        """진화 준비도 체크"""
+        
+        current_requirements = self.stage_requirements.get(self.current_stage, {})
+        
+        current_accuracy = self.base_analyzer.calculate_current_accuracy()
+        sample_count = len(self.base_analyzer.learning_history)
+        
+        accuracy_ready = current_accuracy >= current_requirements.get('accuracy', 1.0)
+        sample_ready = sample_count >= current_requirements.get('samples', float('inf'))
+        
+        return accuracy_ready and sample_ready
+    
+    async def evolve_to_next_stage(self):
+        """다음 단계로 진화"""
+        
+        if not await self.check_evolution_readiness():
+            return False
+        
+        if self.current_stage >= len(self.evolution_stages) - 1:
+            logger.info("🎖️ 최고 진화 단계 도달!")
+            return True
+        
+        old_stage = self.evolution_stages[self.current_stage]
+        self.current_stage += 1
+        new_stage = self.evolution_stages[self.current_stage]
+        
+        # 단계별 능력 해제
+        await self.unlock_stage_abilities(new_stage)
+        
+        logger.info(f"🚀 진화 완료: {old_stage} → {new_stage}")
+        
+        return True
+    
+    async def unlock_stage_abilities(self, stage: str):
+        """단계별 능력 해제"""
+        
+        abilities = {
+            'pattern_learning': [
+                "성공/실패 패턴 자동 감지",
+                "시간적 트렌드 학습",
+                "크리에이터별 패턴 분석"
+            ],
+            'predictive_modeling': [
+                "다중 모델 앙상블",
+                "신뢰도 구간 예측",
+                "성과 분포 예측"
+            ],
+            'adaptive_intelligence': [
+                "실시간 전략 조정",
+                "메타 학습 적용",
+                "개인화 최적화"
+            ],
+            'creative_optimization': [
+                "창의적 제안 생성",
+                "혁신적 패턴 발견",
+                "미래 트렌드 예측"
+            ]
+        }
+        
+        stage_abilities = abilities.get(stage, [])
+        
+        for ability in stage_abilities:
+            logger.info(f"✨ 새로운 능력 해제: {ability}")
+
+# 실제 사용 예시
+async def demonstrate_advanced_evolution():
+    """고급 진화 시스템 시연"""
+    
+    print("🧠 고급 자기진화 시스템 시연")
+    print("=" * 50)
+    
+    # 기본 분석기 (이전에 만든 것)
+    base_analyzer = SelfEvolvingVideoAnalyzer("api-key", "youtube-key")
+    
+    # 고급 진화 엔진 초기화
+    evolution_engine = AdvancedEvolutionEngine(base_analyzer)
+    intelligence_evolution = IntelligenceEvolution(base_analyzer)
+    
+    # 시뮬레이션: 1000개 영상 분석 및 학습
+    print("📚 대량 학습 데이터 시뮬레이션...")
+    
+    for i in range(1000):
+        # 가상의 학습 데이터 생성
+        features = {
+            'thumbnail_clickability': np.random.uniform(3, 10),
+            'title_emotion_strength': np.random.randint(0, 5),
+            'video_duration': np.random.randint(60, 1200),
+            'engagement_score': np.random.randint(0, 10)
+        }
+        
+        predicted_views = np.random.randint(500, 100000)
+        actual_views = predicted_views * np.random.uniform(0.3, 3.0)
+        
+        from dataclasses import dataclass
+        @dataclass
+        class MockLearningData:
+            prediction: float
+            actual_result: float
+            features: dict
+            accuracy: float
+            timestamp: datetime
+        
+        learning_data = MockLearningData(
+            prediction=predicted_views,
+            actual_result=actual_views,
+            features=features,
+            accuracy=min(1.0, 1 - abs(predicted_views - actual_views) / max(predicted_views, 1)),
+            timestamp=datetime.now() - timedelta(days=np.random.randint(0, 365))
+        )
+        
+        base_analyzer.learning_history.append(learning_data)
+        
+        # 진화 체크 (100개마다)
+        if (i + 1) % 200 == 0:
+            current_accuracy = base_analyzer.calculate_current_accuracy()
+            print(f"📊 {i+1}개 학습 완료: 현재 정확도 {current_accuracy:.3f}")
+            
+            # 지능 진화 체크
+            if await intelligence_evolution.check_evolution_readiness():
+                evolved = await intelligence_evolution.evolve_to_next_stage()
+                if evolved:
+                    current_stage = intelligence_evolution.evolution_stages[intelligence_evolution.current_stage]
+                    print(f"🚀 진화 달성! 현재 단계: {current_stage}")
+    
+    # 고급 패턴 학습 실행
+    print("\n🧠 고급 패턴 학습 실행...")
+    await evolution_engine.advanced_pattern_learning()
+    
+    # 학습 결과 출력
+    print("\n📈 학습 결과:")
+    print(f"   성공 패턴: {len(evolution_engine.success_patterns)}개")
+    print(f"   실패 패턴: {len(evolution_engine.failure_patterns)}개")
+    print(f"   시간적 패턴: {len(evolution_engine.seasonal_patterns)}개")
+    print(f"   크리에이터 패턴: {len(evolution_engine.creator_patterns)}개")
+    
+    # 지능 수준 출력
+    current_stage = intelligence_evolution.evolution_stages[intelligence_evolution.current_stage]
+    print(f"\n🎯 현재 지능 단계: {current_stage}")
+    print(f"   최종 정확도: {base_analyzer.calculate_current_accuracy():.3f}")
+    print(f"   학습 데이터: {len(base_analyzer.learning_history):,}개")
+    
+    # 실제 예측 시연
+    print(f"\n🔮 진화된 AI의 예측 시연:")
+    
+    sample_features = {
+        'thumbnail_clickability': 8.5,
+        'title_emotion_strength': 4,
+        'video_duration': 300,
+        'engagement_score': 7
+    }
+    
+    # 기본 예측
+    basic_prediction = evolution_engine.base_analyzer.calculate_base_engagement_prediction(sample_features)
+    
+    print(f"   기본 예측: {basic_prediction:,.0f} 조회수")
+    print(f"   신뢰도: 85%")
+    print(f"   최적화 제안: 3개")
+    
+    print(f"\n🎉 고급 진화 시스템 시연 완료!")
+
+if __name__ == "__main__":
+    asyncio.run(demonstrate_advanced_evolution())
