@@ -1,115 +1,127 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>완전한 YouTube 자동화 + AI 코치 시스템</title>
-  <style>
-    body {
-      margin: 0; font-family: 'Pretendard', sans-serif; background: #eef4fc; color: #222;
-    }
-    .container {
-      max-width: 460px; margin: 50px auto; background: #fff; border-radius: 32px;
-      box-shadow: 0 8px 48px rgba(90,110,230,0.13); padding: 38px 24px;
-    }
-    h1 { font-size: 2.1rem; margin-bottom: 0.3em; text-align:center;
-      background: linear-gradient(90deg,#ff7166,#ffcd70,#2de181,#6cb8ff);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .desc { font-size: 1.08rem; color:#8bb; margin-bottom:26px; text-align:center;}
-    .btn { padding: 14px 0; width: 100%; font-size: 1.1rem; border-radius: 1.5em;
-      border: none; background: linear-gradient(90deg,#77c0fd,#56f2c2); color:#fff; font-weight:bold; cursor:pointer;
-      margin-bottom:14px; box-shadow:0 3px 12px #d8eefd;
-      transition: background 0.2s;
-    }
-    .btn:last-child {background:#e2e2e2;color:#555;}
-    .field {margin-bottom:18px;}
-    label {font-weight: bold;}
-    input[type=text], textarea {
-      width: 100%; padding: 12px; margin-top:5px; border:1px solid #d3e8f7; border-radius:1em; font-size:1.08em;
-      box-sizing: border-box;
-    }
-    .ai-coach {margin-top: 24px; background:#f7fafd; border-radius:1.2em; padding:20px 18px;}
-    .coach-msg {margin-bottom:0.6em; padding:9px 0;}
-    .mic-btn {background:#fff6c0;color:#c08713;font-weight:bold;border-radius:1em; border:1px solid #e4d08b;padding:8px 18px; cursor:pointer;}
-    @media (max-width: 600px) {
-      .container {margin: 18px 4px;}
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🎬 완전한 YouTube 자동화 시스템</h1>
-    <div class="desc">GPT/Claude 코치 + 음성인식 + TTS + 자동 업로드 – 모든 기능 포함</div>
+// App.jsx (또는 index.js에 바로)
+// 완전 자동 예약 업로드 & 로그 시스템
 
-    <!-- 유튜브 자동화 입력 영역 -->
-    <div class="field">
-      <label>영상 제목</label>
-      <input type="text" id="ytTitle" placeholder="제목 입력">
+import React, { useState } from "react";
+
+const initUploads = [
+  // 샘플 데이터 (실제는 빈 배열로 시작)
+  // { id: 1, title: "AI 예시", author: "리마", time: "2025-07-16 14:10", status: "예약", result: "" },
+];
+
+export default function App() {
+  const [uploads, setUploads] = useState(initUploads);
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [time, setTime] = useState("");
+  const [result, setResult] = useState("");
+
+  // 예약 등록
+  const reserveUpload = (e) => {
+    e.preventDefault();
+    if (!title || !author || !time) return alert("모든 항목을 입력하세요!");
+    setUploads([
+      ...uploads,
+      {
+        id: Date.now(),
+        title,
+        author,
+        time,
+        status: "예약",
+        result: "",
+      },
+    ]);
+    setTitle("");
+    setAuthor("");
+    setTime("");
+  };
+
+  // (테스트용) 예약 업로드 실행 버튼 (실제 서비스에서는 예약 시간 되면 자동 실행!)
+  const runUpload = (uploadId) => {
+    setUploads((us) =>
+      us.map((u) =>
+        u.id === uploadId
+          ? {
+              ...u,
+              status: "완료",
+              result: "성공",
+              endTime: new Date().toLocaleString(),
+            }
+          : u
+      )
+    );
+  };
+
+  return (
+    <div style={{ maxWidth: 480, margin: "40px auto", padding: 24, background: "#f9f9f9", borderRadius: 24 }}>
+      <h2 style={{ color: "#2bc48a", fontWeight: 800 }}>유튜브 예약 업로드 & 자동 기록 시스템</h2>
+      <form onSubmit={reserveUpload} style={{ marginBottom: 32 }}>
+        <input
+          placeholder="영상 제목"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          style={{ marginRight: 12, padding: 8, borderRadius: 8, border: "1px solid #ddd" }}
+        />
+        <input
+          placeholder="업로더 (리마/이름)"
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
+          style={{ marginRight: 12, padding: 8, borderRadius: 8, border: "1px solid #ddd" }}
+        />
+        <input
+          placeholder="예약시간 (2025-07-16 15:00)"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          style={{ marginRight: 12, padding: 8, borderRadius: 8, border: "1px solid #ddd" }}
+        />
+        <button type="submit" style={{ padding: 8, borderRadius: 8, background: "#2bc48a", color: "#fff", border: "none" }}>
+          예약등록
+        </button>
+      </form>
+
+      <h4>예약 내역 및 로그</h4>
+      <table style={{ width: "100%", background: "#fff", borderRadius: 12 }}>
+        <thead>
+          <tr>
+            <th>제목</th>
+            <th>업로더</th>
+            <th>예약시간</th>
+            <th>상태</th>
+            <th>결과</th>
+            <th>실행</th>
+          </tr>
+        </thead>
+        <tbody>
+          {uploads.length === 0 ? (
+            <tr>
+              <td colSpan={6} style={{ textAlign: "center", color: "#aaa" }}>
+                예약 내역이 없습니다.
+              </td>
+            </tr>
+          ) : (
+            uploads.map((u) => (
+              <tr key={u.id}>
+                <td>{u.title}</td>
+                <td>{u.author}</td>
+                <td>{u.time}</td>
+                <td>{u.status}</td>
+                <td>{u.result}</td>
+                <td>
+                  {u.status === "예약" ? (
+                    <button onClick={() => runUpload(u.id)} style={{ padding: 4, borderRadius: 6, background: "#555", color: "#fff" }}>
+                      업로드 실행
+                    </button>
+                  ) : (
+                    <span style={{ color: "#2bc48a", fontWeight: 600 }}>완료</span>
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+      <div style={{ marginTop: 24, color: "#888" }}>
+        <b>※ 실제 연동시에는 예약된 시간에 자동 업로드 + 결과 자동 기록까지 실행됩니다.</b>
+      </div>
     </div>
-    <div class="field">
-      <label>영상 내용 (스크립트/설명)</label>
-      <textarea id="ytDesc" rows="3" placeholder="내용을 입력하거나, 음성으로 말해보세요"></textarea>
-      <button class="mic-btn" onclick="recordVoice()">🎤 음성 입력</button>
-      <button class="btn" onclick="ttsPlay()">TTS로 듣기</button>
-    </div>
-    <div class="field">
-      <label>썸네일 이미지</label>
-      <input type="file" id="thumbnail" accept="image/*">
-    </div>
-    <button class="btn" onclick="uploadYoutube()">YouTube 자동 업로드 (Demo)</button>
-
-    <!-- AI 코치 피드백 -->
-    <div class="ai-coach" id="aiCoachBox">
-      <div class="coach-msg"><b>GPT 코치:</b> 영상 내용/전략을 입력하면 실시간으로 분석해 조언해줍니다.</div>
-      <button class="btn" onclick="coachAdvice()">코치 피드백 받기</button>
-      <div id="coachResult"></div>
-    </div>
-  </div>
-
-  <script>
-    // [음성 입력] - 실제 브라우저 음성인식 연동
-    function recordVoice() {
-      if (!('webkitSpeechRecognition' in window)) {
-        alert("지원되지 않는 브라우저입니다.");
-        return;
-      }
-      const rec = new webkitSpeechRecognition();
-      rec.lang = 'ko-KR';
-      rec.onresult = (e) => {
-        document.getElementById('ytDesc').value = e.results[0][0].transcript;
-      };
-      rec.start();
-    }
-
-    // [TTS 듣기] - 실제 브라우저 TTS
-    function ttsPlay() {
-      const msg = new SpeechSynthesisUtterance(document.getElementById('ytDesc').value);
-      msg.lang = 'ko-KR';
-      window.speechSynthesis.speak(msg);
-    }
-
-    // [유튜브 자동 업로드 Demo] - 실제 API 연동은 Demo 메시지!
-    function uploadYoutube() {
-      alert('YouTube 자동 업로드 Demo – 실제 연동은 서버/API 필요!');
-    }
-
-    // [AI 코치 피드백 Demo] – 실제론 OpenAI API/Claude 연동, 지금은 샘플만!
-    function coachAdvice() {
-      const title = document.getElementById('ytTitle').value;
-      const desc = document.getElementById('ytDesc').value;
-      let advice = '';
-      if(!title && !desc){
-        advice = '제목과 내용을 모두 입력해 주세요!';
-      } else if(title.length < 4) {
-        advice = '제목이 너무 짧습니다. 키워드, 핵심 내용을 포함해 보세요!';
-      } else if(desc.length < 10) {
-        advice = '내용이 너무 짧아요. 구체적인 정보를 더 추가해 보세요!';
-      } else {
-        advice = '매우 좋아요! 트렌드 키워드, 시청자 Q&A, 관련 태그를 더하면 최적화가 됩니다.';
-      }
-      document.getElementById('coachResult').innerText = advice;
-    }
-  </script>
-</body>
-</html>
+  );
+}
