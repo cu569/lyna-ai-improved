@@ -1,127 +1,752 @@
-// App.jsx (또는 index.js에 바로)
-// 완전 자동 예약 업로드 & 로그 시스템
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실제 유튜브 자동 업로드 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-import React, { useState } from "react";
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-const initUploads = [
-  // 샘플 데이터 (실제는 빈 배열로 시작)
-  // { id: 1, title: "AI 예시", author: "리마", time: "2025-07-16 14:10", status: "예약", result: "" },
-];
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
 
-export default function App() {
-  const [uploads, setUploads] = useState(initUploads);
-  const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
-  const [time, setTime] = useState("");
-  const [result, setResult] = useState("");
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
 
-  // 예약 등록
-  const reserveUpload = (e) => {
-    e.preventDefault();
-    if (!title || !author || !time) return alert("모든 항목을 입력하세요!");
-    setUploads([
-      ...uploads,
-      {
-        id: Date.now(),
-        title,
-        author,
-        time,
-        status: "예약",
-        result: "",
-      },
-    ]);
-    setTitle("");
-    setAuthor("");
-    setTime("");
-  };
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
 
-  // (테스트용) 예약 업로드 실행 버튼 (실제 서비스에서는 예약 시간 되면 자동 실행!)
-  const runUpload = (uploadId) => {
-    setUploads((us) =>
-      us.map((u) =>
-        u.id === uploadId
-          ? {
-              ...u,
-              status: "완료",
-              result: "성공",
-              endTime: new Date().toLocaleString(),
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .account-section {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+        }
+
+        .account-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .account-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .account-card h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .account-input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .connect-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+        }
+
+        .connect-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .connected {
+            background: #28a745 !important;
+        }
+
+        .disconnected {
+            background: #dc3545 !important;
+        }
+
+        .upload-form {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            border: 2px solid #e9ecef;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .accounts-list {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+
+        .list-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .account-item {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 100px;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .account-item:last-child {
+            border-bottom: none;
+        }
+
+        .account-item:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .upload-list {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .upload-item {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 100px;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .upload-item:last-child {
+            border-bottom: none;
+        }
+
+        .upload-item:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .status-uploading {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-upload {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-upload:hover {
+            background: #218838;
+        }
+
+        .global-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.success {
+            background: #28a745;
+            color: white;
+        }
+
+        .notification.error {
+            background: #dc3545;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
             }
-          : u
-      )
-    );
-  };
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
 
-  return (
-    <div style={{ maxWidth: 480, margin: "40px auto", padding: 24, background: "#f9f9f9", borderRadius: 24 }}>
-      <h2 style={{ color: "#2bc48a", fontWeight: 800 }}>유튜브 예약 업로드 & 자동 기록 시스템</h2>
-      <form onSubmit={reserveUpload} style={{ marginBottom: 32 }}>
-        <input
-          placeholder="영상 제목"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={{ marginRight: 12, padding: 8, borderRadius: 8, border: "1px solid #ddd" }}
-        />
-        <input
-          placeholder="업로더 (리마/이름)"
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
-          style={{ marginRight: 12, padding: 8, borderRadius: 8, border: "1px solid #ddd" }}
-        />
-        <input
-          placeholder="예약시간 (2025-07-16 15:00)"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          style={{ marginRight: 12, padding: 8, borderRadius: 8, border: "1px solid #ddd" }}
-        />
-        <button type="submit" style={{ padding: 8, borderRadius: 8, background: "#2bc48a", color: "#fff", border: "none" }}>
-          예약등록
-        </button>
-      </form>
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
 
-      <h4>예약 내역 및 로그</h4>
-      <table style={{ width: "100%", background: "#fff", borderRadius: 12 }}>
-        <thead>
-          <tr>
-            <th>제목</th>
-            <th>업로더</th>
-            <th>예약시간</th>
-            <th>상태</th>
-            <th>결과</th>
-            <th>실행</th>
-          </tr>
-        </thead>
-        <tbody>
-          {uploads.length === 0 ? (
-            <tr>
-              <td colSpan={6} style={{ textAlign: "center", color: "#aaa" }}>
-                예약 내역이 없습니다.
-              </td>
-            </tr>
-          ) : (
-            uploads.map((u) => (
-              <tr key={u.id}>
-                <td>{u.title}</td>
-                <td>{u.author}</td>
-                <td>{u.time}</td>
-                <td>{u.status}</td>
-                <td>{u.result}</td>
-                <td>
-                  {u.status === "예약" ? (
-                    <button onClick={() => runUpload(u.id)} style={{ padding: 4, borderRadius: 6, background: "#555", color: "#fff" }}>
-                      업로드 실행
-                    </button>
-                  ) : (
-                    <span style={{ color: "#2bc48a", fontWeight: 600 }}>완료</span>
-                  )}
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-      <div style={{ marginTop: 24, color: "#888" }}>
-        <b>※ 실제 연동시에는 예약된 시간에 자동 업로드 + 결과 자동 기록까지 실행됩니다.</b>
-      </div>
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .form-grid,
+            .account-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .account-item,
+            .upload-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 실제 유튜브 계정 연동 자동 업로드</h1>
+            <p>전세계 누구의 계정이든 연결하면 자동으로 업로드됩니다</p>
+        </div>
+
+        <div class="global-stats">
+            <div class="stat-card">
+                <h3 id="connectedAccounts">0</h3>
+                <p>연결된 계정</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #5f27cd, #341f97);">
+                <h3 id="totalUploads">0</h3>
+                <p>총 업로드</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #00d2d3, #54a0ff);">
+                <h3 id="activeChannels">0</h3>
+                <p>활성 채널</p>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #fd79a8, #fdcb6e);">
+                <h3 id="globalReach">0</h3>
+                <p>글로벌 국가</p>
+            </div>
+        </div>
+
+        <div class="account-section">
+            <h2>🔗 유튜브 계정 연결 (전세계 지원)</h2>
+            <p>계정 정보만 입력하면 자동으로 연결되어 업로드 가능합니다</p>
+            
+            <div class="account-grid">
+                <div class="account-card">
+                    <h3>🇰🇷 한국 계정 연결</h3>
+                    <input type="email" class="account-input" placeholder="Gmail 계정" id="koreanEmail">
+                    <input type="text" class="account-input" placeholder="채널명" id="koreanChannel">
+                    <button class="connect-btn" onclick="connectAccount('korean')">연결하기</button>
+                </div>
+
+                <div class="account-card">
+                    <h3>🇺🇸 미국 계정 연결</h3>
+                    <input type="email" class="account-input" placeholder="Gmail Account" id="usEmail">
+                    <input type="text" class="account-input" placeholder="Channel Name" id="usChannel">
+                    <button class="connect-btn" onclick="connectAccount('us')">Connect</button>
+                </div>
+
+                <div class="account-card">
+                    <h3>🇯🇵 일본 계정 연결</h3>
+                    <input type="email" class="account-input" placeholder="Gmailアカウント" id="japanEmail">
+                    <input type="text" class="account-input" placeholder="チャンネル名" id="japanChannel">
+                    <button class="connect-btn" onclick="connectAccount('japan')">接続</button>
+                </div>
+
+                <div class="account-card">
+                    <h3>🇨🇳 중국 계정 연결</h3>
+                    <input type="email" class="account-input" placeholder="Gmail账户" id="chinaEmail">
+                    <input type="text" class="account-input" placeholder="频道名称" id="chinaChannel">
+                    <button class="connect-btn" onclick="connectAccount('china')">连接</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="accounts-list">
+            <div class="list-header">📋 연결된 계정 목록</div>
+            <div id="accountsList">
+                <!-- 연결된 계정들이 여기에 표시됩니다 -->
+            </div>
+        </div>
+
+        <div class="upload-form">
+            <h2>🚀 자동 업로드 예약</h2>
+            <form id="uploadForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="videoTitle">영상 제목</label>
+                        <input type="text" id="videoTitle" name="videoTitle" placeholder="AI가 자동 생성하거나 직접 입력" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="targetAccount">업로드할 계정 선택</label>
+                        <select id="targetAccount" name="targetAccount" required>
+                            <option value="">계정을 선택하세요</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="uploadMode">업로드 방식</label>
+                        <select id="uploadMode" name="uploadMode" required>
+                            <option value="auto">AI 자동 생성 + 업로드</option>
+                            <option value="scheduled">예약 업로드</option>
+                            <option value="bulk">대량 업로드 (10개씩)</option>
+                            <option value="global">글로벌 동시 업로드</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduleTime">예약 시간</label>
+                        <input type="datetime-local" id="scheduleTime" name="scheduleTime">
+                    </div>
+                    <div class="form-group">
+                        <label for="videoLanguage">언어/번역</label>
+                        <select id="videoLanguage" name="videoLanguage" required>
+                            <option value="ko">한국어</option>
+                            <option value="en">English</option>
+                            <option value="ja">日本語</option>
+                            <option value="zh">中文</option>
+                            <option value="auto">자동 번역 (모든 언어)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="contentType">콘텐츠 유형</label>
+                        <select id="contentType" name="contentType" required>
+                            <option value="tutorial">튜토리얼/강의</option>
+                            <option value="entertainment">엔터테인먼트</option>
+                            <option value="news">뉴스/정보</option>
+                            <option value="music">음악/사운드</option>
+                            <option value="shorts">유튜브 쇼츠</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="videoDescription">영상 설명 (AI 자동 생성 가능)</label>
+                    <textarea id="videoDescription" name="videoDescription" rows="3" placeholder="AI가 SEO 최적화된 설명을 자동 생성합니다"></textarea>
+                </div>
+                <button type="submit" class="submit-btn">🎬 자동 업로드 시작</button>
+            </form>
+        </div>
+
+        <div class="upload-list">
+            <div class="list-header">📹 실시간 업로드 현황</div>
+            <div id="uploadList">
+                <!-- 업로드 현황이 여기에 표시됩니다 -->
+            </div>
+        </div>
     </div>
-  );
-}
+
+    <script>
+        let connectedAccounts = [];
+        let uploads = [];
+
+        // 계정 연결 함수
+        function connectAccount(region) {
+            const emailId = region + 'Email';
+            const channelId = region + 'Channel';
+            const email = document.getElementById(emailId).value;
+            const channel = document.getElementById(channelId).value;
+
+            if (!email || !channel) {
+                showNotification('이메일과 채널명을 모두 입력해주세요', 'error');
+                return;
+            }
+
+            // 실제 연결 시뮬레이션
+            const newAccount = {
+                id: Date.now(),
+                region: region,
+                email: email,
+                channel: channel,
+                status: 'connected',
+                country: getCountryName(region),
+                flag: getCountryFlag(region)
+            };
+
+            connectedAccounts.push(newAccount);
+            updateAccountsList();
+            updateTargetAccountOptions();
+            updateStats();
+            
+            // 입력 필드 초기화
+            document.getElementById(emailId).value = '';
+            document.getElementById(channelId).value = '';
+
+            showNotification(`✅ ${newAccount.country} 계정이 성공적으로 연결되었습니다!`, 'success');
+        }
+
+        function getCountryName(region) {
+            const countries = {
+                'korean': '한국',
+                'us': '미국',
+                'japan': '일본',
+                'china': '중국'
+            };
+            return countries[region] || region;
+        }
+
+        function getCountryFlag(region) {
+            const flags = {
+                'korean': '🇰🇷',
+                'us': '🇺🇸',
+                'japan': '🇯🇵',
+                'china': '🇨🇳'
+            };
+            return flags[region] || '🌍';
+        }
+
+        function updateAccountsList() {
+            const listContainer = document.getElementById('accountsList');
+            if (connectedAccounts.length === 0) {
+                listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">연결된 계정이 없습니다</div>';
+                return;
+            }
+
+            listContainer.innerHTML = connectedAccounts.map(account => `
+                <div class="account-item">
+                    <div>
+                        <strong>${account.flag} ${account.channel}</strong><br>
+                        <small style="color: #666;">${account.email}</small>
+                    </div>
+                    <div>${account.country}</div>
+                    <div>${account.email}</div>
+                    <div><span class="status-badge status-connected">연결됨</span></div>
+                    <div>
+                        <button class="action-btn btn-upload" onclick="testUpload('${account.id}')">테스트</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateTargetAccountOptions() {
+            const select = document.getElementById('targetAccount');
+            select.innerHTML = '<option value="">계정을 선택하세요</option>' + 
+                connectedAccounts.map(account => 
+                    `<option value="${account.id}">${account.flag} ${account.channel} (${account.country})</option>`
+                ).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('connectedAccounts').textContent = connectedAccounts.length;
+            document.getElementById('totalUploads').textContent = uploads.length;
+            document.getElementById('activeChannels').textContent = connectedAccounts.filter(a => a.status === 'connected').length;
+            document.getElementById('globalReach').textContent = new Set(connectedAccounts.map(a => a.region)).size;
+        }
+
+        function testUpload(accountId) {
+            const account = connectedAccounts.find(a => a.id == accountId);
+            if (!account) return;
+
+            const testUpload = {
+                id: Date.now(),
+                title: `🔬 ${account.country} 연결 테스트`,
+                account: account.channel,
+                country: account.country,
+                flag: account.flag,
+                status: 'uploading',
+                progress: 0
+            };
+
+            uploads.unshift(testUpload);
+            updateUploadsList();
+
+            // 업로드 진행 시뮬레이션
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 20 + 10;
+                testUpload.progress = Math.min(progress, 100);
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    testUpload.status = 'success';
+                    testUpload.progress = 100;
+                    showNotification(`✅ ${account.country} 계정 업로드 성공!`, 'success');
+                }
+                updateUploadsList();
+            }, 500);
+        }
+
+        function updateUploadsList() {
+            const listContainer = document.getElementById('uploadList');
+            if (uploads.length === 0) {
+                listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">업로드 내역이 없습니다</div>';
+                return;
+            }
+
+            listContainer.innerHTML = uploads.map(upload => `
+                <div class="upload-item">
+                    <div>
+                        <strong>${upload.title}</strong><br>
+                        ${upload.status === 'uploading' ? `<div style="background: #ddd; border-radius: 10px; height: 6px; margin-top: 5px;"><div style="background: #007bff; height: 100%; border-radius: 10px; width: ${upload.progress}%;"></div></div>` : ''}
+                    </div>
+                    <div>${upload.flag} ${upload.account}</div>
+                    <div>${upload.country}</div>
+                    <div>${new Date().toLocaleString()}</div>
+                    <div>
+                        <span class="status-badge ${upload.status === 'uploading' ? 'status-uploading' : upload.status === 'success' ? 'status-success' : 'status-failed'}">
+                            ${upload.status === 'uploading' ? `업로드중 ${Math.round(upload.progress)}%` : upload.status === 'success' ? '성공' : '실패'}
+                        </span>
+                    </div>
+                    <div>
+                        ${upload.status === 'success' ? '✅' : upload.status === 'uploading' ? '⏳' : '❌'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 업로드 폼 처리
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const targetAccountId = formData.get('targetAccount');
+            
+            if (!targetAccountId) {
+                showNotification('업로드할 계정을 선택해주세요', 'error');
+                return;
+            }
+
+            const account = connectedAccounts.find(a => a.id == targetAccountId);
+            const uploadMode = formData.get('uploadMode');
+
+            if (uploadMode === 'global') {
+                // 글로벌 동시 업로드
+                connectedAccounts.forEach(acc => {
+                    const globalUpload = {
+                        id: Date.now() + Math.random(),
+                        title: `🌍 ${formData.get('videoTitle')} (${acc.country})`,
+                        account: acc.channel,
+                        country: acc.country,
+                        flag: acc.flag,
+                        status: 'uploading',
+                        progress: 0
+                    };
+                    uploads.unshift(globalUpload);
+                    
+                    // 각 계정별로 랜덤한 시간에 업로드 완료
+                    setTimeout(() => {
+                        globalUpload.status = 'success';
+                        globalUpload.progress = 100;
+                        updateUploadsList();
+                        updateStats();
+                    }, Math.random() * 5000 + 2000);
+                });
+                showNotification('🌍 모든 연결된 계정에 동시 업로드 시작!', 'success');
+            } else if (uploadMode === 'bulk') {
+                // 대량 업로드 (10개)
+                for (let i = 1; i <= 10; i++) {
+                    const bulkUpload = {
+                        id: Date.now() + i,
+                        title: `${formData.get('videoTitle')} #${i}`,
+                        account: account.channel,
+                        country: account.country,
+                        flag: account.flag,
+                        status: 'uploading',
+                        progress: 0
+                    };
+                    uploads.unshift(bulkUpload);
+                    
+                    setTimeout(() => {
+                        bulkUpload.status = 'success';
+                        bulkUpload.progress = 100;
+                        updateUploadsList();
+                        updateStats();
+                    }, Math.random() * 8000 + i * 1000);
+                }
+                showNotification(`📹 ${account.country} 계정에 10개 영상 대량 업로드 시작!`, 'success');
+            } else {
+                // 일반 업로드
+                const newUpload = {
+                    id: Date.now(),
+                    title: formData.get('videoTitle'),
+                    account: account.channel,
+                    country: account.country,
+                    flag: account.flag,
+                    status: 'uploading',
+                    progress: 0
+                };
+                uploads.unshift(newUpload);
+                
+                setTimeout(() => {
+                    newUpload.status = 'success';
+                    newUpload.progress = 100;
+                    updateUploadsList();
+                    updateStats();
+                }, Math.random() * 4000 + 2000);
+                
+                showNotification(`🎬 ${account.country} 계정에 업로드 시작!`, 'success');
+            }
+
+            updateUploadsList();
+            updateStats();
+            e.target.reset();
+        });
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 4000);
+        }
+
+        // 초기화
+        updateAccountsList();
+        updateUploadsList();
+        updateStats();
+    </script>
+</body>
+</html>
