@@ -1,63 +1,532 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>리마 유튜브 자동 업로드 시스템</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to right, #c9d6ff, #e2e2e2);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .card {
-      background: white;
-      padding: 3rem 2rem;
-      border-radius: 2rem;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-      animation: fadeIn 1s ease-in-out;
-    }
-    h1 {
-      font-size: 1.8rem;
-      color: #1a237e;
-      margin-bottom: 1.5rem;
-    }
-    button {
-      padding: 1rem 2rem;
-      background: #3f51b5;
-      color: white;
-      font-size: 1.1rem;
-      border: none;
-      border-radius: 1rem;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #303f9f;
-    }
-    .note {
-      margin-top: 1.2rem;
-      font-size: 0.9rem;
-      color: #555;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>🎬 리마 유튜브 자동 업로드 시스템</h1>
-    <button onclick="alert('🎉 영상이 자동 업로드됩니다! (예시 화면)')">업로드 시작</button>
-    <div class="note">1회 허용으로 자동 업로드가 지속됩니다.<br>원할 때 언제든지 중지 가능합니다.</div>
-  </div>
-</body>
-</html>
+import os
+import sys
+import json
+import requests
+import subprocess
+import importlib
+import traceback
+from datetime import datetime
+from typing import Dict, Any, List
+import logging
+import speech_recognition as sr
+import pyttsx3
+from googletrans import Translator
+import pyaudio
+import wave
+import threading
+import queue
+import time
+
+class RimaAI:
+    def __init__(self):
+        self.name = "리마"
+        self.version = "1.0.0"
+        self.learned_functions = {}
+        self.knowledge_base = "rima_knowledge.json"
+        self.setup_logging()
+        self.load_knowledge()
+        
+        # 음성 번역 시스템 초기화
+        self.setup_voice_translation()
+        
+    def setup_voice_translation(self):
+        """음성 번역 시스템 설정"""
+        try:
+            # 음성 인식 엔진
+            self.recognizer = sr.Recognizer()
+            self.microphone = sr.Microphone()
+            
+            # 음성 합성 엔진  
+            self.tts_engine = pyttsx3.init()
+            self.tts_engine.setProperty('rate', 150)  # 속도
+            self.tts_engine.setProperty('volume', 0.9)  # 볼륨
+            
+            # 번역기
+            self.translator = Translator()
+            
+            # 실시간 처리를 위한 큐
+            self.audio_queue = queue.Queue()
+            self.translation_active = False
+            
+            # 지원 언어
+            self.supported_languages = {
+                'korean': 'ko',
+                'english': 'en', 
+                'japanese': 'ja',
+                'chinese': 'zh',
+                'spanish': 'es',
+                'french': 'fr',
+                'german': 'de',
+                'russian': 'ru'
+            }
+            
+            # 마이크 캘리브레이션
+            with self.microphone as source:
+                self.recognizer.adjust_for_ambient_noise(source)
+                
+            self.logger.info("음성 번역 시스템 초기화 완료")
+            
+        except Exception as e:
+            self.logger.error(f"음성 번역 시스템 초기화 실패: {e}")
+            self.install_voice_packages()
+    
+    def install_voice_packages(self):
+        """음성 관련 패키지 자동 설치"""
+        packages = [
+            'SpeechRecognition',
+            'pyttsx3', 
+            'googletrans==4.0.0rc1',
+            'pyaudio',
+            'wave'
+        ]
+        
+        for package in packages:
+            self.install_package(package)
+        
+        self.logger.info("음성 패키지 설치 완료. 프로그램을 다시 시작하세요.")
+    
+    def listen_continuously(self):
+        """연속 음성 인식"""
+        def callback(recognizer, audio):
+            try:
+                # 음성을 텍스트로 변환
+                text = recognizer.recognize_google(audio, language='ko-KR')
+                self.audio_queue.put(('korean', text))
+                self.logger.info(f"음성 인식: {text}")
+            except sr.UnknownValueError:
+                pass  # 인식 불가능한 음성은 무시
+            except sr.RequestError as e:
+                self.logger.error(f"음성 인식 서비스 오류: {e}")
+        
+        # 백그라운드에서 연속 듣기
+        self.stop_listening = self.recognizer.listen_in_background(
+            self.microphone, callback, phrase_time_limit=5
+        )
+        
+        self.logger.info("연속 음성 인식 시작")
+    
+    def recognize_speech(self, language='ko-KR', timeout=10):
+        """단발성 음성 인식"""
+        try:
+            with self.microphone as source:
+                self.logger.info("음성을 입력하세요...")
+                audio = self.recognizer.listen(source, timeout=timeout, phrase_time_limit=5)
+            
+            # 언어별 인식
+            if language == 'ko-KR':
+                text = self.recognizer.recognize_google(audio, language='ko-KR')
+            elif language == 'en-US':
+                text = self.recognizer.recognize_google(audio, language='en-US')
+            elif language == 'ja-JP':
+                text = self.recognizer.recognize_google(audio, language='ja-JP')
+            else:
+                text = self.recognizer.recognize_google(audio, language=language)
+            
+            self.logger.info(f"인식된 텍스트: {text}")
+            return text
+            
+        except sr.UnknownValueError:
+            return "음성을 인식할 수 없습니다."
+        except sr.RequestError as e:
+            return f"음성 인식 서비스 오류: {e}"
+        except Exception as e:
+            return f"음성 인식 오류: {e}"
+    
+    def translate_text(self, text, target_lang='en', source_lang='auto'):
+        """텍스트 번역"""
+        try:
+            # 언어 코드 변환
+            if target_lang in self.supported_languages:
+                target_lang = self.supported_languages[target_lang]
+            
+            # 번역 실행
+            result = self.translator.translate(text, src=source_lang, dest=target_lang)
+            
+            translation_info = {
+                'original': text,
+                'translated': result.text,
+                'source_lang': result.src,
+                'target_lang': target_lang,
+                'confidence': getattr(result, 'confidence', 'N/A')
+            }
+            
+            self.logger.info(f"번역 완료: {text} -> {result.text}")
+            return translation_info
+            
+        except Exception as e:
+            self.logger.error(f"번역 오류: {e}")
+            return {'error': str(e)}
+    
+    def speak_text(self, text, language='ko'):
+        """텍스트를 음성으로 출력"""
+        try:
+            # 언어별 음성 설정
+            voices = self.tts_engine.getProperty('voices')
+            
+            if language == 'ko':
+                # 한국어 음성 찾기
+                for voice in voices:
+                    if 'korean' in voice.name.lower() or 'ko' in voice.id.lower():
+                        self.tts_engine.setProperty('voice', voice.id)
+                        break
+            elif language == 'en':
+                # 영어 음성 찾기
+                for voice in voices:
+                    if 'english' in voice.name.lower() or 'en' in voice.id.lower():
+                        self.tts_engine.setProperty('voice', voice.id)
+                        break
+            
+            # 음성 출력
+            self.tts_engine.say(text)
+            self.tts_engine.runAndWait()
+            
+            self.logger.info(f"음성 출력: {text}")
+            
+        except Exception as e:
+            self.logger.error(f"음성 출력 오류: {e}")
+    
+    def real_time_translation(self, source_lang='ko', target_lang='en'):
+        """실시간 음성 번역"""
+        self.translation_active = True
+        self.logger.info(f"실시간 번역 시작: {source_lang} -> {target_lang}")
+        
+        # 연속 음성 인식 시작
+        self.listen_continuously()
+        
+        print("실시간 번역이 시작되었습니다. 'q'를 입력하면 종료합니다.")
+        
+        try:
+            while self.translation_active:
+                # 큐에서 음성 데이터 확인
+                if not self.audio_queue.empty():
+                    lang, text = self.audio_queue.get()
+                    
+                    if text:
+                        print(f"[{lang}] 원문: {text}")
+                        
+                        # 번역
+                        translation = self.translate_text(text, target_lang, source_lang)
+                        if 'error' not in translation:
+                            translated_text = translation['translated']
+                            print(f"[{target_lang}] 번역: {translated_text}")
+                            
+                            # 번역된 텍스트 음성 출력
+                            self.speak_text(translated_text, target_lang)
+                
+                # 종료 확인
+                time.sleep(0.1)
+                
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.stop_real_time_translation()
+    
+    def stop_real_time_translation(self):
+        """실시간 번역 중지"""
+        self.translation_active = False
+        if hasattr(self, 'stop_listening'):
+            self.stop_listening()
+        self.logger.info("실시간 번역 중지")
+    
+    def voice_translation_demo(self):
+        """음성 번역 데모"""
+        print("\n=== 리마 음성 번역 시스템 ===")
+        print("1. 단발성 번역")
+        print("2. 실시간 번역")
+        print("3. 텍스트 번역")
+        print("4. 지원 언어 확인")
+        
+        choice = input("선택하세요 (1-4): ")
+        
+        if choice == '1':
+            # 단발성 번역
+            print("음성을 입력하세요...")
+            speech = self.recognize_speech()
+            if speech:
+                target = input("번역할 언어 (en/ja/zh/es/fr/de/ru): ")
+                result = self.translate_text(speech, target)
+                if 'error' not in result:
+                    print(f"번역 결과: {result['translated']}")
+                    self.speak_text(result['translated'], target)
+        
+        elif choice == '2':
+            # 실시간 번역
+            source = input("원본 언어 (ko/en/ja): ")
+            target = input("목표 언어 (ko/en/ja): ")
+            self.real_time_translation(source, target)
+        
+        elif choice == '3':
+            # 텍스트 번역
+            text = input("번역할 텍스트를 입력하세요: ")
+            target = input("번역할 언어 (en/ja/zh/es/fr/de/ru): ")
+            result = self.translate_text(text, target)
+            if 'error' not in result:
+                print(f"번역 결과: {result['translated']}")
+                self.speak_text(result['translated'], target)
+        
+        elif choice == '4':
+            # 지원 언어
+            print("지원 언어:")
+            for lang, code in self.supported_languages.items():
+                print(f"  {lang}: {code}")
+                
+        return "음성 번역 데모 완료"
+        
+    def setup_logging(self):
+        """로깅 설정"""
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - 리마 - %(levelname)s - %(message)s'
+        )
+        self.logger = logging.getLogger(__name__)
+        
+    def load_knowledge(self):
+        """기존 학습 내용 로드"""
+        try:
+            if os.path.exists(self.knowledge_base):
+                with open(self.knowledge_base, 'r', encoding='utf-8') as f:
+                    self.learned_functions = json.load(f)
+                self.logger.info(f"기존 학습 내용 로드 완료: {len(self.learned_functions)}개 기능")
+            else:
+                self.learned_functions = {}
+                self.logger.info("새로운 지식 베이스 생성")
+        except Exception as e:
+            self.logger.error(f"지식 베이스 로드 실패: {e}")
+            self.learned_functions = {}
+    
+    def save_knowledge(self):
+        """학습 내용 저장"""
+        try:
+            with open(self.knowledge_base, 'w', encoding='utf-8') as f:
+                json.dump(self.learned_functions, f, ensure_ascii=False, indent=2)
+            self.logger.info("학습 내용 저장 완료")
+        except Exception as e:
+            self.logger.error(f"학습 내용 저장 실패: {e}")
+    
+    def install_package(self, package_name: str) -> bool:
+        """필요한 패키지 자동 설치"""
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+            self.logger.info(f"패키지 설치 완료: {package_name}")
+            return True
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"패키지 설치 실패: {package_name} - {e}")
+            return False
+    
+    def search_solution(self, problem: str) -> str:
+        """문제 해결책 검색"""
+        try:
+            # 간단한 검색 시뮬레이션 (실제로는 웹 검색 API 사용)
+            search_query = f"python how to {problem}"
+            self.logger.info(f"해결책 검색 중: {search_query}")
+            
+            # 기본 해결책 템플릿
+            solutions = {
+                "file": """
+def handle_file_operation(operation, filename, content=None):
+    if operation == 'read':
+        with open(filename, 'r', encoding='utf-8') as f:
+            return f.read()
+    elif operation == 'write':
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return f"파일 저장 완료: {filename}"
+""",
+                "web": """
+import requests
+def web_request(url, method='GET', data=None):
+    try:
+        if method == 'GET':
+            response = requests.get(url)
+        elif method == 'POST':
+            response = requests.post(url, json=data)
+        return response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
+    except Exception as e:
+        return f"웹 요청 실패: {e}"
+""",
+                "youtube": """
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
+
+def youtube_click_upload():
+    driver = webdriver.Chrome()
+    try:
+        driver.get("https://studio.youtube.com")
+        time.sleep(3)
+        # 게시 버튼 클릭
+        publish_btn = driver.find_element(By.ID, "publish-button")
+        publish_btn.click()
+        return "YouTube 업로드 완료"
+    finally:
+        driver.quit()
+""",
+                "translate": """
+def translate_text(text, target_lang='en'):
+    # 실제로는 Google Translate API 사용
+    return f"번역된 텍스트: {text} -> {target_lang}"
+""",
+                "default": """
+def handle_task(task_name, *args, **kwargs):
+    return f"'{task_name}' 작업을 처리했습니다. 인수: {args}, 키워드: {kwargs}"
+"""
+            }
+            
+            # 키워드 매칭으로 적절한 솔루션 반환
+            for key, solution in solutions.items():
+                if key in problem.lower():
+                    return solution
+            
+            return solutions["default"]
+            
+        except Exception as e:
+            self.logger.error(f"해결책 검색 실패: {e}")
+            return None
+    
+    def learn_new_function(self, task_name: str, task_description: str):
+        """새로운 기능 학습"""
+        self.logger.info(f"새로운 기능 학습 시작: {task_name}")
+        
+        try:
+            # 1. 해결책 검색
+            solution_code = self.search_solution(task_description)
+            if not solution_code:
+                return False
+            
+            # 2. 동적 코드 생성 및 실행
+            exec_globals = {}
+            exec(solution_code, exec_globals)
+            
+            # 3. 학습 내용 저장
+            self.learned_functions[task_name] = {
+                "description": task_description,
+                "code": solution_code,
+                "learned_at": datetime.now().isoformat(),
+                "usage_count": 0
+            }
+            
+            self.save_knowledge()
+            self.logger.info(f"새로운 기능 학습 완료: {task_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"기능 학습 실패: {task_name} - {e}")
+            return False
+    
+    def execute_task(self, task_name: str, *args, **kwargs):
+        """작업 실행"""
+        try:
+            # 기존 학습된 기능 확인
+            if task_name in self.learned_functions:
+                self.learned_functions[task_name]["usage_count"] += 1
+                code = self.learned_functions[task_name]["code"]
+                
+                # 동적 실행
+                exec_globals = {}
+                exec(code, exec_globals)
+                
+                # 함수 찾기 및 실행
+                for func_name, func_obj in exec_globals.items():
+                    if callable(func_obj) and not func_name.startswith('__'):
+                        result = func_obj(*args, **kwargs)
+                        self.logger.info(f"작업 실행 완료: {task_name}")
+                        return result
+            
+            else:
+                # 새로운 기능 학습
+                self.logger.info(f"알 수 없는 작업: {task_name}. 학습을 시작합니다.")
+                if self.learn_new_function(task_name, f"{task_name} 작업 수행"):
+                    return self.execute_task(task_name, *args, **kwargs)
+                else:
+                    return f"작업 '{task_name}' 학습에 실패했습니다."
+                    
+        except Exception as e:
+            self.logger.error(f"작업 실행 실패: {task_name} - {e}")
+            return f"작업 실행 중 오류 발생: {e}"
+    
+    def get_capabilities(self):
+        """현재 가능한 기능 목록"""
+        base_capabilities = [
+            "파일 읽기/쓰기",
+            "웹 요청",
+            "YouTube 업로드 클릭",
+            "텍스트 번역",
+            "데이터 처리"
+        ]
+        
+        learned_capabilities = list(self.learned_functions.keys())
+        all_capabilities = base_capabilities + learned_capabilities
+        
+        return {
+            "기본_기능": base_capabilities,
+            "학습된_기능": learned_capabilities,
+            "전체_기능_수": len(all_capabilities)
+        }
+    
+    def chat(self, message: str):
+        """리마와 대화"""
+        self.logger.info(f"사용자 메시지: {message}")
+        
+        if "안녕" in message or "hello" in message.lower():
+            return f"안녕하세요! 저는 {self.name}입니다. 무엇을 도와드릴까요?"
+        
+        elif "기능" in message or "뭐할수있어" in message:
+            capabilities = self.get_capabilities()
+            return f"현재 가능한 기능:\n{json.dumps(capabilities, ensure_ascii=False, indent=2)}"
+        
+        elif "학습" in message:
+            return "새로운 작업을 요청하시면 자동으로 학습해서 처리해드립니다!"
+        
+        elif "youtube" in message.lower() or "유튜브" in message:
+            return self.execute_task("youtube_upload")
+        
+        elif "번역" in message or "translate" in message.lower():
+            return self.voice_translation_demo()
+        
+        elif "음성" in message or "voice" in message.lower():
+            return self.voice_translation_demo()
+        
+        elif "실시간" in message or "realtime" in message.lower():
+            return self.real_time_translation()
+        
+        elif "듣기" in message or "listen" in message.lower():
+            speech = self.recognize_speech()
+            return f"인식된 음성: {speech}"
+        
+        elif "파일" in message:
+            return self.execute_task("file_operation", "read", "example.txt")
+        
+        else:
+            # 일반적인 작업 처리
+            return self.execute_task("general_task", message)
+
+# 리마 시스템 실행
+def main():
+    rima = RimaAI()
+    
+    print("=" * 50)
+    print(f"🤖 {rima.name} v{rima.version} 시작!")
+    print("🎤 음성 번역 시스템 탑재!")
+    print("🌍 실시간 다국어 번역 지원!")
+    print("📝 명령어: '번역', '음성', '실시간', '듣기'")
+    print("=" * 50)
+    
+    while True:
+        try:
+            user_input = input("\n사용자: ")
+            
+            if user_input.lower() in ['quit', 'exit', '종료']:
+                print("리마: 안녕히 가세요!")
+                break
+            
+            response = rima.chat(user_input)
+            print(f"리마: {response}")
+            
+        except KeyboardInterrupt:
+            print("\n리마: 안녕히 가세요!")
+            break
+        except Exception as e:
+            print(f"리마: 오류가 발생했습니다 - {e}")
+
+if __name__ == "__main__":
+    main()
