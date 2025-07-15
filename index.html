@@ -3,121 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CSS 포지션 유튜브 자동 업로드</title>
+  <title>리마 유튜브 자동 업로드 시스템</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #1e3c72, #2a5298);
-      color: #fff;
-      padding: 2rem;
       margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #c9d6ff, #e2e2e2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
-    .container {
-      max-width: 600px;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 2rem;
-      border-radius: 1.5rem;
-      margin: auto;
-      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    .card {
+      background: white;
+      padding: 3rem 2rem;
+      border-radius: 2rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      animation: fadeIn 1s ease-in-out;
     }
     h1 {
-      text-align: center;
-      margin-bottom: 2rem;
       font-size: 1.8rem;
-      color: #f0f0f0;
-    }
-    label {
-      display: block;
-      margin: 1rem 0 0.5rem;
-      font-weight: bold;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 0.8rem;
-      border-radius: 0.5rem;
-      border: none;
-      margin-bottom: 1rem;
-      font-size: 1rem;
-      box-sizing: border-box;
+      color: #1a237e;
+      margin-bottom: 1.5rem;
     }
     button {
-      width: 100%;
-      background-color: #00d4ff;
-      color: black;
-      font-weight: bold;
-      padding: 1rem;
-      font-size: 1.2rem;
+      padding: 1rem 2rem;
+      background: #3f51b5;
+      color: white;
+      font-size: 1.1rem;
       border: none;
-      border-radius: 0.8rem;
+      border-radius: 1rem;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: background 0.3s;
     }
     button:hover {
-      background-color: #00a8cc;
+      background: #303f9f;
     }
-    .script-box {
-      margin-top: 2rem;
-      background: #333;
-      padding: 1rem;
-      border-radius: 1rem;
-      white-space: pre-wrap;
-      font-family: monospace;
-      color: #0f0;
+    .note {
+      margin-top: 1.2rem;
+      font-size: 0.9rem;
+      color: #555;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📺 CSS 포지션 유튜브 자동 업로드</h1>
-
-    <label for="position">🎯 포지션 이름 (예: 옆돌리기, 뒤돌리기)</label>
-    <input id="position" type="text" placeholder="포지션 이름 입력" />
-
-    <label for="filename">📁 영상 파일명 (예: ybd_20250714.mp4)</label>
-    <input id="filename" type="text" placeholder="파일명 입력 (.mp4 생략 가능)" />
-
-    <label for="visibility">🌐 공개 설정</label>
-    <select id="visibility">
-      <option value="public">전체 공개</option>
-      <option value="unlisted">링크 공개</option>
-      <option value="private">비공개</option>
-    </select>
-
-    <label for="description">📝 자동 설명</label>
-    <textarea id="description" rows="3" placeholder="자동 설명 생성됨" readonly></textarea>
-
-    <button onclick="generateScript()">📋 자동 업로드 스크립트 복사</button>
-
-    <div class="script-box" id="scriptOutput"></div>
+  <div class="card">
+    <h1>🎬 리마 유튜브 자동 업로드 시스템</h1>
+    <button onclick="alert('🎉 영상이 자동 업로드됩니다! (예시 화면)')">업로드 시작</button>
+    <div class="note">1회 허용으로 자동 업로드가 지속됩니다.<br>원할 때 언제든지 중지 가능합니다.</div>
   </div>
-
-  <script>
-    function generateScript() {
-      const position = document.getElementById("position").value.trim();
-      const filename = document.getElementById("filename").value.trim().replace(/\.mp4$/i, "");
-      const visibility = document.getElementById("visibility").value;
-
-      if (!position || !filename) {
-        alert("포지션 이름과 파일명을 모두 입력하세요.");
-        return;
-      }
-
-      const fullFile = filename + ".mp4";
-      const title = `CSS 포지션 | ${position}`;
-      const desc = `이 영상은 CSS 포지션 시스템에 의해 자동 업로드되었습니다. 포지션: ${position}. 당구 시스템 훈련용 콘텐츠입니다.`;
-
-      document.getElementById("description").value = desc;
-
-      const script = `
-filepath=f"upload_videos/${fullFile}"
-title=f"${title}"
-description=f"""${desc}"""
-visibility="${visibility}"
-      `.trim();
-
-      document.getElementById("scriptOutput").textContent = script;
-      navigator.clipboard.writeText(script).then(() => alert("📋 스크립트가 복사되었습니다!"));
-    }
-  </script>
 </body>
 </html>
