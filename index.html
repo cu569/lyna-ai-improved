@@ -1,34 +1,66 @@
-# real_youtube_uploader.py
-import os
-import time
-import shutil
-from pathlib import Path
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSS 포지션 당구 자동 업로드</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f5f5f5; }
+    h1 { color: #333; }
+    textarea, input, button, select {
+      width: 100%; padding: 1rem; margin-top: 1rem; font-size: 1rem; border-radius: 0.5rem;
+      border: 1px solid #ccc; box-sizing: border-box;
+    }
+    button { background-color: #007bff; color: white; border: none; cursor: pointer; }
+    button:hover { background-color: #0056b3; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 2rem; border-radius: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CSS 포지션 유튜브 자동 업로드</h1>
+    <label>🎱 포지션 이름 (예: 옆돌리기, 뒤돌리기)</label>
+    <input type="text" id="position" placeholder="포지션 이름 입력" />
 
-class YouTubeUploader:
-    def __init__(self):
-        self.watch_folder = Path("upload_videos")
-        self.archive_folder = Path("uploaded_videos")
-        self.driver = None
-        self.wait = None
+    <label>📁 영상 파일명 (예: ybd_20250714.mp4)</label>
+    <input type="text" id="filename" placeholder="파일명만 입력 (.mp4 생략 가능)" />
 
-    def setup_browser(self):
-        chrome_options = Options()
-        chrome_options.add_argument("--user-data-dir=chrome-profile")
-        chrome_options.add_argument("--start-maximized")
-        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 30)
+    <label>🌍 공개 설정</label>
+    <select id="privacy">
+      <option value="public">전체 공개</option>
+      <option value="unlisted">비공개 링크</option>
+      <option value="private">완전 비공개</option>
+    </select>
 
-    def upload_video(self, video_path):
-        self.driver.get("https://www.youtube.com/upload")
-        time.sleep(5)
-        file_input = self.driver.find_element(By.XPATH, "//input[@type='file']")
-        file_input.send_keys(str(video_path.resolve()))
-        print(f"업로드 시작: {video_path.name}")
-    
+    <label>📝 자동 설명</label>
+    <textarea id="description">이 영상은 CSS 포지션 시스템에 의해 자동 업로드되었습니다. 포지션: 옆돌리기. 당구 시스템 훈련용 영상입니다.</textarea>
+
+    <button onclick="copyCode()">📋 자동 업로드 스크립트 복사</button>
+    <textarea id="output" rows="10" readonly></textarea>
+  </div>
+
+  <script>
+    function copyCode() {
+      const position = document.getElementById('position').value || '무명 포지션';
+      const filename = document.getElementById('filename').value.replace('.mp4', '') || 'default_video';
+      const privacy = document.getElementById('privacy').value;
+      const description = document.getElementById('description').value;
+
+      const script = `
+from uploader import upload_video
+
+upload_video(
+  filepath=f"upload_videos/${filename}.mp4",
+  title=f"CSS 포지션 | ${position}",
+  description="""${description}""",
+  privacy="${privacy}"
+)
+      `.trim();
+
+      document.getElementById('output').value = script;
+      navigator.clipboard.writeText(script);
+      alert("✅ 코드 복사 완료!");
+    }
+  </script>
+</body>
+</html>
