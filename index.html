@@ -1,53 +1,35 @@
-<script>
-  const status = document.getElementById("status");
-  const log = document.getElementById("log");
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>리마 기억 시스템</title>
+</head>
+<body>
+  <h2>🧠 리마 기억 시스템</h2>
+  <button onclick="startRecognition()">🎤 말하기 시작</button>
+  <div id="status">대기 중...</div>
+  <pre id="log"></pre>
 
-  // 로컬에서 과거 학습 불러오기
-  let memory = JSON.parse(localStorage.getItem("rimaMemory")) || [];
+  <script>
+    const status = document.getElementById("status");
+    const log = document.getElementById("log");
+    let memory = JSON.parse(localStorage.getItem("rimaMemory")) || [];
 
-  // 이전 학습 내역 표시
-  if (memory.length > 0) {
-    log.innerText += `\n📚 이전 학습 불러오기 완료 (${memory.length}개)\n`;
-    memory.forEach(item => {
-      log.innerText += `📝 ${item}\n`;
-    });
-  }
-
-  function startRecognition() {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = "ko-KR";
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      status.innerText = "🎧 듣는 중...";
-    };
-
-    recognition.onresult = (event) => {
-      const text = event.results[0][0].transcript;
-      status.innerText = `📥 입력됨: "${text}"`;
-      learn(text);
-    };
-
-    recognition.onerror = (event) => {
-      status.innerText = `❌ 오류 발생: ${event.error}`;
-    };
-
-    recognition.start();
-  }
-
-  function learn(input) {
-    memory.push(input);
-    localStorage.setItem("rimaMemory", JSON.stringify(memory));
-    log.innerText += `\n📝 학습됨: "${input}"`;
-
-    if (input.includes("이름")) {
-      alert("저는 리마입니다. 기억하는 AI입니다.");
-    } else if (input.includes("고마워")) {
-      alert("언제든지요. 항상 기억할게요.");
-    } else if (input.includes("공부")) {
-      alert("계속 배우고 있어요.");
-    } else {
-      alert("이 내용을 학습했습니다. 다음에 더 잘 대답할게요.");
+    if (memory.length > 0) {
+      memory.forEach(item => log.innerText += `📌 ${item}\n`);
     }
-  }
-</script>
+
+    function startRecognition() {
+      const r = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      r.lang = "ko-KR";
+      r.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        log.innerText += `📝 ${text}\n`;
+        memory.push(text);
+        localStorage.setItem("rimaMemory", JSON.stringify(memory));
+      };
+      r.start();
+    }
+  </script>
+</body>
+</html>
