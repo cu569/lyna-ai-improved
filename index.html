@@ -1,53 +1,35 @@
-<!-- 리마 기억 관리 시스템: 수정, 삭제 + 음성 확인 메시지 포함 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>리마 기억 관리 시스템</title>
+  <meta charset="UTF-8" />
+  <title>🎙️ 리마 음성 자동 응답 시스템</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #f3f3f3;
-      padding: 2rem;
-    }
+    body { font-family: sans-serif; background: #f9f9f9; padding: 2rem; }
     .container {
-      max-width: 750px;
-      margin: auto;
-      background: white;
-      padding: 2rem;
-      border-radius: 16px;
+      max-width: 750px; margin: auto; background: white;
+      padding: 2rem; border-radius: 16px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    .log, .memory-log {
-      font-size: 1rem;
-      margin-top: 1rem;
-      color: #333;
-      line-height: 1.6;
-    }
-    input, select {
-      width: 100%;
-      padding: 0.7rem;
-      margin-top: 1rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+    select, input {
+      width: 100%; margin-top: 1rem; padding: 0.7rem;
+      font-size: 1rem; border-radius: 8px; border: 1px solid #ccc;
     }
     button {
-      margin-top: 1rem;
-      padding: 0.7rem 1.2rem;
-      font-size: 1rem;
-      border: none;
-      background-color: #007acc;
-      color: white;
-      border-radius: 8px;
-      cursor: pointer;
+      margin-top: 1rem; padding: 0.7rem 1.2rem;
+      font-size: 1rem; border: none;
+      border-radius: 8px; cursor: pointer;
     }
-    .button-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .log { margin-top: 1.5rem; line-height: 1.6; font-size: 1rem; }
+    .mic-btn { background-color: #ff5b5b; color: white; }
+    .send-btn { background-color: #007acc; color: white; }
+    .sec-btn { background-color: #4caf50; color: white; }
+    .danger-btn { background-color: #888; color: white; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>📘 리마 기억 관리 시스템</h2>
+    <h2>🎙️ 리마 음성 자동 응답 시스템</h2>
 
     <select id="role">
       <option value="기본">기본 리마</option>
@@ -55,86 +37,105 @@
       <option value="운전">운전 리마</option>
     </select>
 
-    <input type="text" id="command" placeholder="명령 입력..." />
-    <div class="button-row">
-      <button onclick="runRima()">전송</button>
-      <button onclick="showMemory()">🧠 학습 내역 보기</button>
+    <input type="text" id="command" placeholder="명령 입력 또는 음성 입력..." />
+    <div class="btn-row">
+      <button class="send-btn" onclick="runRima()">전송</button>
+      <button class="mic-btn" onclick="startVoice()">🎤 음성 명령</button>
+      <button class="sec-btn" onclick="showMemory()">🧠 학습 보기</button>
     </div>
 
-    <input type="text" id="editKey" placeholder="수정 또는 삭제할 명령 입력..." />
-    <input type="text" id="newReply" placeholder="새로운 응답 (수정용)" />
-    <div class="button-row">
-      <button onclick="editMemory()">✏️ 수정</button>
-      <button onclick="deleteMemory()">🗑️ 삭제</button>
+    <input type="text" id="editKey" placeholder="수정/삭제 명령 입력" />
+    <input type="text" id="newReply" placeholder="새 응답 (수정용)" />
+    <div class="btn-row">
+      <button class="sec-btn" onclick="editMemory()">✏️ 수정</button>
+      <button class="danger-btn" onclick="deleteMemory()">🗑️ 삭제</button>
     </div>
 
     <div id="response" class="log"></div>
-    <div id="memoryLog" class="memory-log"></div>
+    <div id="memoryLog" class="log"></div>
   </div>
 
   <script>
-    const memory = {};
+    const memory = {
+      "기본:안녕": "안녕하세요, 리마입니다!",
+      "기본:이름이 뭐야": "저는 리마예요.",
+      "당구:원쿠션": "원쿠션은 수구가 적구를 맞기 전, 한 번 쿠션을 먼저 맞히는 플레이입니다."
+    };
+
     const responseEl = document.getElementById("response");
     const memoryLogEl = document.getElementById("memoryLog");
 
     function runRima() {
       const role = document.getElementById("role").value;
       const cmd = document.getElementById("command").value.trim();
-      const key = role + ":" + cmd;
+      const key = `${role}:${cmd}`;
       if (!cmd) return;
 
-      let response;
+      let result;
       if (memory[key]) {
-        response = `🤖 [${role}] 기억된 응답: ${memory[key]}<br>📢 음성 기록 완료. 언제든 확인 가능합니다.`;
+        result = `✅ [${role}] 기억된 응답: ${memory[key]}`;
       } else {
-        memory[key] = "해당 명령을 저장했습니다.";
-        response = `🤖 [${role}] 새로운 명령을 격리 메모리에 저장했습니다.<br>📢 음성도 함께 기록되었습니다. 확인되면 응답합니다.`;
+        memory[key] = "🆕 명령이 저장되었습니다.";
+        result = `📌 [${role}] 새 명령 저장 완료`;
       }
 
-      responseEl.innerHTML += `<br>👤 ${role} - ${cmd}<br>${response}`;
+      responseEl.innerHTML += `<br>👤 ${role} - ${cmd}<br>${result}`;
       document.getElementById("command").value = "";
     }
 
     function showMemory() {
       const role = document.getElementById("role").value;
-      let log = `📋 [${role}] 리마의 기억 목록:<br>`;
+      let log = `🧠 [${role}] 기억 목록:<br>`;
       let found = false;
-
-      for (const key in memory) {
-        if (key.startsWith(role + ":")) {
-          log += "🧠 " + key.split(":")[1] + " → " + memory[key] + "<br>";
+      for (let key in memory) {
+        if (key.startsWith(`${role}:`)) {
+          log += `• ${key.split(":")[1]} → ${memory[key]}<br>`;
           found = true;
         }
       }
-
-      memoryLogEl.innerHTML = found ? log : `⚠️ [${role}] 기억된 명령이 없습니다.`;
+      memoryLogEl.innerHTML = found ? log : `❌ [${role}] 기억 없음`;
     }
 
     function editMemory() {
       const role = document.getElementById("role").value;
-      const target = document.getElementById("editKey").value.trim();
+      const key = `${role}:${document.getElementById("editKey").value.trim()}`;
       const newReply = document.getElementById("newReply").value.trim();
-      const key = role + ":" + target;
-
       if (memory[key]) {
-        memory[key] = newReply || "(수정됨)";
-        responseEl.innerHTML += `<br>📝 [${role}] '${target}' 응답이 수정되었습니다.`;
+        memory[key] = newReply;
+        responseEl.innerHTML += `<br>✏️ [${role}] '${key.split(":")[1]}' 응답 수정됨`;
       } else {
-        responseEl.innerHTML += `<br>❌ [${role}] '${target}'은(는) 기억되어 있지 않습니다.`;
+        responseEl.innerHTML += `<br>❌ '${key.split(":")[1]}' 없음`;
       }
     }
 
     function deleteMemory() {
       const role = document.getElementById("role").value;
-      const target = document.getElementById("editKey").value.trim();
-      const key = role + ":" + target;
-
+      const key = `${role}:${document.getElementById("editKey").value.trim()}`;
       if (memory[key]) {
         delete memory[key];
-        responseEl.innerHTML += `<br>🗑️ [${role}] '${target}' 명령이 삭제되었습니다.`;
+        responseEl.innerHTML += `<br>🗑️ [${role}] '${key.split(":")[1]}' 삭제됨`;
       } else {
-        responseEl.innerHTML += `<br>❌ [${role}] '${target}'은(는) 삭제할 수 없습니다.`;
+        responseEl.innerHTML += `<br>❌ '${key.split(":")[1]}' 없음`;
       }
+    }
+
+    function startVoice() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "ko-KR";
+      recognition.start();
+
+      responseEl.innerHTML += `<br>🎤 음성 수신 중...`;
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.trim();
+        document.getElementById("command").value = transcript;
+        responseEl.innerHTML += `<br>📝 인식된 명령: "${transcript}"`;
+        runRima();
+      };
+
+      recognition.onerror = (event) => {
+        responseEl.innerHTML += `<br>⚠️ 음성 인식 오류: ${event.error}`;
+      };
     }
   </script>
 </body>
