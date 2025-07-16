@@ -6,8 +6,9 @@
 </head>
 <body>
   <h2>🧠 리마 기억 시스템</h2>
-  <button onclick="startRecognition()">🎤 말하기 시작</button>
-  <div id="status">대기 중...</div>
+  <button onclick="startRecognition()">🎤 말하기</button>
+  <button onclick="clearMemory()">🧹 기억 초기화</button>
+  <div id="status">⏳ 대기 중...</div>
   <pre id="log"></pre>
 
   <script>
@@ -15,20 +16,35 @@
     const log = document.getElementById("log");
     let memory = JSON.parse(localStorage.getItem("rimaMemory")) || [];
 
-    if (memory.length > 0) {
-      memory.forEach(item => log.innerText += `📌 ${item}\n`);
+    function renderMemory() {
+      log.innerText = '';
+      memory.forEach((item, index) => {
+        log.innerText += `📌 ${index + 1}. ${item}\n`;
+      });
     }
+
+    renderMemory();
 
     function startRecognition() {
       const r = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       r.lang = "ko-KR";
+      r.onstart = () => status.innerText = "🎙️ 듣는 중...";
+      r.onend = () => status.innerText = "✅ 완료!";
+      r.onerror = () => status.innerText = "⚠️ 오류 발생";
+
       r.onresult = (e) => {
         const text = e.results[0][0].transcript;
-        log.innerText += `📝 ${text}\n`;
         memory.push(text);
         localStorage.setItem("rimaMemory", JSON.stringify(memory));
+        renderMemory();
       };
       r.start();
+    }
+
+    function clearMemory() {
+      memory = [];
+      localStorage.removeItem("rimaMemory");
+      renderMemory();
     }
   </script>
 </body>
