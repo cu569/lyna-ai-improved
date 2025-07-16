@@ -1,76 +1,138 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>🎤 음성 리마 질문/답변</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YoutAI 대화 로그</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    .container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.8rem 1.6rem;
+      font-size: 1rem;
+      margin: 0.3rem;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #388e3c;
+    }
+    #status {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      color: #444;
+    }
+    #logBox {
+      margin-top: 2rem;
+      text-align: left;
+      background: #fafafa;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      width: 100%;
+    }
+    .entry {
+      margin-bottom: 1rem;
+    }
+    .entry strong {
+      color: #007acc;
+    }
+  </style>
 </head>
 <body>
-  <h2>🎤 음성 질문 - 리마 답변 시스템</h2>
-
-  <h3>📝 질문과 답변 등록</h3>
-  <input id="question" placeholder="질문을 입력하세요" />
-  <input id="answer" placeholder="답변을 입력하세요" />
-  <button onclick="saveQA()">💾 등록</button>
-
-  <h3>🎙️ 마이크로 질문하기</h3>
-  <button onclick="startListening()">🎧 질문 시작</button>
-  <p id="result">🎧 인식된 질문이 여기에 표시됩니다</p>
-
-  <h3>📃 전체 학습 내용</h3>
-  <ul id="memoryList"></ul>
+  <div class="container">
+    <h1>🧠 YoutAI 대화 시스템</h1>
+    <button onclick="startRecognition()">🎤 질문 시작</button>
+    <button onclick="downloadLog()">📥 기록 저장</button>
+    <div id="status">🕓 대기 중...</div>
+    <div id="logBox"></div>
+  </div>
 
   <script>
-    let qaMemory = JSON.parse(localStorage.getItem("rimaQA")) || [];
+    const log = [];
 
-    function renderList() {
-      const list = document.getElementById("memoryList");
-      list.innerHTML = "";
-      qaMemory.forEach((item, i) => {
-        const li = document.createElement("li");
-        li.innerText = `❓ ${item.q} → 💡 ${item.a}`;
-        list.appendChild(li);
+    function speak(text) {
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = "ko-KR";
+      window.speechSynthesis.speak(msg);
+    }
+
+    async function askGPT(question) {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer YOUR_OPENAI_API_KEY"
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: question }]
+        })
+      });
+
+      const data = await response.json();
+      const answer = data.choices[0].message.content;
+      document.getElementById("status").textContent = "🧠 GPT 응답: " + answer;
+      speak(answer);
+      log.push({ question, answer });
+      updateLogDisplay();
+    }
+
+    function updateLogDisplay() {
+      const logBox = document.getElementById("logBox");
+      logBox.innerHTML = "";
+      log.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.innerHTML = `<strong>Q${index + 1}:</strong> ${item.question}<br><strong>A:</strong> ${item.answer}`;
+        logBox.appendChild(div);
       });
     }
 
-    function saveQA() {
-      const q = document.getElementById("question").value.trim();
-      const a = document.getElementById("answer").value.trim();
-      if (q && a) {
-        qaMemory.push({ q, a });
-        localStorage.setItem("rimaQA", JSON.stringify(qaMemory));
-        renderList();
-        document.getElementById("question").value = "";
-        document.getElementById("answer").value = "";
-      }
-    }
-
-    function speak(text) {
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = "ko-KR";
-      speechSynthesis.speak(utter);
-    }
-
-    function startListening() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
+    function startRecognition() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = "ko-KR";
-      recognition.start();
-
       recognition.onresult = function(event) {
         const transcript = event.results[0][0].transcript;
-        document.getElementById("result").innerText = `🗣️ 인식된 질문: ${transcript}`;
-        const found = qaMemory.find(item => transcript.includes(item.q));
-        const answer = found ? found.a : "죄송해요. 아직 학습하지 못했어요.";
-        speak(answer);
+        document.getElementById("status").textContent = "❓ 질문: " + transcript;
+        askGPT(transcript);
       };
+      recognition.start();
     }
 
-    renderList();
+    function downloadLog() {
+      const blob = new Blob([JSON.stringify(log, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "youtai_log.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   </script>
 </body>
 </html>
