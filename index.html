@@ -1,18 +1,17 @@
-<!-- 리마 자동 격리 시스템 (생성 → 학습 → 기억 → 응답) -->
+<!-- 리마 학습 확인 + 기억 리스트 보기 기능 포함 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>리마 자동 격리 시스템</title>
+  <title>리마 학습 내역 시스템</title>
   <style>
     body {
       font-family: sans-serif;
       background: #f3f3f3;
-      margin: 0;
       padding: 2rem;
     }
     .container {
-      max-width: 700px;
+      max-width: 750px;
       margin: auto;
       background: white;
       padding: 2rem;
@@ -20,7 +19,12 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     h2 { margin-top: 0; }
-    .log { margin-top: 1rem; font-size: 1rem; color: #333; line-height: 1.6; }
+    .log, .memory-log {
+      font-size: 1rem;
+      margin-top: 1rem;
+      color: #333;
+      line-height: 1.6;
+    }
     input, select {
       width: 100%;
       padding: 0.7rem;
@@ -31,7 +35,7 @@
     }
     button {
       margin-top: 1rem;
-      padding: 0.7rem 1.5rem;
+      padding: 0.7rem 1.2rem;
       font-size: 1rem;
       border: none;
       background-color: #007acc;
@@ -43,7 +47,7 @@
 </head>
 <body>
   <div class="container">
-    <h2>📘 리마 자동 격리 시스템</h2>
+    <h2>📘 리마 학습 내역 시스템</h2>
     <div id="log" class="log">🔄 리마 초기화 중...</div>
 
     <select id="role">
@@ -54,12 +58,16 @@
     </select>
     <input type="text" id="command" placeholder="명령 입력..." />
     <button onclick="runRima()">전송</button>
+    <button onclick="showMemory()">🧠 학습 내역 보기</button>
+
     <div id="response" class="log"></div>
+    <div id="memoryLog" class="memory-log"></div>
   </div>
 
   <script>
     const logEl = document.getElementById("log");
     const responseEl = document.getElementById("response");
+    const memoryLogEl = document.getElementById("memoryLog");
     const memory = {};
 
     const steps = [
@@ -90,6 +98,22 @@
 
       responseEl.innerHTML += `<br>👤 ${role} - ${cmd}<br>${response}`;
       document.getElementById("command").value = "";
+    }
+
+    function showMemory() {
+      const selectedRole = document.getElementById("role").value;
+      let logs = `📋 [${selectedRole}] 리마의 기억 목록:<br>`;
+      let found = false;
+
+      for (const key in memory) {
+        if (key.startsWith(selectedRole + ":")) {
+          logs += "🧠 " + key.split(":")[1] + " → " + memory[key] + "<br>";
+          found = true;
+        }
+      }
+
+      if (!found) logs += "⚠️ 저장된 명령이 없습니다.";
+      memoryLogEl.innerHTML = logs;
     }
   </script>
 </body>
