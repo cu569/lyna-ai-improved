@@ -1,31 +1,32 @@
-<!-- 리마 격리 시스템 - 복사 후 리마.html로 저장 -->
+<!-- 리마 역할 분리 + 기억 격리 시스템 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>리마 격리형</title>
+  <title>리마 역할 기억 시스템</title>
   <style>
-    * { box-sizing: border-box; }
     body {
       font-family: sans-serif;
-      margin: 0; padding: 2rem;
-      background: #f0f0f0;
+      background: #f3f3f3;
+      margin: 0;
+      padding: 2rem;
     }
-    .rima-box {
-      background: white;
-      max-width: 600px;
+    .container {
+      max-width: 700px;
       margin: auto;
+      background: white;
       padding: 2rem;
       border-radius: 16px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    .log { margin: 0.5rem 0; font-size: 1rem; color: #333; }
-    input {
+    h2 { margin-top: 0; }
+    .log { margin-top: 1rem; font-size: 1rem; color: #333; }
+    input, select {
       width: 100%;
       padding: 0.7rem;
       margin-top: 1rem;
       font-size: 1rem;
-      border-radius: 10px;
+      border-radius: 8px;
       border: 1px solid #ccc;
     }
     button {
@@ -33,7 +34,7 @@
       padding: 0.7rem 1.5rem;
       font-size: 1rem;
       border: none;
-      background: #007bff;
+      background-color: #007acc;
       color: white;
       border-radius: 8px;
       cursor: pointer;
@@ -41,31 +42,41 @@
   </style>
 </head>
 <body>
-  <div class="rima-box">
-    <h2>📘 리마 격리형 시스템</h2>
-    <div id="log" class="log">🔒 리마 격리 상태에서 초기화 중...</div>
-    <input id="input" placeholder="명령 입력하세요..." />
-    <button onclick="rimaTalk()">전송</button>
+  <div class="container">
+    <h2>📘 리마 역할 기억 시스템</h2>
+    <div class="log">🔒 리마가 격리된 상태에서 각 역할을 분리하고 기억합니다.</div>
+    <select id="role">
+      <option value="기본">기본 리마</option>
+      <option value="당구">당구 리마</option>
+      <option value="운전">운전 리마</option>
+      <option value="건강">건강 리마</option>
+    </select>
+    <input type="text" id="command" placeholder="명령어 입력..." />
+    <button onclick="runRima()">전송</button>
+    <div id="response" class="log"></div>
   </div>
 
   <script>
-    const log = document.getElementById('log');
-    const input = document.getElementById('input');
-    const memory = {
-      "안녕": "리마: 안녕하세요. 격리된 공간에서 준비되었습니다.",
-      "상태": "리마: 격리 모드에서 안정적으로 작동 중입니다.",
-      "기억해": "리마: 해당 내용을 격리된 저장소에 저장했습니다."
-    };
+    const memory = {};
 
-    setTimeout(() => {
-      log.innerText = "🧠 리마가 학습된 상태로 격리 영역에 진입했습니다.";
-    }, 1500);
+    function runRima() {
+      const role = document.getElementById("role").value;
+      const cmd = document.getElementById("command").value.trim();
+      const key = role + ":" + cmd;
+      const responseBox = document.getElementById("response");
 
-    function rimaTalk() {
-      const text = input.value.trim();
-      const response = memory[text] || "리마: 새로운 명령을 격리된 메모리에 저장했습니다.";
-      log.innerHTML += `<br>👤 ${text}<br>🤖 ${response}`;
-      input.value = "";
+      if (!cmd) return;
+
+      let response;
+      if (memory[key]) {
+        response = `🤖 [${role}] 기억된 응답: ` + memory[key];
+      } else {
+        memory[key] = "해당 명령을 저장했습니다.";
+        response = `🤖 [${role}] 새로운 명령을 격리 메모리에 저장했습니다.`;
+      }
+
+      responseBox.innerHTML += `<br>👤 ${role} - ${cmd}<br>${response}`;
+      document.getElementById("command").value = "";
     }
   </script>
 </body>
