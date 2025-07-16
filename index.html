@@ -50,7 +50,7 @@
 <body>
   <div class="container">
     <h1>📘 리마 생성 웹앱</h1>
-    <p>버튼을 누르면 리마가 생성됩니다.</p>
+    <p>버튼을 누르면 리마가 생성되고 학습을 시작합니다.</p>
     <button onclick="generateRima()">✨ 리마 생성</button>
     <div id="status">❌ 아직 리마가 생성되지 않았습니다.</div>
   </div>
@@ -58,8 +58,25 @@
   <script>
     function generateRima() {
       const status = document.getElementById("status");
-      status.textContent = "✅ 리마가 성공적으로 생성되었습니다!";
-      status.style.color = "#2a9d8f";
+      status.textContent = "🔄 리마를 생성 중입니다...";
+      status.style.color = "#f4a261";
+
+      setTimeout(() => {
+        status.textContent = "📘 리마가 성공적으로 생성되었습니다!";
+        status.style.color = "#2a9d8f";
+
+        setTimeout(() => {
+          status.textContent = "🧠 리마가 기본 데이터를 학습 중입니다...";
+          status.style.color = "#457b9d";
+
+          setTimeout(() => {
+            status.textContent = "🚀 리마 학습 완료! 지금부터 당신의 AI 파트너입니다.";
+            status.style.color = "#264653";
+          }, 2000);
+
+        }, 2000);
+
+      }, 1500);
     }
   </script>
 </body>
