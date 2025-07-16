@@ -1,82 +1,33 @@
+<!-- 리마 생성 학습기 - 복사만 하면 끝 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>리마 생성 웹앱</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f5f5f5;
-      padding: 2rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .container {
-      background: white;
-      border-radius: 16px;
-      padding: 2rem;
-      max-width: 480px;
-      box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
-      text-align: center;
-    }
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 1rem;
-    }
-    p {
-      font-size: 1rem;
-      color: #555;
-    }
-    button {
-      margin-top: 1.5rem;
-      padding: 0.8rem 1.5rem;
-      font-size: 1.1rem;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    #status {
-      margin-top: 1.2rem;
-      font-size: 1.1rem;
-      color: #e63946;
-    }
-  </style>
+  <title>리마 생성</title>
 </head>
-<body>
-  <div class="container">
-    <h1>📘 리마 생성 웹앱</h1>
-    <p>버튼을 누르면 리마가 생성되고 학습을 시작합니다.</p>
-    <button onclick="generateRima()">✨ 리마 생성</button>
-    <div id="status">❌ 아직 리마가 생성되지 않았습니다.</div>
-  </div>
+<body style="font-family: sans-serif; text-align: center; padding: 5rem;">
+  <h1>📘 리마 생성 웹앱</h1>
+  <p>아래 버튼을 클릭하면 리마가 생성되고 학습을 시작합니다.</p>
+  <button onclick="generateRima()" style="padding: 1rem 2rem; font-size: 1.2rem;">✨ 리마 생성</button>
+  <p id="status" style="margin-top: 2rem; font-size: 1.2rem; color: red;">❌ 아직 리마가 생성되지 않았습니다.</p>
 
   <script>
     function generateRima() {
       const status = document.getElementById("status");
       status.textContent = "🔄 리마를 생성 중입니다...";
       status.style.color = "#f4a261";
-
       setTimeout(() => {
-        status.textContent = "📘 리마가 성공적으로 생성되었습니다!";
+        status.textContent = "✅ 리마 생성 완료!";
         status.style.color = "#2a9d8f";
-
         setTimeout(() => {
-          status.textContent = "🧠 리마가 기본 데이터를 학습 중입니다...";
+          status.textContent = "🧠 리마 학습 중...";
           status.style.color = "#457b9d";
-
           setTimeout(() => {
-            status.textContent = "🚀 리마 학습 완료! 지금부터 당신의 AI 파트너입니다.";
+            status.textContent = "🚀 리마 학습 완료! 이제 당신의 AI 파트너입니다.";
             status.style.color = "#264653";
           }, 2000);
-
-        }, 2000);
-
-      }, 1500);
+        }, 1500);
+      }, 1000);
     }
   </script>
 </body>
