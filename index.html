@@ -2,50 +2,75 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>리마 기억 시스템</title>
+  <title>🎤 음성 리마 질문/답변</title>
 </head>
 <body>
-  <h2>🧠 리마 기억 시스템</h2>
-  <button onclick="startRecognition()">🎤 말하기</button>
-  <button onclick="clearMemory()">🧹 기억 초기화</button>
-  <div id="status">⏳ 대기 중...</div>
-  <pre id="log"></pre>
+  <h2>🎤 음성 질문 - 리마 답변 시스템</h2>
+
+  <h3>📝 질문과 답변 등록</h3>
+  <input id="question" placeholder="질문을 입력하세요" />
+  <input id="answer" placeholder="답변을 입력하세요" />
+  <button onclick="saveQA()">💾 등록</button>
+
+  <h3>🎙️ 마이크로 질문하기</h3>
+  <button onclick="startListening()">🎧 질문 시작</button>
+  <p id="result">🎧 인식된 질문이 여기에 표시됩니다</p>
+
+  <h3>📃 전체 학습 내용</h3>
+  <ul id="memoryList"></ul>
 
   <script>
-    const status = document.getElementById("status");
-    const log = document.getElementById("log");
-    let memory = JSON.parse(localStorage.getItem("rimaMemory")) || [];
+    let qaMemory = JSON.parse(localStorage.getItem("rimaQA")) || [];
 
-    function renderMemory() {
-      log.innerText = '';
-      memory.forEach((item, index) => {
-        log.innerText += `📌 ${index + 1}. ${item}\n`;
+    function renderList() {
+      const list = document.getElementById("memoryList");
+      list.innerHTML = "";
+      qaMemory.forEach((item, i) => {
+        const li = document.createElement("li");
+        li.innerText = `❓ ${item.q} → 💡 ${item.a}`;
+        list.appendChild(li);
       });
     }
 
-    renderMemory();
+    function saveQA() {
+      const q = document.getElementById("question").value.trim();
+      const a = document.getElementById("answer").value.trim();
+      if (q && a) {
+        qaMemory.push({ q, a });
+        localStorage.setItem("rimaQA", JSON.stringify(qaMemory));
+        renderList();
+        document.getElementById("question").value = "";
+        document.getElementById("answer").value = "";
+      }
+    }
 
-    function startRecognition() {
-      const r = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      r.lang = "ko-KR";
-      r.onstart = () => status.innerText = "🎙️ 듣는 중...";
-      r.onend = () => status.innerText = "✅ 완료!";
-      r.onerror = () => status.innerText = "⚠️ 오류 발생";
+    function speak(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "ko-KR";
+      speechSynthesis.speak(utter);
+    }
 
-      r.onresult = (e) => {
-        const text = e.results[0][0].transcript;
-        memory.push(text);
-        localStorage.setItem("rimaMemory", JSON.stringify(memory));
-        renderMemory();
+    function startListening() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ko-KR";
+      recognition.start();
+
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("result").innerText = `🗣️ 인식된 질문: ${transcript}`;
+        const found = qaMemory.find(item => transcript.includes(item.q));
+        const answer = found ? found.a : "죄송해요. 아직 학습하지 못했어요.";
+        speak(answer);
       };
-      r.start();
     }
 
-    function clearMemory() {
-      memory = [];
-      localStorage.removeItem("rimaMemory");
-      renderMemory();
-    }
+    renderList();
   </script>
 </body>
 </html>
