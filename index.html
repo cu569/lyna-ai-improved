@@ -1,13 +1,13 @@
-<!-- 리마 학습 확인 + 기억 리스트 보기 기능 포함 -->
+<!-- 리마 격리 시스템: 기억 수정 / 삭제 기능 추가 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>리마 학습 내역 시스템</title>
+  <meta charset="UTF-8" />
+  <title>리마 기억 관리 시스템</title>
   <style>
     body {
       font-family: sans-serif;
-      background: #f3f3f3;
+      background: #f0f0f0;
       padding: 2rem;
     }
     .container {
@@ -18,7 +18,6 @@
       border-radius: 16px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    h2 { margin-top: 0; }
     .log, .memory-log {
       font-size: 1rem;
       margin-top: 1rem;
@@ -47,40 +46,30 @@
 </head>
 <body>
   <div class="container">
-    <h2>📘 리마 학습 내역 시스템</h2>
-    <div id="log" class="log">🔄 리마 초기화 중...</div>
-
+    <h2>📘 리마 기억 관리 시스템</h2>
     <select id="role">
       <option value="기본">기본 리마</option>
       <option value="당구">당구 리마</option>
       <option value="운전">운전 리마</option>
       <option value="건강">건강 리마</option>
     </select>
-    <input type="text" id="command" placeholder="명령 입력..." />
+
+    <input id="command" placeholder="명령 입력..." />
     <button onclick="runRima()">전송</button>
     <button onclick="showMemory()">🧠 학습 내역 보기</button>
+    <input id="editCommand" placeholder="수정 또는 삭제할 명령 입력..." />
+    <input id="editResponse" placeholder="새로운 응답 (수정용)" />
+    <button onclick="editMemory()">✏️ 수정</button>
+    <button onclick="deleteMemory()">🗑️ 삭제</button>
 
     <div id="response" class="log"></div>
     <div id="memoryLog" class="memory-log"></div>
   </div>
 
   <script>
-    const logEl = document.getElementById("log");
     const responseEl = document.getElementById("response");
     const memoryLogEl = document.getElementById("memoryLog");
     const memory = {};
-
-    const steps = [
-      "🧠 리마가 학습 중입니다...",
-      "💾 기억 저장소 초기화 완료.",
-      "✅ 리마 학습 완료! 명령을 입력해보세요."
-    ];
-    let step = 0;
-    const interval = setInterval(() => {
-      logEl.innerHTML += "<br>" + steps[step];
-      step++;
-      if (step >= steps.length) clearInterval(interval);
-    }, 1200);
 
     function runRima() {
       const role = document.getElementById("role").value;
@@ -102,7 +91,7 @@
 
     function showMemory() {
       const selectedRole = document.getElementById("role").value;
-      let logs = `📋 [${selectedRole}] 리마의 기억 목록:<br>`;
+      let logs = `📋 [${selectedRole}] 기억 목록:<br>`;
       let found = false;
 
       for (const key in memory) {
@@ -114,6 +103,33 @@
 
       if (!found) logs += "⚠️ 저장된 명령이 없습니다.";
       memoryLogEl.innerHTML = logs;
+    }
+
+    function editMemory() {
+      const role = document.getElementById("role").value;
+      const cmd = document.getElementById("editCommand").value.trim();
+      const newResponse = document.getElementById("editResponse").value.trim();
+      const key = role + ":" + cmd;
+
+      if (memory[key]) {
+        memory[key] = newResponse || "(응답 없음)";
+        responseEl.innerHTML += `<br>✏️ [${role}] '${cmd}' 응답이 수정되었습니다.`;
+      } else {
+        responseEl.innerHTML += `<br>⚠️ [${role}] '${cmd}' 명령이 존재하지 않습니다.`;
+      }
+    }
+
+    function deleteMemory() {
+      const role = document.getElementById("role").value;
+      const cmd = document.getElementById("editCommand").value.trim();
+      const key = role + ":" + cmd;
+
+      if (memory[key]) {
+        delete memory[key];
+        responseEl.innerHTML += `<br>🗑️ [${role}] '${cmd}' 명령이 삭제되었습니다.`;
+      } else {
+        responseEl.innerHTML += `<br>⚠️ [${role}] '${cmd}' 명령이 존재하지 않습니다.`;
+      }
     }
   </script>
 </body>
