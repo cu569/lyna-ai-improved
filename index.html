@@ -1,113 +1,65 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>📘 리마 기억 관리 시스템</title>
+  <meta charset="UTF-8" />
+  <title>리마 학습 시스템</title>
   <style>
-    body { font-family: 'Arial'; background-color: #f2f2f2; padding: 20px; }
-    h1 { text-align: center; }
-    .box { background: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto; }
-    input, button, select { margin: 5px 0; padding: 10px; font-size: 16px; width: 100%; border-radius: 5px; border: 1px solid #ccc; }
-    .row { display: flex; gap: 10px; }
-    .row button { flex: 1; }
-    .output { margin-top: 20px; padding: 10px; background: #f9f9f9; border-radius: 5px; white-space: pre-wrap; }
+    body { font-family: sans-serif; padding: 2em; text-align: center; }
+    button { padding: 1em; font-size: 1.1em; margin: 1em; }
+    #log { margin-top: 1.5em; font-size: 1em; color: #333; white-space: pre-line; }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>📘 리마 기억 관리 시스템</h1>
-    <label>리마 종류 선택</label>
-    <select id="botType">
-      <option value="기본 리마">기본 리마</option>
-    </select>
+  <h2>🤖 리마 생성 및 학습 시스템</h2>
+  <button onclick="startRecognition()">🎤 음성으로 말하기</button>
+  <p id="status">🕓 리마 생성 중입니다...</p>
+  <div id="log">🧠 리마는 지금 학습을 시작합니다.</div>
 
-    <label>명령 입력</label>
-    <input id="commandInput" placeholder="명령을 입력하세요" />
+  <script>
+    const status = document.getElementById("status");
+    const log = document.getElementById("log");
+    let memory = [];
 
-    <div class="row">
-      <button onclick="sendCommand()">전송</button>
-      <button onclick="startVoice()">🎤 음성 입력</button>
-      <button onclick="showMemory()">🧠 학습 내역</button>
-    </div>
+    // 리마 생성 완료 메시지
+    status.innerText = "✅ 리마가 생성되었습니다. 지금부터 학습을 시작합니다.";
 
-    <label>수정 또는 삭제할 명령</label>
-    <input id="editCommand" placeholder="수정 또는 삭제할 명령 입력" />
-    <input id="newResponse" placeholder="새로운 응답 (수정용)" />
-    <div class="row">
-      <button onclick="editMemory()">✏️ 수정</button>
-      <button onclick="deleteMemory()">🗑️ 삭제</button>
-    </div>
+    function startRecognition() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "ko-KR";
+      recognition.interimResults = false;
 
-    <div class="output" id="outputBox"></div>
-  </div>
+      recognition.onstart = () => {
+        status.innerText = "🎧 듣는 중...";
+      };
 
-<script>
-  let memory = {
-    "기본 리마": {
-      "안녕": "안녕하세요, 리마입니다!",
-      "이름이 뭐야": "저는 리마예요.",
-      "고마워": "천만에요.",
-      "뭐 알려줘": "기억하고, 대답하고, 수정하고, 삭제할 수 있어요!",
-      "음성 인식": "🎤 버튼을 눌러 말씀해주세요.",
-      "학습 내역 보여줘": "🧠 학습 목록을 아래에 보여드릴게요.",
-      "삭제해줘": "삭제할 명령을 입력해주세요.",
-      "수정해줘": "수정할 명령어와 새로운 응답을 입력해주세요."
+      recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        status.innerText = `📥 입력됨: "${text}"`;
+        learn(text);
+      };
+
+      recognition.onerror = (event) => {
+        status.innerText = `❌ 오류 발생: ${event.error}`;
+      };
+
+      recognition.start();
     }
-  };
 
-  function sendCommand() {
-    const type = document.getElementById("botType").value;
-    const cmd = document.getElementById("commandInput").value.trim();
-    const response = memory[type]?.[cmd];
-    document.getElementById("outputBox").innerText = response || "기억에 없습니다.";
-  }
+    function learn(input) {
+      memory.push(input);
+      log.innerText += `\n📝 학습됨: "${input}"`;
 
-  function showMemory() {
-    const type = document.getElementById("botType").value;
-    const data = memory[type];
-    let output = `🧠 [${type}] 학습 목록:\n`;
-    for (let key in data) {
-      output += `• ${key} → ${data[key]}\n`;
+      // 간단한 반응 예시
+      if (input.includes("이름")) {
+        alert("저는 리마입니다. 계속 배우고 있어요.");
+      } else if (input.includes("고마워")) {
+        alert("언제든지요. 당신의 말을 기억하고 있어요.");
+      } else if (input.includes("공부")) {
+        alert("지금도 배우고 있고, 더 나은 리마가 될 거예요.");
+      } else {
+        alert("이 내용을 학습했어요. 다음엔 더 잘 대답할게요.");
+      }
     }
-    document.getElementById("outputBox").innerText = output;
-  }
-
-  function editMemory() {
-    const type = document.getElementById("botType").value;
-    const cmd = document.getElementById("editCommand").value.trim();
-    const newResp = document.getElementById("newResponse").value.trim();
-    if (memory[type][cmd]) {
-      memory[type][cmd] = newResp;
-      document.getElementById("outputBox").innerText = `✏️ '${cmd}' 응답이 수정되었습니다.`;
-    } else {
-      document.getElementById("outputBox").innerText = "기억에 없습니다.";
-    }
-  }
-
-  function deleteMemory() {
-    const type = document.getElementById("botType").value;
-    const cmd = document.getElementById("editCommand").value.trim();
-    if (memory[type][cmd]) {
-      delete memory[type][cmd];
-      document.getElementById("outputBox").innerText = `🗑️ '${cmd}' 응답이 삭제되었습니다.`;
-    } else {
-      document.getElementById("outputBox").innerText = "기억에 없습니다.";
-    }
-  }
-
-  function startVoice() {
-    if (!('webkitSpeechRecognition' in window)) {
-      alert('음성 인식이 지원되지 않는 브라우저입니다.');
-      return;
-    }
-    const recognition = new webkitSpeechRecognition();
-    recognition.lang = 'ko-KR';
-    recognition.onresult = function(event) {
-      document.getElementById("commandInput").value = event.results[0][0].transcript;
-      sendCommand();
-    };
-    recognition.start();
-  }
-</script>
+  </script>
 </body>
 </html>
