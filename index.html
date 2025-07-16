@@ -1,166 +1,26 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <title>🎙️ 리마 기억 관리 시스템</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f0f0f0;
-      padding: 2rem;
-    }
-    .container {
-      background: white;
-      max-width: 700px;
-      margin: auto;
-      padding: 2rem;
-      border-radius: 16px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h2 {
-      font-size: 1.5rem;
-    }
-    select, input {
-      width: 100%;
-      margin-top: 1rem;
-      padding: 0.7rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    .btn-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    button {
-      padding: 0.7rem 1.2rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-    }
-    .send-btn { background-color: #007acc; color: white; }
-    .mic-btn { background-color: #ff5b5b; color: white; }
-    .show-btn { background-color: #6a00c4; color: white; }
-    .edit-btn { background-color: #4caf50; color: white; }
-    .delete-btn { background-color: #999; color: white; }
-    .log {
-      margin-top: 1.5rem;
-      font-size: 1rem;
-      line-height: 1.6;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>📘 리마 기억 관리 시스템</h2>
-
-    <select id="role">
-      <option value="기본">기본 리마</option>
-      <option value="당구">당구 리마</option>
-      <option value="운전">운전 리마</option>
-    </select>
-
-    <input type="text" id="command" placeholder="명령 입력..." />
-
-    <div class="btn-row">
-      <button class="send-btn" onclick="runRima()">전송</button>
-      <button class="mic-btn" onclick="startVoice()">🎤 음성 입력</button>
-      <button class="show-btn" onclick="showMemory()">🧠 학습 내역 보기</button>
-    </div>
-
-    <input type="text" id="editKey" placeholder="수정 또는 삭제할 명령 입력..." />
-    <input type="text" id="newReply" placeholder="새로운 응답 (수정용)" />
-
-    <div class="btn-row">
-      <button class="edit-btn" onclick="editMemory()">✏️ 수정</button>
-      <button class="delete-btn" onclick="deleteMemory()">🗑️ 삭제</button>
-    </div>
-
-    <div id="response" class="log"></div>
-    <div id="memoryLog" class="log"></div>
-  </div>
-
-  <script>
-    const memory = {
-      "기본:안녕": "안녕하세요, 리마입니다!",
-      "기본:이름이 뭐야": "저는 리마예요.",
-      "당구:원쿠션": "수구가 쿠션을 먼저 맞고 적구를 맞히는 샷이에요."
-    };
-
-    function runRima() {
-      const role = document.getElementById("role").value;
-      const cmd = document.getElementById("command").value.trim();
-      const key = `${role}:${cmd}`;
-      if (!cmd) return;
-
-      let result;
-      if (memory[key]) {
-        result = `✅ [${role}] 기억된 응답: ${memory[key]}`;
-      } else {
-        memory[key] = "🆕 새 명령 저장 완료";
-        result = `📌 [${role}] 새로운 명령이 저장되었습니다.`;
-      }
-
-      document.getElementById("response").innerHTML += `<br>👤 ${role} - ${cmd}<br>${result}`;
-      document.getElementById("command").value = "";
-    }
-
-    function showMemory() {
-      const role = document.getElementById("role").value;
-      let log = `🧠 [${role}] 학습 목록:<br>`;
-      let found = false;
-      for (let key in memory) {
-        if (key.startsWith(`${role}:`)) {
-          log += `• ${key.split(":")[1]} → ${memory[key]}<br>`;
-          found = true;
-        }
-      }
-      document.getElementById("memoryLog").innerHTML = found ? log : `❌ [${role}] 기억 없음`;
-    }
-
-    function editMemory() {
-      const role = document.getElementById("role").value;
-      const key = `${role}:${document.getElementById("editKey").value.trim()}`;
-      const newReply = document.getElementById("newReply").value.trim();
-      if (memory[key]) {
-        memory[key] = newReply;
-        document.getElementById("response").innerHTML += `<br>✏️ '${key.split(":")[1]}' 응답 수정됨`;
-      } else {
-        document.getElementById("response").innerHTML += `<br>❌ '${key.split(":")[1]}' 없음`;
-      }
-    }
-
-    function deleteMemory() {
-      const role = document.getElementById("role").value;
-      const key = `${role}:${document.getElementById("editKey").value.trim()}`;
-      if (memory[key]) {
-        delete memory[key];
-        document.getElementById("response").innerHTML += `<br>🗑️ '${key.split(":")[1]}' 삭제됨`;
-      } else {
-        document.getElementById("response").innerHTML += `<br>❌ '${key.split(":")[1]}' 없음`;
-      }
-    }
-
-    function startVoice() {
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = "ko-KR";
-      recognition.start();
-      document.getElementById("response").innerHTML += "<br>🎤 음성 수신 중...";
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.trim();
-        document.getElementById("command").value = transcript;
-        document.getElementById("response").innerHTML += `<br>📝 인식된 명령: "${transcript}"`;
-        runRima();
-      };
-
-      recognition.onerror = (event) => {
-        document.getElementById("response").innerHTML += `<br>⚠️ 음성 인식 오류: ${event.error}`;
-      };
-    }
-  </script>
-</body>
-</html>
+{
+  "기본 리마": {
+    "안녕": "안녕하세요, 리마입니다!",
+    "이름이 뭐야": "저는 리마예요.",
+    "고마워": "천만에요! 언제든 도와드릴게요.",
+    "뭐 할 수 있어": "저는 기억하고, 대답하고, 수정하고, 삭제할 수 있어요!",
+    "음성 인식": "마이크 버튼을 눌러 말씀해주세요. 제가 기억할게요.",
+    "학습 내역 보여줘": "지금까지 배운 목록을 아래에 보여드릴게요.",
+    "삭제해줘": "삭제할 명령어를 아래 칸에 입력해주세요.",
+    "수정해줘": "수정할 명령어와 새로운 응답을 입력해주세요.",
+    "기억 지워": "모든 기억을 초기화하시겠습니까?",
+    "기억 보여줘": "현재 저장된 기억 목록입니다.",
+    "기억 저장했어?": "네, 새로운 명령을 격리 메모리에 저장했어요.",
+    "확인했어": "네, 확인 완료했습니다!",
+    "응답 바꿔줘": "수정할 명령어와 새로운 응답을 입력해주세요.",
+    "명령 지워줘": "삭제할 명령어를 정확히 입력해주세요.",
+    "응답 보여줘": "해당 명령의 응답은 다음과 같습니다:",
+    "응답 추가해": "새 명령과 응답을 입력해주세요.",
+    "응답 전체 삭제": "모든 응답을 삭제할까요?",
+    "지금 뭐 하고 있어": "기억 관리 시스템을 대기 중이에요.",
+    "음성 입력 시작": "지금 말씀하시면 제가 듣고 기억할게요!",
+    "메모 보여줘": "지금까지 저장된 메모는 다음과 같습니다:",
+    "메모 추가해": "새로운 메모를 입력해주세요.",
+    "메모 삭제해": "삭제할 메모 내용을 입력해주세요."
+  }
+}
