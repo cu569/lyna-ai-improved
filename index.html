@@ -3,77 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>리마 유튜브 자동 업로드 시스템</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to right, #e3f2fd, #ffffff);
-      color: #222;
-      padding: 60px;
-      text-align: center;
-    }
-    h1 {
-      color: #1a237e;
-      font-size: 2.5rem;
-    }
-    input {
-      padding: 12px;
-      width: 60%;
-      font-size: 1.1rem;
-      margin-bottom: 20px;
-      border: 2px solid #90caf9;
-      border-radius: 8px;
-    }
-    button {
-      padding: 12px 32px;
-      font-size: 1.1rem;
-      background-color: #1e88e5;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-    }
-    button:hover {
-      background-color: #1565c0;
-    }
-    #status {
-      margin-top: 30px;
-      font-weight: bold;
-      font-size: 1.2rem;
-      color: #388e3c;
-    }
-    .footer {
-      margin-top: 60px;
-      font-size: 0.9rem;
-      color: #777;
-    }
-  </style>
+  <title>리마 웹앱 - 생성, 번역, 유튜브 업로드</title>
 </head>
-<body>
-  <h1>🎬 리마 유튜브 자동 업로드</h1>
-  <p>유튜버 채널 주소를 입력하고 업로드 권한을 허용해주세요.</p>
+<body style="font-family: sans-serif; padding: 2em;">
+  <h1>📚 리마 생성 웹앱</h1>
+  <section>
+    <h2>🧑‍💻 리마 생성</h2>
+    <button onclick="createRima()">✨ 리마 만들기</button>
+    <p id="rima-status">❌ 리마가 아직 생성되지 않았습니다.</p>
+  </section>
 
-  <input id="channel" type="text" placeholder="▶️ 유튜브 채널 주소 입력" />
-  <br />
+  <section>
+    <h2>🎧 음성 번역 기능</h2>
+    <button onclick="startListening()">🎤 말하기 시작</button>
+    <p id="voice-output">⚫ 아직 아무 음성이 인식되지 않았습니다.</p>
+  </section>
 
-  <button onclick="allowUpload()">
-    ✅ 업로드 허용
-  </button>
-
-  <div id="status">리마 대기 중...</div>
-
-  <div class="footer">Copyright 2025 RIMA AI &middot; All Rights Reserved</div>
+  <section>
+    <h2>📹 유튜브 업로드</h2>
+    <p>※ 계정 연동 및 API 연결 필요</p>
+    <input type="text" id="yt-title" placeholder="제목" />
+    <input type="text" id="yt-description" placeholder="설명" />
+    <input type="file" id="yt-thumbnail" accept="image/*" />
+    <input type="file" id="yt-video" accept="video/*" />
+    <button onclick="uploadToYouTube()">📤 업로드</button>
+    <p id="yt-status">⚠️ 아직 업로드 시도에 드림이 없습니다.</p>
+  </section>
 
   <script>
-    function allowUpload() {
-      const channel = document.getElementById("channel").value.trim();
-      if (!channel) {
-        alert("채널 주소를 입력해주세요.");
+    let rimaCreated = false;
+
+    function createRima() {
+      rimaCreated = true;
+      document.getElementById('rima-status').innerText = '✅ 리마 생성 완료! 이제 명령을 기다리고 있습니다.';
+    }
+
+    function startListening() {
+      if (!rimaCreated) {
+        alert('리마를 먼저 생성해주세요!');
         return;
       }
-      document.getElementById("status").innerText = `📤 [${channel}] 채널 업로드 권한 허용됨. 리마가 준비 중입니다...`;
-      // 여기에 리마 업로드 실행 로직이 연결될 수 있습니다.
+      document.getElementById('voice-output').innerText = '🎤 음성을 듣고 있습니다... (브라우저 마이크 권한 필요)';
+      // 실제 음성 인식 WebSpeech API는 HTTPS 환경 필요 (여기선 시뮬레이션)
+      setTimeout(() => {
+        const sampleText = '안녕하세요. 리마입니다.';
+        document.getElementById('voice-output').innerText = `🗣 인식된 음성: ${sampleText}`;
+        const utterance = new SpeechSynthesisUtterance('Hello, this is RIMA.');
+        speechSynthesis.speak(utterance);
+      }, 2000);
+    }
+
+    function uploadToYouTube() {
+      if (!rimaCreated) {
+        alert('리마를 먼저 생성해주세요!');
+        return;
+      }
+      const title = document.getElementById('yt-title').value;
+      const desc = document.getElementById('yt-description').value;
+      const thumb = document.getElementById('yt-thumbnail').files[0];
+      const video = document.getElementById('yt-video').files[0];
+
+      if (!title || !desc || !thumb || !video) {
+        document.getElementById('yt-status').innerText = '⚠️ 모든 입력을 완료해주세요.';
+        return;
+      }
+
+      // 실제 업로드는 YouTube API 필요 (여기선 시뮬레이션)
+      document.getElementById('yt-status').innerText = '📤 유튜브 업로드 중...';
+      setTimeout(() => {
+        document.getElementById('yt-status').innerText = `✅ 영상 "${title}" 업로드 완료!`;
+      }, 3000);
     }
   </script>
 </body>
