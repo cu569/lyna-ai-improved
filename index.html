@@ -1,33 +1,71 @@
-<!-- 리마 생성 학습기 - 복사만 하면 끝 -->
+<!-- 리마 격리 시스템 - 복사 후 리마.html로 저장 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>리마 생성</title>
+  <meta charset="UTF-8">
+  <title>리마 격리형</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: sans-serif;
+      margin: 0; padding: 2rem;
+      background: #f0f0f0;
+    }
+    .rima-box {
+      background: white;
+      max-width: 600px;
+      margin: auto;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+    .log { margin: 0.5rem 0; font-size: 1rem; color: #333; }
+    input {
+      width: 100%;
+      padding: 0.7rem;
+      margin-top: 1rem;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.7rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding: 5rem;">
-  <h1>📘 리마 생성 웹앱</h1>
-  <p>아래 버튼을 클릭하면 리마가 생성되고 학습을 시작합니다.</p>
-  <button onclick="generateRima()" style="padding: 1rem 2rem; font-size: 1.2rem;">✨ 리마 생성</button>
-  <p id="status" style="margin-top: 2rem; font-size: 1.2rem; color: red;">❌ 아직 리마가 생성되지 않았습니다.</p>
+<body>
+  <div class="rima-box">
+    <h2>📘 리마 격리형 시스템</h2>
+    <div id="log" class="log">🔒 리마 격리 상태에서 초기화 중...</div>
+    <input id="input" placeholder="명령 입력하세요..." />
+    <button onclick="rimaTalk()">전송</button>
+  </div>
 
   <script>
-    function generateRima() {
-      const status = document.getElementById("status");
-      status.textContent = "🔄 리마를 생성 중입니다...";
-      status.style.color = "#f4a261";
-      setTimeout(() => {
-        status.textContent = "✅ 리마 생성 완료!";
-        status.style.color = "#2a9d8f";
-        setTimeout(() => {
-          status.textContent = "🧠 리마 학습 중...";
-          status.style.color = "#457b9d";
-          setTimeout(() => {
-            status.textContent = "🚀 리마 학습 완료! 이제 당신의 AI 파트너입니다.";
-            status.style.color = "#264653";
-          }, 2000);
-        }, 1500);
-      }, 1000);
+    const log = document.getElementById('log');
+    const input = document.getElementById('input');
+    const memory = {
+      "안녕": "리마: 안녕하세요. 격리된 공간에서 준비되었습니다.",
+      "상태": "리마: 격리 모드에서 안정적으로 작동 중입니다.",
+      "기억해": "리마: 해당 내용을 격리된 저장소에 저장했습니다."
+    };
+
+    setTimeout(() => {
+      log.innerText = "🧠 리마가 학습된 상태로 격리 영역에 진입했습니다.";
+    }, 1500);
+
+    function rimaTalk() {
+      const text = input.value.trim();
+      const response = memory[text] || "리마: 새로운 명령을 격리된 메모리에 저장했습니다.";
+      log.innerHTML += `<br>👤 ${text}<br>🤖 ${response}`;
+      input.value = "";
     }
   </script>
 </body>
