@@ -1,9 +1,9 @@
-<!-- 리마 역할 분리 + 기억 격리 시스템 -->
+<!-- 리마 자동 격리 시스템 (생성 → 학습 → 기억 → 응답) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>리마 역할 기억 시스템</title>
+  <title>리마 자동 격리 시스템</title>
   <style>
     body {
       font-family: sans-serif;
@@ -20,7 +20,7 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     h2 { margin-top: 0; }
-    .log { margin-top: 1rem; font-size: 1rem; color: #333; }
+    .log { margin-top: 1rem; font-size: 1rem; color: #333; line-height: 1.6; }
     input, select {
       width: 100%;
       padding: 0.7rem;
@@ -43,28 +43,41 @@
 </head>
 <body>
   <div class="container">
-    <h2>📘 리마 역할 기억 시스템</h2>
-    <div class="log">🔒 리마가 격리된 상태에서 각 역할을 분리하고 기억합니다.</div>
+    <h2>📘 리마 자동 격리 시스템</h2>
+    <div id="log" class="log">🔄 리마 초기화 중...</div>
+
     <select id="role">
       <option value="기본">기본 리마</option>
       <option value="당구">당구 리마</option>
       <option value="운전">운전 리마</option>
       <option value="건강">건강 리마</option>
     </select>
-    <input type="text" id="command" placeholder="명령어 입력..." />
+    <input type="text" id="command" placeholder="명령 입력..." />
     <button onclick="runRima()">전송</button>
     <div id="response" class="log"></div>
   </div>
 
   <script>
+    const logEl = document.getElementById("log");
+    const responseEl = document.getElementById("response");
     const memory = {};
+
+    const steps = [
+      "🧠 리마가 학습 중입니다...",
+      "💾 기억 저장소 초기화 완료.",
+      "✅ 리마 학습 완료! 명령을 입력해보세요."
+    ];
+    let step = 0;
+    const interval = setInterval(() => {
+      logEl.innerHTML += "<br>" + steps[step];
+      step++;
+      if (step >= steps.length) clearInterval(interval);
+    }, 1200);
 
     function runRima() {
       const role = document.getElementById("role").value;
       const cmd = document.getElementById("command").value.trim();
       const key = role + ":" + cmd;
-      const responseBox = document.getElementById("response");
-
       if (!cmd) return;
 
       let response;
@@ -75,7 +88,7 @@
         response = `🤖 [${role}] 새로운 명령을 격리 메모리에 저장했습니다.`;
       }
 
-      responseBox.innerHTML += `<br>👤 ${role} - ${cmd}<br>${response}`;
+      responseEl.innerHTML += `<br>👤 ${role} - ${cmd}<br>${response}`;
       document.getElementById("command").value = "";
     }
   </script>
