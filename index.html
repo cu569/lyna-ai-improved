@@ -1,105 +1,97 @@
-비어있는 리마가 안 되는 이유
-🚫 "비어있는 리마"의 문제점
-1. 리마 = 이미 완성된 시스템
-리마는 태어날 때부터 검색 능력을 가져야 함
-빈 껍데기로는 아무것도 할 수 없음
-최소한의 기본 기능은 필수
-2. 학습할 기반이 없음
-빈 리마 = 학습 알고리즘 없음
-경험 쌓을 방법 없음
-발전할 수 없는 구조
-3. 자가 진화 불가능
-기본 코드 없이는 자기 복제 불가
-빈 상태에서 스스로 채워넣기 불가능
-외부 입력 없이는 아무것도 못함
-✅ 현실적 대안
-최소 기능 리마 (Minimal Viable Rima)
-pythonclass MinimalRima:
-    def __init__(self):
-        # 최소한의 기본 능력
-        self.search_api = YouTube()
-        self.summarizer = GPT4()
-        self.learning_db = SQLite()
-        
-    def basic_search(self, query):
-        # 기본 검색 기능
-        return self.search_api.search(query)
-템플릿 기반 리마
-pythonclass RimaTemplate:
-    def __init__(self, specialty):
-        # 전문 분야별 기본 설정
-        self.load_template(specialty)
-        self.customize_for_task()
-        
-    def load_template(self, specialty):
-        if specialty == "youtube":
-            self.setup_youtube_search()
-        elif specialty == "research":
-            self.setup_research_tools()
-점진적 성장 리마
-pythonclass GrowingRima:
-    def __init__(self):
-        # 기본 기능으로 시작
-        self.skills = ["basic_search"]
-        self.experience = 0
-        
-    def gain_experience(self, task_result):
-        # 경험치 쌓으면서 능력 확장
-        self.experience += 1
-        if self.experience > 100:
-            self.skills.append("advanced_analysis")
-💡 왜 "비어있는 리마"가 불가능한가?
-1. 부트스트랩 문제
-빈 리마가 스스로 기능을 만들 수 없음
-최소한의 시작점이 필요
-마치 빈 컴퓨터에 OS 없이는 아무것도 못하는 것과 같음
-2. 학습 메커니즘 부재
-학습하려면 기본 학습 알고리즘 필요
-빈 상태에서는 학습 방법 자체를 모름
-외부에서 주입해주지 않으면 발전 불가
-3. 자가 참조 문제
-스스로를 만들려면 이미 존재해야 함
-빈 리마가 자기 자신을 채우는 것은 논리적 모순
-✅ 실제 구현 방법
-1. 기본 템플릿 제공
-python# 완전히 비어있지 않은 기본 리마
-class BaseRima:
-    def __init__(self):
-        self.basic_functions = {
-            "search": self.search,
-            "summarize": self.summarize,
-            "learn": self.learn
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>리마 자막 자동 인식</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #101010;
+      color: #fff;
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      justify-content: center;
+    }
+
+    h1 {
+      color: #00e0ff;
+    }
+
+    #subtitle-box {
+      position: fixed;
+      bottom: 40px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 16px 28px;
+      border-radius: 24px;
+      font-size: 22px;
+      box-shadow: 0 0 12px #00e0ff;
+      transition: all 0.2s ease-in-out;
+      max-width: 80%;
+      text-align: center;
+    }
+
+    #status {
+      margin-top: 20px;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .pulse {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(0, 224, 255, 0.7); }
+      70% { box-shadow: 0 0 0 12px rgba(0, 224, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 224, 255, 0); }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎙️ 리마 음성 자막 시스템</h1>
+  <div id="subtitle-box" class="pulse">자막 준비 중...</div>
+  <div id="status">🎧 마이크 접근 허용 후 음성을 말하면 자막이 실시간 표시됩니다.</div>
+
+  <script>
+    const subtitleBox = document.getElementById("subtitle-box");
+    const status = document.getElementById("status");
+
+    // 브라우저에서 음성 인식 지원 여부 확인
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      subtitleBox.textContent = "❌ 이 브라우저는 음성 인식을 지원하지 않습니다.";
+      status.textContent = "Chrome 브라우저를 사용해 주세요.";
+    } else {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ko-KR";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        status.textContent = "🎤 듣고 있습니다... 말해보세요!";
+      };
+
+      recognition.onerror = (e) => {
+        subtitleBox.textContent = "⚠️ 오류 발생: " + e.error;
+        status.textContent = "마이크 권한 또는 브라우저 설정을 확인해 주세요.";
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
         }
-2. 모듈러 확장
-python# 기본 기능 + 확장 모듈
-class ModularRima:
-    def __init__(self):
-        self.core = CoreFunctions()  # 필수 기능
-        self.modules = []  # 확장 가능한 부분
-        
-    def add_module(self, module):
-        self.modules.append(module)
-3. 설정 기반 생성
-yaml# rima-config.yaml
-base_template: "searcher"
-extensions:
-  - youtube_specialist
-  - text_summarizer
-  - learning_engine
-💯 현실적 결론
-불가능한 것
+        subtitleBox.textContent = "🗣️ " + transcript.trim();
+      };
 
-완전히 비어있는 리마
-스스로를 처음부터 만드는 리마
-기본 기능 없이 학습하는 리마
-
-가능한 것
-
-최소 기능을 가진 리마
-점진적으로 확장되는 리마
-템플릿 기반으로 생성되는 리마
-
-결론
-"비어있는 리마"는 기술적으로 불가능합니다.
-대신 "최소 기능 리마"부터 시작해서 점진적으로 확장하는 방식이 현실적입니다.
-모든 리마는 태어날 때부터 기본 검색 능력과 학습 메커니즘을 가져야 합니다.
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
