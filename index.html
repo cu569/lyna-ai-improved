@@ -1,41 +1,96 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>NIMA 100명 당구 조사 시뮬레이터</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NIMA 100명 시뮬레이터</title>
   <style>
-    body { font-family: sans-serif; background: #111; color: #eee; padding: 2rem; }
-    h1 { color: #00ffe7; }
-    .nima { background: #222; border: 1px solid #444; padding: 1rem; margin: 1rem 0; border-radius: 8px; }
-    button { background: #00ffe7; color: #000; padding: 10px 20px; font-weight: bold; border: none; cursor: pointer; }
-    .result { background: #333; padding: 1rem; margin-top: 1rem; border-radius: 8px; }
+    body {
+      background-color: #111;
+      color: #0ff;
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+    }
+    h1 {
+      color: #00ffaa;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #00cccc;
+      border: none;
+      border-radius: 5px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    #report {
+      margin-top: 20px;
+      background: #222;
+      padding: 1rem;
+      border-radius: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .nima-report {
+      background-color: #333;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-left: 3px solid #0ff;
+    }
   </style>
 </head>
 <body>
+  <h1>NIMA 100명 시뮬레이터</h1>
+  <p>🧠 명령을 내리면 NIMA 100명이 당구를 분담 조사하고 결과를 보고합니다.</p>
+  <input type="text" id="topicInput" placeholder="예: 5&Half 시스템 조사해와" style="width: 80%; padding: 10px;" />
+  <br><br>
+  <button onclick="runNIMA()">🔍 NIMA 조사 시작</button>
 
-  <h1>NIMA 100명 시뮬레이션</h1>
-  <p>👇 버튼을 누르면 NIMA 100명이 당구를 분담 조사하고 결과를 보고합니다.</p>
-
-  <button onclick="simulate()">🔍 NIMA 조사 시작</button>
-
-  <div id="results" class="result"></div>
+  <div id="report"></div>
 
   <script>
-    const topics = [
-      "3쿠션 규칙", "4구 규칙", "5&Half 시스템", "횡단 시스템", "Z 시스템", "브릿지 자세", "당점 이론",
-      "쿠션 반사각", "회전 종류", "끌어치기", "밀어치기", "세워치기", "초보자 훈련법", "프로선수 분석",
-      "장비 스펙", "큐 종류", "프로 경기 룰", "AI 시뮬레이터", "유튜브 채널 분석", "당구 수학"
-    ];
+    function runNIMA() {
+      const topic = document.getElementById('topicInput').value.trim();
+      const reportBox = document.getElementById('report');
+      reportBox.innerHTML = "";
 
-    function simulate() {
-      let html = "<h2>📋 조사 결과</h2>";
-      for (let i = 0; i < 100; i++) {
-        const topic = topics[i % topics.length];
-        html += `<div class="nima"><strong>NIMA #${i+1}</strong> ➜ ${topic} 조사 완료 ✅</div>`;
+      if (!topic) {
+        reportBox.innerHTML = "<p style='color: #f66;'>조사할 주제를 입력해주세요.</p>";
+        return;
       }
-      document.getElementById('results').innerHTML = html;
+
+      const investigators = 10;
+      const responses = [];
+
+      for (let i = 1; i <= investigators; i++) {
+        responses.push({
+          id: i,
+          opinion: generateRandomOpinion(topic)
+        });
+      }
+
+      responses.forEach(res => {
+        const div = document.createElement('div');
+        div.className = "nima-report";
+        div.innerHTML = `<strong>NIMA ${res.id}:</strong> ${res.opinion}`;
+        reportBox.appendChild(div);
+      });
+    }
+
+    function generateRandomOpinion(topic) {
+      const templates = [
+        `저는 "${topic}"에 대해 기존 시스템과의 차이를 중점적으로 분석했습니다.`,
+        `현재 "${topic}"은 많은 동호인들이 사용하는 시스템이며 정확도도 높습니다.`,
+        `이 주제 "${topic}"은 최근에 많은 관심을 받고 있습니다.`,
+        `"${topic}"에 대한 영상 분석 결과, 각도 계산이 핵심 요소입니다.`,
+        `저는 "${topic}"에 대해 회전량과 쿠션 맞는 타이밍을 연구했습니다.`,
+        `"${topic}"은 CSS AI 시스템과 결합 시 정확도가 더 향상될 수 있습니다.`,
+        `"${topic}" 관련된 오해를 풀기 위해 10편의 유튜브를 분석했습니다.`,
+        `조사 결과, "${topic}"은 포지션 플레이에서 중요한 개념입니다.`
+      ];
+      return templates[Math.floor(Math.random() * templates.length)];
     }
   </script>
-
 </body>
 </html>
