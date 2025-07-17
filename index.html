@@ -1,36 +1,48 @@
-const 주제목록 = [
-  "GPT-4의 성능",
-  "C.S.S 포지션 시스템 정확도",
-  "AI 당구 샷 판별률",
-  "유튜브 자동 업로드 오류율",
-  "AI 심판과 실제 심판 비교",
-  "AI 당구 프로그램 반응 속도",
-  "자동 번역 음성 정확도",
-  "운전면허 AI 설명 만족도",
-  "스마트링 응급 전송 성공률",
-  "G911 시스템 안정성"
-];
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>NIMA 100명 조사 시뮬레이터</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 20px; }
+    h1 { text-align: center; }
+    #result { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; justify-content: center; }
+    .nima { width: 180px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    .nima h3 { margin: 0 0 5px; font-size: 16px; }
+    .loading { color: gray; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>NIMA 100명 조사 시뮬레이터</h1>
+  <button onclick="startInvestigation()">📡 조사 시작</button>
+  <div id="result"></div>
 
-function 조사하기(id) {
-  const 주제 = 주제목록[Math.floor(Math.random() * 주제목록.length)];
-  const div = document.createElement("div");
-  div.className = "card";
-  div.innerHTML = `
-    <strong>🔹 리마 #${id}</strong><br>
-    주제: ${주제}<br>
-    결과: <span class="결과">[조사중...]</span>
-  `;
-  document.getElementById("결과영역").appendChild(div);
+  <script>
+    const topics = ["당구 시스템", "3쿠션 기술", "브릿지 장갑 효과", "프로 선수 영상", "비껴치기", "당구대 마찰", "쿠션 반응"];
 
-  setTimeout(() => {
-    const 데이터 = `${Math.floor(80 + Math.random() * 15)}% 신뢰도로 "${주제}"에 대해 유의미한 결과를 확인함`;
-    div.querySelector(".결과").innerText = 데이터;
-  }, 200 + Math.random() * 1000);
-}
+    function getRandomTopic() {
+      return topics[Math.floor(Math.random() * topics.length)];
+    }
 
-function 조사시작() {
-  document.getElementById("결과영역").innerHTML = "";
-  for (let i = 1; i <= 100; i++) {
-    조사하기(i);
-  }
-}
+    function getRandomFinding(topic) {
+      return `${topic}에 대해 요약된 조사 결과입니다.`;
+    }
+
+    function startInvestigation() {
+      const result = document.getElementById('result');
+      result.innerHTML = '';
+      for (let i = 1; i <= 100; i++) {
+        const div = document.createElement('div');
+        div.className = 'nima';
+        const topic = getRandomTopic();
+        div.innerHTML = `<h3>리마 ${i}번</h3><div class="loading">조사 중...</div>`;
+        result.appendChild(div);
+
+        setTimeout(() => {
+          div.innerHTML = `<h3>리마 ${i}번</h3><p>${getRandomFinding(topic)}</p>`;
+        }, 500 + Math.random() * 2000); // 0.5~2.5초 조사 시간
+      }
+    }
+  </script>
+</body>
+</html>
