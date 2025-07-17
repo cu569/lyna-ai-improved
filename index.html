@@ -1,84 +1,72 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>유튜브 자동 업로드 시뮬레이터</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f8f8f8;
-      text-align: center;
-      padding: 20px;
-    }
-    .container {
-      background: white;
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    }
-    input, textarea, button {
-      width: 100%;
-      margin: 10px 0;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button {
-      background-color: red;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: darkred;
-    }
-    h2 {
-      color: #cc0000;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>🚀 유튜브 자동 업로드 시뮬레이터</h2>
-    
-    <label>🎥 영상 선택</label>
-    <input type="file" id="videoInput" accept="video/*">
+import os
+import time
+from playwright.sync_api import sync_playwright
+from datetime import datetime
 
-    <label>🖼 썸네일 선택</label>
-    <input type="file" id="thumbnailInput" accept="image/*">
+UPLOAD_DIR = "upload_queue"
 
-    <label>📝 제목</label>
-    <input type="text" id="titleInput" placeholder="영상 제목을 입력하세요">
+def read_file(filepath):
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read().strip()
 
-    <label>📄 설명</label>
-    <textarea id="descInput" placeholder="영상 설명을 입력하세요"></textarea>
+def upload_video(playwright, video_id):
+    browser = playwright.chromium.launch(headless=False)
+    context = browser.new_context(storage_state="auth.json")  # 로그인 저장
+    page = context.new_page()
 
-    <button onclick="simulateUpload()">🚀 업로드 실행</button>
+    page.goto("https://studio.youtube.com")
 
-    <div id="result"></div>
-  </div>
+    page.wait_for_timeout(5000)
+    page.goto("https://studio.youtube.com/channel/UC/videos/upload")
 
-  <script>
-    function simulateUpload() {
-      const video = document.getElementById("videoInput").files[0];
-      const thumbnail = document.getElementById("thumbnailInput").files[0];
-      const title = document.getElementById("titleInput").value;
-      const desc = document.getElementById("descInput").value;
+    # 파일 업로드
+    video_path = f"{UPLOAD_DIR}/{video_id}_video.mp4"
+    page.set_input_files('input[type="file"]', video_path)
 
-      if (!video || !thumbnail || !title || !desc) {
-        alert("모든 항목을 입력해 주세요.");
-        return;
-      }
+    # 제목 입력
+    title = read_file(f"{UPLOAD_DIR}/{video_id}_title.txt")
+    page.get_by_label("Title").fill(title)
 
-      document.getElementById("result").innerHTML =
-        `<p>✅ "${title}" 영상이 유튜브에 업로드 되었다고 가정합니다!</p>
-         <p>썸네일: ${thumbnail.name}</p>
-         <p>설명: ${desc}</p>`;
-    }
-  </script>
-</body>
-</html>
+    # 설명 입력
+    description = read_file(f"{UPLOAD_DIR}/{video_id}_description.txt")
+    page.get_by_label("Description").fill(description)
+
+    # 썸네일 업로드
+    thumb_path = f"{UPLOAD_DIR}/{video_id}_thumbnail.jpg"
+    if os.path.exists(thumb_path):
+        page.get_by_text("Upload thumbnail").click()
+        page.set_input_files('input[type="file"]', thumb_path)
+
+    # 다음 버튼 3번 클릭
+    for _ in range(3):
+        page.get_by_text("Next").click()
+        page.wait_for_timeout(1000)
+
+    # 예약 게시 설정
+    page.get_by_text("Schedule").click()
+
+    schedule = read_file(f"{UPLOAD_DIR}/{video_id}_schedule.txt")
+    dt = datetime.strptime(schedule, "%Y-%m-%d %H:%M")
+
+    page.get_by_label("Date").fill(dt.strftime("%m/%d/%Y"))
+    page.get_by_label("Time").fill(dt.strftime("%I:%M %p"))
+
+    page.get_by_text("Schedule").nth(1).click()
+
+    print(f"{video_id} 예약 업로드 완료 ✅")
+    page.wait_for_timeout(3000)
+    context.close()
+    browser.close()
+
+def main():
+    with sync_playwright() as p:
+        for file in os.listdir(UPLOAD_DIR):
+            if file.endswith("_video.mp4"):
+                video_id = file.split("_")[0]
+                try:
+                    upload_video(p, video_id)
+                except Exception as e:
+                    print(f"{video_id} 실패 ❌: {e}")
+
+if __name__ == "__main__":
+    main()
