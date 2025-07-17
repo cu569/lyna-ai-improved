@@ -2,94 +2,48 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NIMA 100명 시뮬레이터</title>
+  <title>NIMA 분산 조사 시스템</title>
   <style>
-    body {
-      background-color: #111;
-      color: #0ff;
-      font-family: Arial, sans-serif;
-      padding: 2rem;
-    }
-    h1 {
-      color: #00ffaa;
-    }
-    button {
-      padding: 10px 20px;
-      background-color: #00cccc;
-      border: none;
-      border-radius: 5px;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
-    #report {
-      margin-top: 20px;
-      background: #222;
-      padding: 1rem;
-      border-radius: 8px;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    .nima-report {
-      background-color: #333;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-left: 3px solid #0ff;
-    }
+    body { font-family: sans-serif; background: #f8f8f8; padding: 20px; }
+    h1 { color: #222; }
+    #output { white-space: pre-wrap; background: #fff; padding: 20px; border: 1px solid #ccc; height: 300px; overflow-y: scroll; }
+    button { padding: 10px 20px; margin: 10px 0; }
   </style>
 </head>
 <body>
-  <h1>NIMA 100명 시뮬레이터</h1>
-  <p>🧠 명령을 내리면 NIMA 100명이 당구를 분담 조사하고 결과를 보고합니다.</p>
-  <input type="text" id="topicInput" placeholder="예: 5&Half 시스템 조사해와" style="width: 80%; padding: 10px;" />
-  <br><br>
-  <button onclick="runNIMA()">🔍 NIMA 조사 시작</button>
-
-  <div id="report"></div>
+  <h1>🔍 NIMA 100명 분산 조사 시뮬레이터</h1>
+  <button onclick="startSimulation()">10분간 조사 명령!</button>
+  <div id="output">조사 결과가 여기에 표시됩니다...</div>
 
   <script>
-    function runNIMA() {
-      const topic = document.getElementById('topicInput').value.trim();
-      const reportBox = document.getElementById('report');
-      reportBox.innerHTML = "";
+    const topics = [
+      "5와 ½ 시스템에서 수구 출발 위치별 계산법",
+      "코너에서 3쿠션 포지션 잡는 방법",
+      "1쿠션 계산 공식 정리",
+      "스트로크에 따른 회전량 실험 결과",
+      "최단거리 vs 최적회전 비교",
+      "당점에 따른 1쿠션 궤적 변화",
+      "회전력 유지거리 분석",
+      "2단 쿠션에서 방향 각도 변화",
+      "횡회전(좌우스핀)의 실전 적용",
+      "실제 시합에서의 시스템 활용 사례"
+    ];
 
-      if (!topic) {
-        reportBox.innerHTML = "<p style='color: #f66;'>조사할 주제를 입력해주세요.</p>";
-        return;
+    function startSimulation() {
+      const output = document.getElementById("output");
+      output.innerText = "📡 NIMA 100명이 조사 시작합니다...\n\n";
+
+      for (let i = 1; i <= 100; i++) {
+        const topic = topics[Math.floor(Math.random() * topics.length)];
+        const report = `🧠 NIMA ${i} 조사 완료: "${topic}" 관련 영상 3개, 요약 1개 확보됨.`;
+        setTimeout(() => {
+          output.innerText += report + "\n";
+        }, i * 100);
       }
 
-      const investigators = 10;
-      const responses = [];
-
-      for (let i = 1; i <= investigators; i++) {
-        responses.push({
-          id: i,
-          opinion: generateRandomOpinion(topic)
-        });
-      }
-
-      responses.forEach(res => {
-        const div = document.createElement('div');
-        div.className = "nima-report";
-        div.innerHTML = `<strong>NIMA ${res.id}:</strong> ${res.opinion}`;
-        reportBox.appendChild(div);
-      });
-    }
-
-    function generateRandomOpinion(topic) {
-      const templates = [
-        `저는 "${topic}"에 대해 기존 시스템과의 차이를 중점적으로 분석했습니다.`,
-        `현재 "${topic}"은 많은 동호인들이 사용하는 시스템이며 정확도도 높습니다.`,
-        `이 주제 "${topic}"은 최근에 많은 관심을 받고 있습니다.`,
-        `"${topic}"에 대한 영상 분석 결과, 각도 계산이 핵심 요소입니다.`,
-        `저는 "${topic}"에 대해 회전량과 쿠션 맞는 타이밍을 연구했습니다.`,
-        `"${topic}"은 CSS AI 시스템과 결합 시 정확도가 더 향상될 수 있습니다.`,
-        `"${topic}" 관련된 오해를 풀기 위해 10편의 유튜브를 분석했습니다.`,
-        `조사 결과, "${topic}"은 포지션 플레이에서 중요한 개념입니다.`
-      ];
-      return templates[Math.floor(Math.random() * templates.length)];
+      setTimeout(() => {
+        output.innerText += "\n✅ 전체 조사 완료! (예시)\n지금부터 데이터 정제 및 교차 분석 시작 가능.";
+      }, 10100);
     }
   </script>
 </body>
