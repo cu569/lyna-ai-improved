@@ -3,95 +3,70 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>리마 자막 자동 인식</title>
+  <title>리마 자막 테스트</title>
   <style>
     body {
       margin: 0;
       padding: 0;
-      background: #101010;
+      background: #121212;
       color: #fff;
-      font-family: "Segoe UI", sans-serif;
+      font-family: "Arial", sans-serif;
       display: flex;
       flex-direction: column;
+      justify-content: center;
       align-items: center;
       height: 100vh;
-      justify-content: center;
     }
 
     h1 {
+      margin-bottom: 10px;
       color: #00e0ff;
     }
 
     #subtitle-box {
       position: fixed;
-      bottom: 40px;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 16px 28px;
-      border-radius: 24px;
-      font-size: 22px;
-      box-shadow: 0 0 12px #00e0ff;
-      transition: all 0.2s ease-in-out;
-      max-width: 80%;
-      text-align: center;
+      bottom: 30px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 12px 24px;
+      border-radius: 20px;
+      font-size: 20px;
+      color: #fff;
+      box-shadow: 0 0 10px #00e0ff;
+      animation: fadeIn 0.3s ease-in-out;
     }
 
-    #status {
-      margin-top: 20px;
-      color: #aaa;
-      font-size: 14px;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .pulse {
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(0, 224, 255, 0.7); }
-      70% { box-shadow: 0 0 0 12px rgba(0, 224, 255, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(0, 224, 255, 0); }
+    .hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h1>🎙️ 리마 음성 자막 시스템</h1>
-  <div id="subtitle-box" class="pulse">자막 준비 중...</div>
-  <div id="status">🎧 마이크 접근 허용 후 음성을 말하면 자막이 실시간 표시됩니다.</div>
+  <h1>🎙️ 리마 자막 시연 페이지</h1>
+  <p>아래 자막이 자동으로 바뀝니다 (3초 간격)</p>
+
+  <div id="subtitle-box">🔊 자막을 준비 중입니다...</div>
 
   <script>
+    const subtitles = [
+      "🔊 테스트를 시작합니다. 리마는 여러분과 대화 중입니다.",
+      "📡 리마는 음성을 인식하고 자동으로 자막을 표시합니다.",
+      "🧠 인공지능 자막은 실시간 대화에 기반합니다.",
+      "📝 이 자막은 테스트용이며, 실제 대화로 교체 가능합니다.",
+      "✅ 테스트가 완료되었습니다. 감사합니다."
+    ];
+
+    let idx = 0;
     const subtitleBox = document.getElementById("subtitle-box");
-    const status = document.getElementById("status");
 
-    // 브라우저에서 음성 인식 지원 여부 확인
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      subtitleBox.textContent = "❌ 이 브라우저는 음성 인식을 지원하지 않습니다.";
-      status.textContent = "Chrome 브라우저를 사용해 주세요.";
-    } else {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "ko-KR";
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      recognition.onstart = () => {
-        status.textContent = "🎤 듣고 있습니다... 말해보세요!";
-      };
-
-      recognition.onerror = (e) => {
-        subtitleBox.textContent = "⚠️ 오류 발생: " + e.error;
-        status.textContent = "마이크 권한 또는 브라우저 설정을 확인해 주세요.";
-      };
-
-      recognition.onresult = (event) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        subtitleBox.textContent = "🗣️ " + transcript.trim();
-      };
-
-      recognition.start();
-    }
+    setInterval(() => {
+      subtitleBox.textContent = subtitles[idx];
+      idx = (idx + 1) % subtitles.length;
+    }, 3000);
   </script>
 </body>
 </html>
