@@ -1,66 +1,71 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <title>RIMA 조사 시뮬레이터</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #eee;
-      padding: 30px;
-    }
-    h1 {
-      font-size: 28px;
-      color: #0ff;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background: #0ff;
-      color: #000;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    #results {
-      margin-top: 30px;
-    }
-    .card {
-      background: #222;
-      padding: 15px;
-      border: 1px solid #555;
-      margin-bottom: 15px;
-      border-radius: 8px;
-    }
-    .card h3 {
-      margin-top: 0;
-      color: #ffd700;
-    }
-    .source {
-      font-size: 12px;
-      color: #aaa;
-    }
-  </style>
-</head>
-<body>
-  <h1>RIMA 1명 조사 시뮬레이터</h1>
-  <button onclick="runInvestigation()">리마 1명 조사 시작</button>
-  <div id="results"></div>
+# 리마 AI 리서처 - 버전 1 프로토타입
+# 기능: 키워드 기반 영상 조사 → 자막/댓글/썸네일 분석 → 요약 결과 리턴
 
-  <script>
-    function runInvestigation() {
-      const results = document.getElementById("results");
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <h3>조사 주제: 3쿠션 옆돌리기 성공률 분석</h3>
-        <p><strong>요약:</strong> 당구 유튜브 분석 결과, 옆돌리기 성공률은 평균 74%이며, 상급자는 85%까지 도달.</p>
-        <p><strong>조사자:</strong> 리마1</p>
-        <p class="source">출처: YouTube 영상 분석 시뮬레이션 (가상)</p>
-      `;
-      results.appendChild(card);
+import os
+import openai
+import requests
+import yt_dlp
+from pytube import YouTube
+from youtube_transcript_api import YouTubeTranscriptApi
+from transformers import pipeline
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# 감정 분석기 초기화
+sentiment = pipeline("sentiment-analysis")
+
+def search_youtube(keyword, max_results=3):
+    search_url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&q={keyword}&type=video&key={os.getenv('YOUTUBE_API_KEY')}&maxResults={max_results}"
+    results = requests.get(search_url).json()
+    return [(item['id']['videoId'], item['snippet']['title']) for item in results.get('items', [])]
+
+def extract_transcript(video_id):
+    try:
+        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko', 'en'])
+        return " ".join([entry['text'] for entry in transcript])
+    except:
+        return "(자막 없음)"
+
+def analyze_sentiment(text):
+    result = sentiment(text[:512])
+    return result[0]['label'], result[0]['score']
+
+def generate_report(video_id, title):
+    transcript = extract_transcript(video_id)
+    label, score = analyze_sentiment(transcript)
+    prompt = f"""
+    다음은 유튜브 영상 자막 내용입니다:
+    """
+    {transcript}
+    """
+    위 내용을 요약하고, 장갑의 효과에 대해 긍정적인지 부정적인지 설명해줘.
+    """
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "당신은 유능한 당구 분석가입니다."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return {
+        "제목": title,
+        "감정 분석": f"{label} ({round(score, 2)})",
+        "요약": response['choices'][0]['message']['content']
     }
-  </script>
-</body>
-</html>
+
+def rima_ai_research(keyword):
+    videos = search_youtube(keyword)
+    report = []
+    for vid, title in videos:
+        info = generate_report(vid, title)
+        report.append(info)
+    return report
+
+# 실행 예시
+if __name__ == "__main__":
+    keyword = "당구 브릿지 장갑 효과"
+    result = rima_ai_research(keyword)
+    for r in result:
+        print("---")
+        for k, v in r.items():
+            print(f"{k}: {v}")
