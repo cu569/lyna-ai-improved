@@ -1,654 +1,392 @@
-import os
-import time
-import json
-import logging
-from datetime import datetime, timedelta
-from pathlib import Path
-from playwright.sync_api import sync_playwright, TimeoutError
-import random
-
-# 로깅 설정
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('youtube_uploader.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
-
-class YouTubeUploader:
-    def __init__(self, upload_dir="upload_queue", auth_file="auth.json"):
-        self.upload_dir = Path(upload_dir)
-        self.auth_file = auth_file
-        self.upload_dir.mkdir(exist_ok=True)
-        self.browser = None
-        self.context = None
-        self.page = None
-        
-        # 업로드 설정
-        self.settings = {
-            'privacy': 'private',  # public, unlisted, private
-            'category': 'Entertainment',
-            'language': 'Korean',
-            'auto_chapters': True,
-            'auto_captions': True,
-            'comments_allowed': True,
-            'age_restriction': False
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIMA Lina 심부름 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    
-    def human_delay(self, min_ms=500, max_ms=2000):
-        """사람처럼 자연스러운 딜레이"""
-        delay = random.uniform(min_ms, max_ms) / 1000
-        time.sleep(delay)
-    
-    def safe_click(self, element, description="element", timeout=10000):
-        """안전한 클릭"""
-        try:
-            element.wait_for(state="visible", timeout=timeout)
-            element.click()
-            logger.info(f"✅ Clicked {description}")
-            return True
-        except TimeoutError:
-            logger.warning(f"⚠️ Timeout waiting for {description}")
-            try:
-                element.click(force=True)
-                logger.info(f"✅ Force clicked {description}")
-                return True
-            except:
-                try:
-                    element.evaluate("el => el.click()")
-                    logger.info(f"✅ JS clicked {description}")
-                    return True
-                except Exception as e:
-                    logger.error(f"❌ Failed to click {description}: {e}")
-                    return False
-        except Exception as e:
-            logger.error(f"❌ Click error {description}: {e}")
-            return False
-    
-    def setup_browser(self, headless=False):
-        """브라우저 설정"""
-        logger.info("🌐 Setting up browser...")
-        
-        try:
-            playwright = sync_playwright().start()
-            self.browser = playwright.chromium.launch(
-                headless=headless,
-                args=[
-                    '--no-sandbox',
-                    '--disable-blink-features=AutomationControlled',
-                    '--disable-web-security'
-                ]
-            )
-            
-            context_options = {
-                'viewport': {'width': 1920, 'height': 1080},
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #0f2027 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sparkle {
+            font-size: 2rem;
+            animation: sparkle 2s infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
+        }
+
+        .title h1 {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .html-btn {
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .html-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card.active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+
+        .stat-card.completed {
+            background: linear-gradient(135deg, #10b981, #047857);
+        }
+
+        .stat-card.progress {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section-title h2 {
+            font-size: 1.3rem;
+        }
+
+        .lina-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .lina-card {
+            padding: 30px;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lina-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .lina-card.researcher {
+            background: linear-gradient(135deg, #3b82f6, #1e40af, #1e3a8a);
+        }
+
+        .lina-card.creator {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed, #6d28d9);
+        }
+
+        .lina-card.analyst {
+            background: linear-gradient(135deg, #10b981, #047857, #065f46);
+        }
+
+        .lina-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .lina-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .lina-description {
+            opacity: 0.9;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .create-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .create-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        .plus-icon {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
             
-            if os.path.exists(self.auth_file):
-                context_options['storage_state'] = self.auth_file
-                logger.info("🔑 Loaded authentication")
-            
-            self.context = self.browser.new_context(**context_options)
-            
-            # 자동화 감지 방지
-            self.context.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', {
-                    get: () => undefined,
-                });
-                window.chrome = { runtime: {} };
-            """)
-            
-            self.page = self.context.new_page()
-            self.page.on("dialog", lambda dialog: dialog.accept())
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Browser setup failed: {e}")
-            return False
-    
-    def authenticate(self):
-        """YouTube 인증"""
-        if os.path.exists(self.auth_file):
-            logger.info("🔑 Using existing authentication")
-            return True
-        
-        logger.info("🔐 Starting authentication...")
-        
-        try:
-            self.page.goto("https://studio.youtube.com", wait_until="domcontentloaded")
-            self.human_delay(3000, 5000)
-            
-            print("\n" + "="*60)
-            print("🔐 YOUTUBE LOGIN REQUIRED")
-            print("="*60)
-            print("1. 구글 계정으로 로그인하세요")
-            print("2. YouTube Studio 메인 페이지가 로드되면 Enter를 누르세요")
-            print("="*60)
-            
-            input("로그인 완료 후 Enter를 누르세요...")
-            
-            self.context.storage_state(path=self.auth_file)
-            logger.info(f"✅ Authentication saved")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Authentication failed: {e}")
-            return False
-    
-    def navigate_to_upload(self):
-        """업로드 페이지로 이동"""
-        logger.info("📤 Navigating to upload...")
-        
-        try:
-            self.page.goto("https://studio.youtube.com", wait_until="domcontentloaded")
-            self.human_delay(3000, 5000)
-            
-            # CREATE 버튼 찾기 및 클릭
-            create_selectors = [
-                '[aria-label="만들기"]',
-                '[aria-label="Create"]',
-                'button:has-text("CREATE")',
-                '#create-icon'
-            ]
-            
-            for selector in create_selectors:
-                try:
-                    create_btn = self.page.locator(selector).first
-                    if create_btn.is_visible(timeout=5000):
-                        self.safe_click(create_btn, "Create button")
-                        break
-                except:
-                    continue
-            
-            self.human_delay(1000, 2000)
-            
-            # 업로드 옵션 클릭
-            upload_selectors = [
-                'text="동영상 업로드"',
-                'text="Upload video"',
-                'text="Upload videos"'
-            ]
-            
-            for selector in upload_selectors:
-                try:
-                    upload_btn = self.page.locator(selector).first
-                    if upload_btn.is_visible(timeout=5000):
-                        self.safe_click(upload_btn, "Upload video")
-                        break
-                except:
-                    continue
-            
-            self.human_delay(2000, 3000)
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Navigation failed: {e}")
-            return False
-    
-    def upload_file(self, video_path):
-        """비디오 파일 업로드"""
-        logger.info(f"📁 Uploading: {video_path}")
-        
-        try:
-            # 파일 입력 요소 찾기
-            file_input = self.page.locator('input[type="file"]').first
-            file_input.set_input_files(str(video_path))
-            logger.info("✅ Video file uploaded")
-            
-            # 업로드 시작 대기
-            self.human_delay(5000, 8000)
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ File upload failed: {e}")
-            return False
-    
-    def wait_for_upload_processing(self):
-        """업로드 처리 완료 대기"""
-        logger.info("⏳ Waiting for upload processing...")
-        
-        max_wait = 300  # 5분
-        start_time = time.time()
-        
-        while time.time() - start_time < max_wait:
-            try:
-                # 처리 완료 확인
-                if self.page.locator('text="처리 완료"').count() > 0:
-                    logger.info("✅ Upload processing complete")
-                    return True
-                
-                if self.page.locator('text="Upload complete"').count() > 0:
-                    logger.info("✅ Upload complete")
-                    return True
-                
-                # 진행률 확인
-                progress = self.page.locator('.progress-label').first
-                if progress.is_visible():
-                    text = progress.inner_text()
-                    if "%" in text:
-                        logger.info(f"📤 Progress: {text}")
-                
-                time.sleep(5)
-                
-            except:
-                time.sleep(5)
-        
-        logger.warning("⚠️ Upload processing timeout")
-        return True  # 타임아웃이어도 계속 진행
-    
-    def fill_metadata(self, title, description, thumbnail_path=None):
-        """메타데이터 입력"""
-        logger.info("📝 Filling metadata...")
-        
-        try:
-            # 제목 입력
-            title_selectors = [
-                '[aria-label="제목"]',
-                '[aria-label="Title"]',
-                '#textbox'
-            ]
-            
-            for selector in title_selectors:
-                try:
-                    title_field = self.page.locator(selector).first
-                    if title_field.is_visible(timeout=5000):
-                        title_field.click()
-                        title_field.press("Control+a")
-                        title_field.type(title, delay=50)
-                        logger.info(f"✅ Title set: {title[:30]}...")
-                        break
-                except:
-                    continue
-            
-            self.human_delay(1000, 2000)
-            
-            # 설명 입력
-            desc_selectors = [
-                '[aria-label="설명"]',
-                '[aria-label="Description"]',
-                '#textbox >> nth=1'
-            ]
-            
-            for selector in desc_selectors:
-                try:
-                    desc_field = self.page.locator(selector).first
-                    if desc_field.is_visible(timeout=5000):
-                        desc_field.click()
-                        desc_field.type(description, delay=30)
-                        logger.info("✅ Description set")
-                        break
-                except:
-                    continue
-            
-            # 썸네일 업로드
-            if thumbnail_path and Path(thumbnail_path).exists():
-                self.upload_thumbnail(thumbnail_path)
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Metadata fill failed: {e}")
-            return False
-    
-    def upload_thumbnail(self, thumbnail_path):
-        """썸네일 업로드"""
-        logger.info(f"🖼️ Uploading thumbnail...")
-        
-        try:
-            # 썸네일 업로드 버튼 찾기
-            thumb_selectors = [
-                'text="썸네일 업로드"',
-                'text="Upload thumbnail"',
-                'input[accept*="image"]'
-            ]
-            
-            for selector in thumb_selectors:
-                try:
-                    if "input" in selector:
-                        thumb_input = self.page.locator(selector).first
-                        thumb_input.set_input_files(str(thumbnail_path))
-                    else:
-                        thumb_btn = self.page.locator(selector).first
-                        if thumb_btn.is_visible(timeout=3000):
-                            thumb_btn.click()
-                            self.human_delay(1000, 2000)
-                            # 파일 입력
-                            file_input = self.page.locator('input[type="file"]').last
-                            file_input.set_input_files(str(thumbnail_path))
-                    
-                    logger.info("✅ Thumbnail uploaded")
-                    return True
-                except:
-                    continue
-            
-            logger.warning("⚠️ Thumbnail upload skipped")
-            return False
-            
-        except Exception as e:
-            logger.warning(f"⚠️ Thumbnail upload failed: {e}")
-            return False
-    
-    def navigate_through_steps(self):
-        """업로드 단계 진행"""
-        logger.info("➡️ Navigating through upload steps...")
-        
-        try:
-            # 다음 버튼 3번 클릭
-            for step in range(3):
-                next_selectors = [
-                    'text="다음"',
-                    'text="Next"',
-                    '[aria-label="다음"]',
-                    '[aria-label="Next"]'
-                ]
-                
-                for selector in next_selectors:
-                    try:
-                        next_btn = self.page.locator(selector).first
-                        if next_btn.is_visible(timeout=5000):
-                            self.safe_click(next_btn, f"Next step {step+1}")
-                            self.human_delay(2000, 3000)
-                            break
-                    except:
-                        continue
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Step navigation failed: {e}")
-            return False
-    
-    def set_privacy_and_schedule(self, privacy="private", schedule_datetime=None):
-        """공개 설정 및 예약"""
-        logger.info(f"🔒 Setting privacy: {privacy}")
-        
-        try:
-            # 공개 설정
-            privacy_map = {
-                'private': ['비공개', 'Private'],
-                'unlisted': ['목록에 없음', 'Unlisted'],
-                'public': ['공개', 'Public']
+            .title h1 {
+                font-size: 1.5rem;
             }
             
-            privacy_options = privacy_map.get(privacy, ['비공개', 'Private'])
-            
-            for privacy_text in privacy_options:
-                try:
-                    privacy_btn = self.page.locator(f'text="{privacy_text}"').first
-                    if privacy_btn.is_visible(timeout=3000):
-                        self.safe_click(privacy_btn, f"Privacy: {privacy_text}")
-                        break
-                except:
-                    continue
-            
-            # 예약 설정
-            if schedule_datetime:
-                logger.info(f"📅 Setting schedule: {schedule_datetime}")
-                
-                # 예약 라디오 버튼
-                schedule_selectors = [
-                    'text="예약"',
-                    'text="Schedule"'
-                ]
-                
-                for selector in schedule_selectors:
-                    try:
-                        schedule_radio = self.page.locator(selector).first
-                        if schedule_radio.is_visible(timeout=3000):
-                            self.safe_click(schedule_radio, "Schedule radio")
-                            break
-                    except:
-                        continue
-                
-                self.human_delay(1000, 2000)
-                
-                # 날짜 설정
-                date_str = schedule_datetime.strftime("%Y-%m-%d")
-                date_input = self.page.locator('input[type="date"]').first
-                if date_input.is_visible(timeout=3000):
-                    date_input.fill(date_str)
-                
-                # 시간 설정
-                time_str = schedule_datetime.strftime("%H:%M")
-                time_input = self.page.locator('input[type="time"]').first
-                if time_input.is_visible(timeout=3000):
-                    time_input.fill(time_str)
-                
-                logger.info(f"✅ Schedule set: {date_str} {time_str}")
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Privacy/schedule setting failed: {e}")
-            return False
+            .lina-card {
+                padding: 20px;
+            }
+        }
+
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .background-animation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(16, 185, 129, 0.2) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation"></div>
     
-    def publish_video(self, is_scheduled=False):
-        """비디오 게시"""
-        action = "scheduled" if is_scheduled else "published"
-        logger.info(f"🚀 Publishing video ({action})...")
+    <div class="container">
+        <div class="header">
+            <div class="title">
+                <span class="sparkle">✨</span>
+                <h1>NIMA Lina 심부름 시스템</h1>
+            </div>
+            <button class="html-btn">HTML 버전</button>
+        </div>
         
-        try:
-            publish_selectors = [
-                'text="예약"' if is_scheduled else 'text="게시"',
-                'text="Schedule"' if is_scheduled else 'text="Publish"',
-                'button:has-text("예약")' if is_scheduled else 'button:has-text("게시")',
-                'button:has-text("Schedule")' if is_scheduled else 'button:has-text("Publish")'
-            ]
-            
-            for selector in publish_selectors:
-                try:
-                    publish_btn = self.page.locator(selector).first
-                    if publish_btn.is_visible(timeout=10000):
-                        self.safe_click(publish_btn, f"Publish ({action})")
-                        self.human_delay(3000, 5000)
-                        logger.info(f"✅ Video {action} successfully!")
-                        return True
-                except:
-                    continue
-            
-            logger.error("❌ Publish button not found")
-            return False
-            
-        except Exception as e:
-            logger.error(f"❌ Publishing failed: {e}")
-            return False
-    
-    def upload_single_video(self, video_config):
-        """단일 비디오 업로드 전체 프로세스"""
-        video_id = video_config['id']
-        logger.info(f"🎬 Starting upload: {video_id}")
+        <p class="subtitle">AI Lina를 생성하고 실제 작업을 맡겨보세요!</p>
         
-        try:
-            # 1. 업로드 페이지로 이동
-            if not self.navigate_to_upload():
-                return False
-            
-            # 2. 파일 업로드
-            if not self.upload_file(video_config['video_path']):
-                return False
-            
-            # 3. 업로드 처리 대기
-            if not self.wait_for_upload_processing():
-                logger.warning("⚠️ Processing timeout, continuing...")
-            
-            # 4. 메타데이터 입력
-            if not self.fill_metadata(
-                video_config['title'],
-                video_config['description'],
-                video_config.get('thumbnail_path')
-            ):
-                return False
-            
-            # 5. 업로드 단계 진행
-            if not self.navigate_through_steps():
-                return False
-            
-            # 6. 공개 설정 및 예약
-            if not self.set_privacy_and_schedule(
-                self.settings['privacy'],
-                video_config.get('schedule_datetime')
-            ):
-                return False
-            
-            # 7. 게시
-            is_scheduled = bool(video_config.get('schedule_datetime'))
-            if not self.publish_video(is_scheduled):
-                return False
-            
-            logger.info(f"✅ {video_id} upload completed successfully!")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Upload failed for {video_id}: {e}")
-            return False
-    
-    def load_video_configs(self):
-        """비디오 설정 로드"""
-        configs = []
-        video_files = list(self.upload_dir.glob("*_video.mp4"))
+        <div class="stats-grid">
+            <div class="stat-card active">
+                <div class="stat-label">활성 Lina:</div>
+                <div class="stat-number">0명</div>
+            </div>
+            <div class="stat-card completed">
+                <div class="stat-label">완료 작업:</div>
+                <div class="stat-number">0건</div>
+            </div>
+            <div class="stat-card progress">
+                <div class="stat-label">진행 중:</div>
+                <div class="stat-number">0건</div>
+            </div>
+        </div>
         
-        for video_file in video_files:
-            video_id = video_file.stem.replace("_video", "")
+        <div class="section-title">
+            <span style="font-size: 1.5rem;">➕</span>
+            <h2>새 Lina 생성하기</h2>
+        </div>
+        
+        <div class="lina-grid">
+            <div class="lina-card researcher" onclick="createLina('researcher')">
+                <span class="lina-icon">🔍</span>
+                <h3 class="lina-title">리서치 전문가</h3>
+                <p class="lina-description">정보 조사 및 분석</p>
+                <button class="create-btn">
+                    <span class="plus-icon">➕</span>
+                    생성하기
+                </button>
+            </div>
             
-            try:
-                title_file = self.upload_dir / f"{video_id}_title.txt"
-                desc_file = self.upload_dir / f"{video_id}_description.txt"
+            <div class="lina-card creator" onclick="createLina('creator')">
+                <span class="lina-icon">🎨</span>
+                <h3 class="lina-title">콘텐츠 크리에이터</h3>
+                <p class="lina-description">창작 및 기획</p>
+                <button class="create-btn">
+                    <span class="plus-icon">➕</span>
+                    생성하기
+                </button>
+            </div>
+            
+            <div class="lina-card analyst" onclick="createLina('analyst')">
+                <span class="lina-icon">📊</span>
+                <h3 class="lina-title">데이터 분석가</h3>
+                <p class="lina-description">통계 및 인사이트</p>
+                <button class="create-btn">
+                    <span class="plus-icon">➕</span>
+                    생성하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createLina(type) {
+            const messages = {
+                researcher: '🔍 리서치 전문가 Lina를 생성합니다!',
+                creator: '🎨 콘텐츠 크리에이터 Lina를 생성합니다!',
+                analyst: '📊 데이터 분석가 Lina를 생성합니다!'
+            };
+            
+            alert(messages[type]);
+            
+            // 여기에 실제 Lina 생성 로직을 추가할 수 있습니다
+            console.log(`Creating ${type} Lina...`);
+        }
+
+        // 배경 애니메이션과 상호작용
+        document.addEventListener('mousemove', (e) => {
+            const cursor = { x: e.clientX, y: e.clientY };
+            const cards = document.querySelectorAll('.lina-card');
+            
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const cardCenter = {
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2
+                };
                 
-                if not title_file.exists() or not desc_file.exists():
-                    logger.warning(f"⚠️ Missing files for {video_id}")
-                    continue
+                const distance = Math.sqrt(
+                    Math.pow(cursor.x - cardCenter.x, 2) + 
+                    Math.pow(cursor.y - cardCenter.y, 2)
+                );
                 
-                config = {
-                    'id': video_id,
-                    'video_path': video_file,
-                    'title': title_file.read_text(encoding='utf-8').strip(),
-                    'description': desc_file.read_text(encoding='utf-8').strip()
+                if (distance < 200) {
+                    const intensity = 1 - (distance / 200);
+                    card.style.transform = `translateY(-${5 + intensity * 10}px) scale(${1 + intensity * 0.05})`;
+                } else {
+                    card.style.transform = 'translateY(0px) scale(1)';
                 }
-                
-                # 썸네일
-                thumbnail_file = self.upload_dir / f"{video_id}_thumbnail.jpg"
-                if thumbnail_file.exists():
-                    config['thumbnail_path'] = thumbnail_file
-                
-                # 예약 시간
-                schedule_file = self.upload_dir / f"{video_id}_schedule.txt"
-                if schedule_file.exists():
-                    schedule_str = schedule_file.read_text(encoding='utf-8').strip()
-                    try:
-                        config['schedule_datetime'] = datetime.strptime(schedule_str, "%Y-%m-%d %H:%M")
-                    except ValueError:
-                        logger.warning(f"⚠️ Invalid schedule format: {schedule_str}")
-                
-                configs.append(config)
-                logger.info(f"📋 Loaded: {video_id}")
-                
-            except Exception as e:
-                logger.error(f"❌ Failed to load {video_id}: {e}")
-        
-        return configs
-    
-    def run(self, headless=False):
-        """메인 실행"""
-        logger.info("🚀 Starting YouTube Auto Uploader...")
-        
-        try:
-            # 브라우저 설정
-            if not self.setup_browser(headless):
-                return False
-            
-            # 인증
-            if not self.authenticate():
-                return False
-            
-            # 비디오 설정 로드
-            video_configs = self.load_video_configs()
-            if not video_configs:
-                logger.warning("⚠️ No videos found")
-                return False
-            
-            logger.info(f"📹 Found {len(video_configs)} videos")
-            
-            # 업로드 실행
-            success_count = 0
-            for i, config in enumerate(video_configs):
-                logger.info(f"📤 Processing {i+1}/{len(video_configs)}: {config['id']}")
-                
-                if self.upload_single_video(config):
-                    success_count += 1
-                
-                # 다음 업로드 전 대기
-                if i < len(video_configs) - 1:
-                    wait_time = random.uniform(60, 120)
-                    logger.info(f"⏳ Waiting {wait_time:.1f}s...")
-                    time.sleep(wait_time)
-            
-            logger.info(f"🎉 Completed: {success_count}/{len(video_configs)} successful")
-            return success_count > 0
-            
-        except Exception as e:
-            logger.error(f"❌ Fatal error: {e}")
-            return False
-        
-        finally:
-            if self.browser:
-                self.browser.close()
-                logger.info("🔒 Browser closed")
+            });
+        });
 
-def create_sample_files():
-    """샘플 파일 생성"""
-    upload_dir = Path("upload_queue")
-    upload_dir.mkdir(exist_ok=True)
-    
-    # 현재 시간 + 1시간 후로 예약
-    schedule_time = datetime.now() + timedelta(hours=1)
-    
-    samples = {
-        "test01_title.txt": "내 첫 번째 자동 업로드 비디오",
-        "test01_description.txt": """안녕하세요! 자동 업로드 테스트입니다.
+        // 통계 카운터 애니메이션
+        function animateCounter(element, target) {
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.floor(current) + (element.textContent.includes('명') ? '명' : '건');
+            }, 20);
+        }
 
-🎯 주요 내용:
-- 완전 자동화된 업로드
-- 예약 게시 기능
-- 메타데이터 자동 입력
-
-#자동업로드 #YouTube #테스트""",
-        "test01_schedule.txt": schedule_time.strftime("%Y-%m-%d %H:%M")
-    }
-    
-    for filename, content in samples.items():
-        filepath = upload_dir / filename
-        filepath.write_text(content, encoding='utf-8')
-    
-    print(f"\n✅ Sample files created in {upload_dir}/")
-    print("📋 Next steps:")
-    print("1. Add 'test01_video.mp4' to upload_queue/")
-    print("2. Optionally add 'test01_thumbnail.jpg'")
-    print("3. Run: python youtube_uploader.py")
-
-if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="YouTube Auto Uploader")
-    parser.add_argument("--headless", action="store_true", help="Run headless")
-    parser.add_argument("--privacy", choices=['public', 'unlisted', 'private'], 
-                       default='private', help="Privacy setting")
-    parser.add_argument("--create-samples", action="store_true", help="Create sample files")
-    
-    args = parser.parse_args()
-    
-    if args.create_samples:
-        create_sample_files()
-    else:
-        uploader = YouTubeUploader()
-        uploader.settings['privacy'] = args.privacy
-        
-        if not list(uploader.upload_dir.glob("*_video.mp4")):
-            print("❌ No video files found!")
-            print("📋 Use --create-samples first")
-        else:
-            uploader.run(headless=args.headless)
+        // 페이지 로드 시 애니메이션
+        window.addEventListener('load', () => {
+            const cards = document.querySelectorAll('.lina-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(50px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0px)';
+                }, index * 200);
+            });
+        });
+    </script>
+</body>
+</html>
