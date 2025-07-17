@@ -1,101 +1,36 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>G911 NIMA 100 조사 시뮬레이터</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #f2f4f8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+const 주제목록 = [
+  "GPT-4의 성능",
+  "C.S.S 포지션 시스템 정확도",
+  "AI 당구 샷 판별률",
+  "유튜브 자동 업로드 오류율",
+  "AI 심판과 실제 심판 비교",
+  "AI 당구 프로그램 반응 속도",
+  "자동 번역 음성 정확도",
+  "운전면허 AI 설명 만족도",
+  "스마트링 응급 전송 성공률",
+  "G911 시스템 안정성"
+];
 
-    h1 {
-      margin-top: 30px;
-      color: #333;
-      font-size: 1.5em;
-    }
+function 조사하기(id) {
+  const 주제 = 주제목록[Math.floor(Math.random() * 주제목록.length)];
+  const div = document.createElement("div");
+  div.className = "card";
+  div.innerHTML = `
+    <strong>🔹 리마 #${id}</strong><br>
+    주제: ${주제}<br>
+    결과: <span class="결과">[조사중...]</span>
+  `;
+  document.getElementById("결과영역").appendChild(div);
 
-    button {
-      margin: 20px;
-      padding: 12px 24px;
-      font-size: 1em;
-      background-color: #0055ff;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
+  setTimeout(() => {
+    const 데이터 = `${Math.floor(80 + Math.random() * 15)}% 신뢰도로 "${주제}"에 대해 유의미한 결과를 확인함`;
+    div.querySelector(".결과").innerText = 데이터;
+  }, 200 + Math.random() * 1000);
+}
 
-    button:hover {
-      background-color: #003ecc;
-    }
-
-    #results {
-      width: 95%;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 10px;
-      margin-bottom: 40px;
-    }
-
-    .card {
-      background: white;
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      text-align: center;
-      font-size: 0.9em;
-    }
-
-    .loading {
-      font-style: italic;
-      color: gray;
-    }
-  </style>
-</head>
-<body>
-
-  <h1>🔎 G911 NIMA 100명 조사 시뮬레이터</h1>
-  <button onclick="startInvestigation()">조사 시작</button>
-  <div id="results"></div>
-
-  <script>
-    const topics = [
-      "옆돌리기 성공률", "히네 원리", "브릿지 장갑 효과", "3쿠션 시스템",
-      "유튜브 인기 포지션", "두께 조절법", "연습 루틴", "수구 회전 이해",
-      "큐대 재질 분석", "프로선수 습관"
-    ];
-
-    function getRandomTopic() {
-      return topics[Math.floor(Math.random() * topics.length)];
-    }
-
-    function simulateNIMA(id) {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `<strong>NIMA #${id}</strong><br>
-        조사 주제: ${getRandomTopic()}<br>
-        결과: <span class="loading">조사 중...</span>`;
-      document.getElementById('results').appendChild(card);
-
-      // 조사 결과 업데이트
-      setTimeout(() => {
-        card.querySelector('.loading').innerText = '조사 완료 ✔️';
-      }, 500 + Math.random() * 1500);
-    }
-
-    function startInvestigation() {
-      document.getElementById('results').innerHTML = '';
-      for (let i = 1; i <= 100; i++) {
-        setTimeout(() => simulateNIMA(i), i * 50);
-      }
-    }
-  </script>
-</body>
-</html>
+function 조사시작() {
+  document.getElementById("결과영역").innerHTML = "";
+  for (let i = 1; i <= 100; i++) {
+    조사하기(i);
+  }
+}
