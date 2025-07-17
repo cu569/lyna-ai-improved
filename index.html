@@ -1,72 +1,24 @@
-import os
 import time
-from playwright.sync_api import sync_playwright
-from datetime import datetime
+import datetime
+from upload import upload_video  # 실제 업로드 함수
 
-UPLOAD_DIR = "upload_queue"
+def check_and_upload(queue_file="upload_queue.txt"):
+    while True:
+        with open(queue_file, "r", encoding="utf-8") as f:
+            lines = f.readlines()
 
-def read_file(filepath):
-    with open(filepath, "r", encoding="utf-8") as f:
-        return f.read().strip()
+        new_lines = []
+        for line in lines:
+            path, upload_time_str = line.strip().split(',')
+            upload_time = datetime.datetime.strptime(upload_time_str, "%Y-%m-%d %H:%M")
 
-def upload_video(playwright, video_id):
-    browser = playwright.chromium.launch(headless=False)
-    context = browser.new_context(storage_state="auth.json")  # 로그인 저장
-    page = context.new_page()
+            if datetime.datetime.now() >= upload_time:
+                print(f"Uploading: {path}")
+                upload_video(path)
+            else:
+                new_lines.append(line)
 
-    page.goto("https://studio.youtube.com")
+        with open(queue_file, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
 
-    page.wait_for_timeout(5000)
-    page.goto("https://studio.youtube.com/channel/UC/videos/upload")
-
-    # 파일 업로드
-    video_path = f"{UPLOAD_DIR}/{video_id}_video.mp4"
-    page.set_input_files('input[type="file"]', video_path)
-
-    # 제목 입력
-    title = read_file(f"{UPLOAD_DIR}/{video_id}_title.txt")
-    page.get_by_label("Title").fill(title)
-
-    # 설명 입력
-    description = read_file(f"{UPLOAD_DIR}/{video_id}_description.txt")
-    page.get_by_label("Description").fill(description)
-
-    # 썸네일 업로드
-    thumb_path = f"{UPLOAD_DIR}/{video_id}_thumbnail.jpg"
-    if os.path.exists(thumb_path):
-        page.get_by_text("Upload thumbnail").click()
-        page.set_input_files('input[type="file"]', thumb_path)
-
-    # 다음 버튼 3번 클릭
-    for _ in range(3):
-        page.get_by_text("Next").click()
-        page.wait_for_timeout(1000)
-
-    # 예약 게시 설정
-    page.get_by_text("Schedule").click()
-
-    schedule = read_file(f"{UPLOAD_DIR}/{video_id}_schedule.txt")
-    dt = datetime.strptime(schedule, "%Y-%m-%d %H:%M")
-
-    page.get_by_label("Date").fill(dt.strftime("%m/%d/%Y"))
-    page.get_by_label("Time").fill(dt.strftime("%I:%M %p"))
-
-    page.get_by_text("Schedule").nth(1).click()
-
-    print(f"{video_id} 예약 업로드 완료 ✅")
-    page.wait_for_timeout(3000)
-    context.close()
-    browser.close()
-
-def main():
-    with sync_playwright() as p:
-        for file in os.listdir(UPLOAD_DIR):
-            if file.endswith("_video.mp4"):
-                video_id = file.split("_")[0]
-                try:
-                    upload_video(p, video_id)
-                except Exception as e:
-                    print(f"{video_id} 실패 ❌: {e}")
-
-if __name__ == "__main__":
-    main()
+        time.sleep(60)  # 1분마다 확인
