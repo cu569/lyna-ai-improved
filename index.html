@@ -2,71 +2,38 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>리마 자막 테스트</title>
+  <title>니마 학습 뷰어</title>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      background: #121212;
+      background-color: #121212;
       color: #fff;
-      font-family: "Arial", sans-serif;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      font-family: Arial, sans-serif;
+      padding: 2rem;
     }
-
-    h1 {
-      margin-bottom: 10px;
-      color: #00e0ff;
-    }
-
-    #subtitle-box {
-      position: fixed;
-      bottom: 30px;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 12px 24px;
-      border-radius: 20px;
-      font-size: 20px;
-      color: #fff;
-      box-shadow: 0 0 10px #00e0ff;
-      animation: fadeIn 0.3s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .hidden {
-      display: none;
+    h1 { font-size: 2rem; }
+    #output {
+      background: #1e1e1e;
+      border: 1px solid #555;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 10px;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
-  <h1>🎙️ 리마 자막 시연 페이지</h1>
-  <p>아래 자막이 자동으로 바뀝니다 (3초 간격)</p>
-
-  <div id="subtitle-box">🔊 자막을 준비 중입니다...</div>
+  <h1>🧠 니마 학습 내용</h1>
+  <div id="output">불러오는 중...</div>
 
   <script>
-    const subtitles = [
-      "🔊 테스트를 시작합니다. 리마는 여러분과 대화 중입니다.",
-      "📡 리마는 음성을 인식하고 자동으로 자막을 표시합니다.",
-      "🧠 인공지능 자막은 실시간 대화에 기반합니다.",
-      "📝 이 자막은 테스트용이며, 실제 대화로 교체 가능합니다.",
-      "✅ 테스트가 완료되었습니다. 감사합니다."
-    ];
+    const output = document.getElementById("output");
+    const data = localStorage.getItem("nima_learning");
 
-    let idx = 0;
-    const subtitleBox = document.getElementById("subtitle-box");
-
-    setInterval(() => {
-      subtitleBox.textContent = subtitles[idx];
-      idx = (idx + 1) % subtitles.length;
-    }, 3000);
+    if (data) {
+      output.textContent = data;
+    } else {
+      output.textContent = "❗ 저장된 학습 내용이 없습니다.";
+    }
   </script>
 </body>
 </html>
