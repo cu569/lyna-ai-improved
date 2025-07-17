@@ -1,1201 +1,284 @@
-import os
-import time
-import json
-import logging
-from datetime import datetime, timedelta
-from pathlib import Path
-from playwright.sync_api import sync_playwright, TimeoutError
-import random
-
-# 로깅 설정
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('youtube_uploader.log', encoding='utf-8'),
-        logging.StreamHandler()
+{
+  "daily_maintenance": {
+    "name": "Daily GitHub Maintenance",
+    "description": "Daily automated GitHub tasks",
+    "schedule": "0 9 * * *",
+    "tasks": [
+      {
+        "type": "get_trending",
+        "params": {
+          "language": "python",
+          "since": "daily"
+        },
+        "delay": 2
+      },
+      {
+        "type": "star_trending",
+        "params": {
+          "count": 5,
+          "min_stars": 100
+        },
+        "delay": 3
+      },
+      {
+        "type": "follow_contributors",
+        "params": {
+          "repo": "microsoft/vscode",
+          "count": 3
+        },
+        "delay": 4
+      }
     ]
-)
-logger = logging.getLogger(__name__)
+  },
 
-class YouTubeUploader:
-    def __init__(self, upload_dir="upload_queue", auth_file="auth.json"):
-        self.upload_dir = Path(upload_dir)
-        self.auth_file = auth_file
-        self.upload_dir.mkdir(exist_ok=True)
-        self.browser = None
-        self.context = None
-        self.page = None
-        
-        # 업로드 설정
-        self.settings = {
-            'privacy': 'private',  # public, unlisted, private
-            'category': 'Entertainment',
-            'language': 'Korean',
-            'auto_chapters': True,
-            'auto_captions': True,
-            'comments_allowed': True,
-            'age_restriction': False
-        }
-    
-    def human_delay(self, min_ms=500, max_ms=2000):
-        """사람처럼 자연스러운 딜레이"""
-        delay = random.uniform(min_ms, max_ms) / 1000
-        time.sleep(delay)
-    
-    def safe_click(self, element, description="element", timeout=10000):
-        """안전한 클릭 (여러 방법 시도)"""
-        try:
-            # 1. 기본 클릭
-            element.wait_for(state="visible", timeout=timeout)
-            element.click()
-            logger.info(f"✅ Clicked {description}")
-            return True
-        except TimeoutError:
-            logger.warning(f"⚠️ Timeout waiting for {description}")
-        except Exception as e:
-            try:
-                # 2. 강제 클릭
-                element.click(force=True)
-                logger.info(f"✅ Force clicked {description}")
-                return True
-            except Exception as e2:
-                try:
-                    # 3. JavaScript 클릭
-                    element.evaluate("el => el.click()")
-                    logger.info(f"✅ JS clicked {description}")
-                    return True
-                except Exception as e3:
-                    logger.error(f"❌ Failed to click {description}: {e3}")
-                    return False
-    
-    def safe_fill(self, element, text, description="field", clear_first=True):
-        """안전한 텍스트 입력"""
-        try:
-            element.wait_for(state="visible", timeout=10000)
-            if clear_first:
-                # 기존 텍스트 전체 선택 후 삭제
-                element.click()
-                element.press("Control+a")
-                self.human_delay(100, 300)
-            
-            # 글자별로 천천히 입력 (봇 감지 방지)
-            for char in text:
-                element.type(char, delay=random.uniform(50, 150))
-            
-            logger.info(f"✅ Filled {description}: {text[:30]}{'...' if len(text) > 30 else ''}")
-            return True
-        except Exception as e:
-            logger.error(f"❌ Failed to fill {description}: {e}")
-            return False
-    
-    def wait_for_upload_complete(self, timeout=300):
-        """업로드 완료까지 대기"""
-        logger.info("⏳ Waiting for video upload to complete...")
-        start_time = time.time()
-        
-        while time.time() - start_time < timeout:
-            try:
-                # 업로드 진행률 확인
-                progress_elements = self.page.locator('.progress-label, [role="progressbar"]')
-                if progress_elements.count() > 0:
-                    for i in range(progress_elements.count()):
-                        element = progress_elements.nth(i)
-                        if element.is_visible():
-                            text = element.inner_text()
-                            if "%" in text:
-                                logger.info(f"📤 Upload progress: {text}")
-                
-                # "Processing" 또는 "Upload complete" 체크
-                processing = self.page.locator('text="Processing"').first
-                if processing.is_visible():
-                    logger.info("🔄 Video processing...")
-                
-                # 업로드 완료 신호들 체크
-                complete_signals = [
-                    'text="Upload complete"',
-                    'text="Processing complete"', 
-                    '[data-testid="VIDEO_MONETIZATION_MONETIZE"]',
-                    'text="Checks complete"'
-                ]
-                
-                for signal in complete_signals:
-                    if self.page.locator(signal).count() > 0:
-                        logger.info("✅ Video upload completed!")
-                        return True
-                
-                time.sleep(5)
-                
-            except Exception as e:
-                logger.warning(f"Error checking upload status: {e}")
-                time.sleep(5)
-        
-        logger.warning("⚠️ Upload timeout reached")
-        return False
-    
-    def setup_browser(self, headless=False):
-        """브라우저 설정 및 시작"""
-        logger.info("🌐 Setting up browser...")
-        
-        # 브라우저 시작 옵션
-        browser_options = {
-            'headless': headless,
-            'args': [
-                '--no-sandbox',
-                '--disable-blink-features=AutomationControlled',
-                '--disable-web-security',
-                '--disable-features=VizDisplayCompositor',
-                '--disable-extensions',
-                '--disable-plugins',
-                '--disable-images',  # 이미지 로딩 비활성화로 속도 향상
-                '--mute-audio',
-                '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            ]
-        }
-        
-        try:
-            with sync_playwright() as playwright:
-                self.browser = playwright.chromium.launch(**browser_options)
-                
-                # 컨텍스트 설정 (인증 정보 포함)
-                context_options = {
-                    'viewport': {'width': 1920, 'height': 1080},
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'java_script_enabled': True,
-                    'accept_downloads': True
-                }
-                
-                if os.path.exists(self.auth_file):
-                    context_options['storage_state'] = self.auth_file
-                    logger.info("🔑 Loaded authentication session")
-                
-                self.context = self.browser.new_context(**context_options)
-                
-                # 자동화 감지 방지
-                self.context.add_init_script("""
-                    Object.defineProperty(navigator, 'webdriver', {
-                        get: () => undefined,
-                    });
-                    
-                    window.chrome = {
-                        runtime: {},
-                    };
-                    
-                    Object.defineProperty(navigator, 'plugins', {
-                        get: () => [1, 2, 3, 4, 5],
-                    });
-                    
-                    Object.defineProperty(navigator, 'languages', {
-                        get: () => ['ko-KR', 'ko', 'en-US', 'en'],
-                    });
-                """)
-                
-                self.page = self.context.new_page()
-                
-                # 페이지 이벤트 리스너
-                self.page.on("dialog", lambda dialog: dialog.accept())
-                self.page.on("console", lambda msg: logger.debug(f"Console: {msg.text}"))
-                
-                return True
-                
-        except Exception as e:
-            logger.error(f"❌ Browser setup failed: {e}")
-            return False
-    
-    def authenticate(self):
-        """YouTube 인증 (로그인)"""
-        if os.path.exists(self.auth_file):
-            logger.info("🔑 Authentication file exists, skipping login")
-            return True
-        
-        logger.info("🔐 Starting authentication process...")
-        
-        try:
-            # YouTube Studio로 이동
-            self.page.goto("https://studio.youtube.com", wait_until="domcontentloaded")
-            self.human_delay(3000, 5000)
-            
-            # 로그인 체크
-            if "accounts.google.com" in self.page.url:
-                print("\n" + "="*60)
-                print("🔐 YOUTUBE LOGIN REQUIRED")
-                print("="*60)
-                print("1. 구글 계정으로 로그인하세요")
-                print("2. 2단계 인증이 있다면 완료하세요")
-                print("3. YouTube Studio 메인 페이지가 로드되면 Enter를 누르세요")
-                print("="*60)
-                
-                input("로그인 완료 후 Enter를 누르세요...")
-            
-            # 인증 상태 저장
-            self.context.storage_state(path=self.auth_file)
-            logger.info(f"✅ Authentication saved to {self.auth_file}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Authentication failed: {e}")
-            return False
-    
-    def navigate_to_upload(self):
-        """업로드 페이지로 이동"""
-        logger.info("📤 Navigating to upload page...")
-        
-        try:
-            # YouTube Studio 메인 페이지
-            self.page.goto("https://studio.youtube.com", wait_until="domcontentloaded")
-            self.human_delay(2000, 4000)
-            
-            # CREATE 버튼 클릭
-            create_selectors = [
-                '[aria-label="만들기"]',
-                '[aria-label="Create"]',
-                'text="CREATE"',
-                '#create-icon',
-                'ytcp-icon-button[aria-label*="Create"]'
-            ]
-            
-            for selector in create_selectors:
-                try:
-                    create_btn = self.page.locator(selector).first
-                    if create_btn.is_visible():
-                        self.safe_click(create_btn, "Create button")
-                        break
-                except:
-                    continue
-            
-            self.human_delay(1000, 2000)
-            
-            # "동영상 업로드" 옵션 클릭
-            upload_selectors = [
-                'text="동영상 업로드"',
-                'text="Upload video"',
-                'text="Upload videos"',
-                '[aria-label*="Upload"]'
-            ]
-            
-            for selector in upload_selectors:
-                try:
-                    upload_btn = self.page.locator(selector).first
-                    if upload_btn.is_visible():
-                        self.safe_click(upload_btn, "Upload video button")
-                        break
-                except:
-                    continue
-            
-            self.human_delay(2000, 3000)
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Failed to navigate to upload: {e}")
-            return False
-    
-    def upload_file(self, video_path):
-        """비디오 파일 업로드"""
-        logger.info(f"📁 Uploading video file: {video_path}")
-        
-        try:
-            # 파일 입력 요소 찾기
-            file_selectors = [
-                'input[type="file"]',
-                'input[accept*="video"]',
-                '[data-testid="file-input"]'
-            ]
-            
-            for selector in file_selectors:
-                try:
-                    file_input = self.page.locator(selector).first
-                    if file_input.count() > 0:
-                        file_input.set_input_files(str(video_path))
-                        logger.info("✅ Video file selected")
-                        return True
-                except:
-                    continue
-            
-            # 드래그 앤 드롭 영역 찾기
-            drop_selectors = [
-                '[data-testid="file-drop-zone"]',
-                '.file-drop-zone',
-                'text="파일을 선택하거나 여기로 드래그하세요"'
-            ]
-            
-            for selector in drop_selectors:
-                try:
-                    drop_zone = self.page.locator(selector).first
-                    if drop_zone.is_visible():
-                        # 파일을 드롭존에 드래그
-                        drop_zone.set_input_files(str(video_path))
-                        logger.info("✅ Video file dropped")
-                        return True
-                except:
-                    continue
-            
-            logger.error("❌ Could not find file upload element")
-            return False
-            
-        except Exception as e:
-            logger.error(f"❌ File upload failed: {e}")
-            return False
-    
-    def fill_metadata(self, title, description, thumbnail_path=None):
-        """메타데이터 입력 (제목, 설명, 썸네일)"""
-        logger.info("📝 Filling video metadata...")
-        
-        try:
-            # 제목 입력
-            title_selectors = [
-                '[aria-label="제목"]',
-                '[aria-label="Title"]',
-                '#textbox[aria-label*="title" i]',
-                'div[contenteditable="true"]'
-            ]
-            
-            for selector in title_selectors:
-                try:
-                    title_field = self.page.locator(selector).first
-                    if title_field.is_visible():
-                        self.safe_fill(title_field, title, "title")
-                        break
-                except:
-                    continue
-            
-            self.human_delay(1000, 2000)
-            
-            # 설명 입력
-            description_selectors = [
-                '[aria-label="설명"]',
-                '[aria-label="Description"]',
-                '#description-textarea',
-                'div[contenteditable="true"]:not([aria-label*="title" i])'
-            ]
-            
-            for selector in description_selectors:
-                try:
-                    desc_field = self.page.locator(selector).first
-                    if desc_field.is_visible():
-                        self.safe_fill(desc_field, description, "description")
-                        break
-                except:
-                    continue
-            
-            # 썸네일 업로드
-            if thumbnail_path and Path(thumbnail_path).exists():
-                self.upload_thumbnail(thumbnail_path)
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Metadata fill failed: {e}")
-            return False
-    
-    def upload_thumbnail(self, thumbnail_path):
-        """썸네일 업로드"""
-        logger.info(f"🖼️ Uploading thumbnail: {thumbnail_path}")
-        
-        try:
-            thumbnail_selectors = [
-                'text="썸네일 업로드"',
-                'text="Upload thumbnail"',
-                '[aria-label*="thumbnail"]',
-                'input[accept*="image"]'
-            ]
-            
-            for selector in thumbnail_selectors:
-                try:
-                    thumb_btn = self.page.locator(selector).first
-                    if thumb_btn.is_visible():
-                        if "input" in selector:
-                            thumb_btn.set_input_files(str(thumbnail_path))
-                        else:
-                            self.safe_click(thumb_btn, "thumbnail upload button")
-                            self.human_delay(500, 1000)
-                            
-                            # 파일 선택 다이얼로그
-                            file_input = self.page.locator('input[type="file"]').last
-                            file_input.set_input_files(str(thumbnail_path))
-                        
-                        logger.info("✅ Thumbnail uploaded")
-                        return True
-                except:
-                    continue
-            
-            logger.warning("⚠️ Thumbnail upload skipped (element not found)")
-            return False
-            
-        except Exception as e:
-            logger.warning(f"⚠️ Thumbnail upload failed: {e}")
-            return False
-    
-    def configure_settings(self):
-        """비디오 설정 구성"""
-        logger.info("⚙️ Configuring video settings...")
-        
-        try:
-            # "다음" 버튼들 클릭하여 설정 페이지들로 이동
-            for step in range(4):
-                next_selectors = [
-                    'text="다음"',
-                    'text="Next"',
-                    '[aria-label="다음"]',
-                    '[aria-label="Next"]',
-                    'ytcp-button[aria-label*="next" i]'
-                ]
-                
-                for selector in next_selectors:
-                    try:
-                        next_btn = self.page.locator(selector).first
-                        if next_btn.is_visible():
-                            self.safe_click(next_btn, f"Next button (step {step+1})")
-                            self.human_delay(2000, 3000)
-                            break
-                    except:
-                        continue
-                
-                # 각 단계별 설정
-                if step == 1:  # 동영상 요소
-                    self.configure_video_elements()
-                elif step == 2:  # 공개 상태
-                    self.configure_visibility()
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Settings configuration failed: {e}")
-            return False
-    
-    def configure_video_elements(self):
-        """동영상 요소 설정"""
-        try:
-            # 자동 챕터 설정
-            if self.settings['auto_chapters']:
-                auto_chapters = self.page.locator('text="자동 챕터"').first
-                if auto_chapters.is_visible():
-                    checkbox = auto_chapters.locator('..').locator('tp-yt-paper-checkbox')
-                    if not checkbox.get_attribute('checked'):
-                        self.safe_click(checkbox, "auto chapters")
-            
-            # 자동 자막 설정
-            if self.settings['auto_captions']:
-                auto_captions = self.page.locator('text="자동 자막"').first
-                if auto_captions.is_visible():
-                    checkbox = auto_captions.locator('..').locator('tp-yt-paper-checkbox')
-                    if not checkbox.get_attribute('checked'):
-                        self.safe_click(checkbox, "auto captions")
-            
-            logger.info("✅ Video elements configured")
-            
-        except Exception as e:
-            logger.warning(f"⚠️ Video elements configuration failed: {e}")
-    
-    def configure_visibility(self):
-        """공개 상태 설정"""
-        try:
-            privacy_options = {
-                'private': ['비공개', 'Private'],
-                'unlisted': ['목록에 없음', 'Unlisted'], 
-                'public': ['공개', 'Public']
+  "project_setup": {
+    "name": "New Project Setup",
+    "description": "Setup new AI project with standard structure",
+    "tasks": [
+      {
+        "type": "create_repo",
+        "params": {
+          "repo_name": "ai-automation-project",
+          "description": "AI-powered automation tools and utilities",
+          "private": false,
+          "auto_init": true
+        },
+        "delay": 3
+      },
+      {
+        "type": "upload_files",
+        "params": {
+          "repo_name": "ai-automation-project",
+          "files": {
+            "requirements.txt": "playwright>=1.40.0\nrequests>=2.31.0\nbeautifulsoup4>=4.12.0\nnumpy>=1.24.0\npandas>=2.0.0",
+            ".gitignore": "*.pyc\n__pycache__/\n.env\n*.log\nauth.json\nnode_modules/",
+            "README.md": "# AI Automation Project\n\nAutomated tools for various platforms.\n\n## Features\n- GitHub automation\n- YouTube uploads\n- Web scraping\n\n## Installation\n```bash\npip install -r requirements.txt\n```",
+            "src/__init__.py": "",
+            "tests/__init__.py": "",
+            "docs/README.md": "# Documentation\n\nProject documentation will be added here."
+          }
+        },
+        "delay": 5
+      },
+      {
+        "type": "create_issues",
+        "params": {
+          "repo_name": "ai-automation-project",
+          "issues": [
+            {
+              "title": "🚀 Setup CI/CD Pipeline",
+              "body": "## Description\nImplement automated testing and deployment pipeline.\n\n## Tasks\n- [ ] Setup GitHub Actions\n- [ ] Add unit tests\n- [ ] Configure deployment\n\n## Acceptance Criteria\n- All tests pass automatically\n- Deployment works on merge to main",
+              "labels": ["enhancement", "ci/cd", "priority-high"]
+            },
+            {
+              "title": "📚 Create Documentation",
+              "body": "## Description\nCreate comprehensive documentation for the project.\n\n## Tasks\n- [ ] API documentation\n- [ ] User guides\n- [ ] Code examples\n- [ ] Installation instructions",
+              "labels": ["documentation", "good first issue"]
+            },
+            {
+              "title": "🧪 Add Unit Tests",
+              "body": "## Description\nImplement comprehensive test coverage.\n\n## Requirements\n- Minimum 80% code coverage\n- Test all major functions\n- Include integration tests\n\n## Files to Test\n- `src/github_automation.py`\n- `src/youtube_uploader.py`\n- `src/web_scraper.py`",
+              "labels": ["testing", "priority-medium"]
+            },
+            {
+              "title": "🔧 Add Configuration Management",
+              "body": "## Description\nImplement centralized configuration management.\n\n## Features\n- Environment-based configs\n- Secure credential storage\n- Easy setting updates\n\n## Technical Details\n- Use JSON/YAML for configs\n- Environment variable support\n- Validation for required settings",
+              "labels": ["enhancement", "configuration"]
+            },
+            {
+              "title": "📊 Add Logging and Monitoring",
+              "body": "## Description\nImplement comprehensive logging and monitoring.\n\n## Requirements\n- Structured logging (JSON format)\n- Log rotation\n- Performance metrics\n- Error tracking\n\n## Log Levels\n- DEBUG: Detailed diagnostic info\n- INFO: General operational messages\n- WARNING: Warning conditions\n- ERROR: Error conditions\n- CRITICAL: Critical errors",
+              "labels": ["enhancement", "monitoring", "priority-medium"]
             }
-            
-            target_privacy = privacy_options.get(self.settings['privacy'], ['비공개', 'Private'])
-            
-            for privacy_text in target_privacy:
-                try:
-                    privacy_btn = self.page.locator(f'text="{privacy_text}"').first
-                    if privacy_btn.is_visible():
-                        self.safe_click(privacy_btn, f"privacy: {privacy_text}")
-                        break
-                except:
-                    continue
-            
-            logger.info(f"✅ Privacy set to: {self.settings['privacy']}")
-            
-        except Exception as e:
-            logger.warning(f"⚠️ Privacy configuration failed: {e}")
-    
-    def schedule_video(self, schedule_datetime):
-        """비디오 예약"""
-        logger.info(f"📅 Scheduling video for: {schedule_datetime}")
-        
-        try:
-            # 예약 라디오 버튼 선택
-            schedule_selectors = [
-                'text="예약"',
-                'text="Schedule"',
-                '[aria-label*="schedule" i]'
-            ]
-            
-            for selector in schedule_selectors:
-                try:
-                    schedule_radio = self.page.locator(selector).first
-                    if schedule_radio.is_visible():
-                        self.safe_click(schedule_radio, "schedule radio")
-                        break
-                except:
-                    continue
-            
-            self.human_delay(1000, 2000)
-            
-            # 날짜 입력
-            date_str = schedule_datetime.strftime("%Y-%m-%d")
-            date_selectors = [
-                '[aria-label*="날짜"]',
-                '[aria-label*="date" i]',
-                'input[type="date"]'
-            ]
-            
-            for selector in date_selectors:
-                try:
-                    date_field = self.page.locator(selector).first
-                    if date_field.is_visible():
-                        self.safe_fill(date_field, date_str, "date")
-                        break
-                except:
-                    continue
-            
-            # 시간 입력
-            time_str = schedule_datetime.strftime("%H:%M")
-            time_selectors = [
-                '[aria-label*="시간"]',
-                '[aria-label*="time" i]',
-                'input[type="time"]'
-            ]
-            
-            for selector in time_selectors:
-                try:
-                    time_field = self.page.locator(selector).first
-                    if time_field.is_visible():
-                        self.safe_fill(time_field, time_str, "time")
-                        break
-                except:
-                    continue
-            
-            logger.info(f"✅ Video scheduled for: {date_str} {time_str}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Scheduling failed: {e}")
-            return False
-    
-    def publish_video(self, is_scheduled=False):
-        """비디오 게시"""
-        action = "scheduled" if is_scheduled else "published"
-        logger.info(f"🚀 Publishing video ({action})...")
-        
-        try:
-            publish_selectors = [
-                'text="예약"' if is_scheduled else 'text="게시"',
-                'text="Schedule"' if is_scheduled else 'text="Publish"',
-                '[aria-label*="publish" i]',
-                'ytcp-button[aria-label*="publish" i]'
-            ]
-            
-            for selector in publish_selectors:
-                try:
-                    publish_btn = self.page.locator(selector).first
-                    if publish_btn.is_visible():
-                        self.safe_click(publish_btn, f"publish button ({action})")
-                        self.human_delay(3000, 5000)
-                        return True
-                except:
-                    continue
-            
-            logger.error(f"❌ Publish button not found")
-            return False
-            
-        except Exception as e:
-            logger.error(f"❌ Publishing failed: {e}")
-            return False
-    
-    def upload_single_video(self, video_config):
-        """단일 비디오 업로드 프로세스"""
-        video_id = video_config['id']
-        logger.info(f"🎬 Starting upload for video: {video_id}")
-        
-        try:
-            # 1. 업로드 페이지로 이동
-            if not self.navigate_to_upload():
-                return False
-            
-            # 2. 파일 업로드
-            if not self.upload_file(video_config['video_path']):
-                return False
-            
-            # 3. 업로드 완료 대기
-            if not self.wait_for_upload_complete():
-                logger.warning("⚠️ Upload may not be complete, continuing...")
-            
-            # 4. 메타데이터 입력
-            if not self.fill_metadata(
-                video_config['title'],
-                video_config['description'], 
-                video_config.get('thumbnail_path')
-            ):
-                return False
-            
-            # 5. 설정 구성
-            if not self.configure_settings():
-                return False
-            
-            # 6. 예약 설정 (있는 경우)
-            if video_config.get('schedule_datetime'):
-                if not self.schedule_video(video_config['schedule_datetime']):
-                    return False
-                is_scheduled = True
-            else:
-                is_scheduled = False
-            
-            # 7. 게시
-            if not self.publish_video(is_scheduled):
-                return False
-            
-            logger.info(f"✅ Video {video_id} uploaded successfully!")
-            return True
-            
-        except Exception as e:
-            logger.error(f"❌ Upload failed for {video_id}: {e}")
-            return False
-    
-    def load_video_configs(self):
-        """비디오 설정 파일들 로드"""
-        configs = []
-        
-        # upload_queue 폴더에서 비디오 파일들 찾기
-        video_files = list(self.upload_dir.glob("*_video.mp4"))
-        
-        for video_file in video_files:
-            video_id = video_file.stem.replace("_video", "")
-            
-            try:
-                # 필수 파일들 확인
-                title_file = self.upload_dir / f"{video_id}_title.txt"
-                desc_file = self.upload_dir / f"{video_id}_description.txt"
-                
-                if not title_file.exists() or not desc_file.exists():
-                    logger.warning(f"⚠️ Missing files for {video_id}, skipping")
-                    continue
-                
-                config = {
-                    'id': video_id,
-                    'video_path': video_file,
-                    'title': title_file.read_text(encoding='utf-8').strip(),
-                    'description': desc_file.read_text(encoding='utf-8').strip()
-                }
-                
-                # 선택적 파일들
-                thumbnail_file = self.upload_dir / f"{video_id}_thumbnail.jpg"
-                if thumbnail_file.exists():
-                    config['thumbnail_path'] = thumbnail_file
-                
-                schedule_file = self.upload_dir / f"{video_id}_schedule.txt"
-                if schedule_file.exists():
-                    schedule_str = schedule_file.read_text(encoding='utf-8').strip()
-                    try:
-                        config['schedule_datetime'] = datetime.strptime(schedule_str, "%Y-%m-%d %H:%M")
-                    except ValueError:
-                        logger.warning(f"⚠️ Invalid schedule format for {video_id}: {schedule_str}")
-                
-                configs.append(config)
-                logger.info(f"📋 Loaded config for {video_id}")
-                
-            except Exception as e:
-                logger.error(f"❌ Failed to load config for {video_id}: {e}")
-        
-        return configs
-    
-    def run(self, headless=False):
-        """메인 실행 함수"""
-        logger.info("🚀 Starting YouTube Auto Uploader...")
-        
-        try:
-            # 브라우저 설정
-            if not self.setup_browser(headless):
-                return False
-            
-            # 인증
-            if not self.authenticate():
-                return False
-            
-            # 비디오 설정 로드
-            video_configs = self.load_video_configs()
-            if not video_configs:
-                logger.warning("⚠️ No videos found to upload")
-                return False
-            
-            logger.info(f"📹 Found {len(video_configs)} videos to upload")
-            
-            # 업로드 실행
-            success_count = 0
-            for config in video_configs:
-                if self.upload_single_video(config):
-                    success_count += 1
-                
-                # 다음 업로드 전 대기 (봇 감지 방지)
-                if config != video_configs[-1]:  # 마지막이 아니면
-                    wait_time = random.uniform(30, 90)  # 30-90초 대기
-                    logger.info(f"⏳ Waiting {wait_time:.1f}s before next upload...")
-                    time.sleep(wait_time)
-            
-            logger.info(f"🎉 Upload completed: {success_count}/{len(video_configs)} successful")
-            return success_count > 0
-            
-        except Exception as e:
-            logger.error(f"❌ Fatal error: {e}")
-            return False
-        
-        finally:
-            # 브라우저 정리
-            if self.browser:
-                self.browser.close()
-                logger.info("🔒 Browser closed")
+          ]
+        },
+        "delay": 2
+      },
+      {
+        "type": "update_settings",
+        "params": {
+          "repo_name": "ai-automation-project",
+          "settings": {
+            "description": "🤖 AI-powered automation tools for GitHub, YouTube, and web platforms",
+            "homepage": "https://github.com/your-username/ai-automation-project",
+            "topics": ["ai", "automation", "github", "youtube", "python", "playwright", "web-scraping"]
+          }
+        },
+        "delay": 3
+      }
+    ]
+  },
 
-def create_sample_files():
-    """샘플 파일 생성"""
-    upload_dir = Path("upload_queue")
-    upload_dir.mkdir(exist_ok=True)
-    
-    samples = {
-        "sample1_title.txt": "내 첫 번째 유튜브 비디오",
-        "sample1_description.txt": """안녕하세요! 이것은 자동 업로드된 비디오입니다.
+  "weekly_analytics": {
+    "name": "Weekly Repository Analytics",
+    "description": "Analyze repository performance and trends",
+    "schedule": "0 10 * * 1",
+    "tasks": [
+      {
+        "type": "analyze_repos",
+        "params": {
+          "include_private": false,
+          "metrics": ["stars", "forks", "issues", "commits"]
+        },
+        "delay": 5
+      },
+      {
+        "type": "generate_report",
+        "params": {
+          "format": "markdown",
+          "include_graphs": true,
+          "save_to": "analytics/weekly_report.md"
+        },
+        "delay": 3
+      },
+      {
+        "type": "update_readme",
+        "params": {
+          "repo_name": "profile-stats",
+          "section": "weekly_stats",
+          "auto_commit": true
+        },
+        "delay": 2
+      }
+    ]
+  },
 
-🎯 주요 내용:
-- 자동화된 업로드 시스템
-- 예약 게시 기능
-- 완전한 메타데이터 관리
+  "community_engagement": {
+    "name": "Community Engagement Automation",
+    "description": "Engage with the GitHub community",
+    "tasks": [
+      {
+        "type": "find_repositories",
+        "params": {
+          "query": "machine learning python",
+          "min_stars": 50,
+          "max_stars": 1000,
+          "language": "python",
+          "created": "2024-01-01..2024-12-31"
+        },
+        "delay": 3
+      },
+      {
+        "type": "engage_with_repos",
+        "params": {
+          "actions": ["star", "watch"],
+          "limit": 10,
+          "comment_on_issues": false
+        },
+        "delay": 5
+      },
+      {
+        "type": "follow_active_users",
+        "params": {
+          "min_followers": 100,
+          "max_followers": 5000,
+          "recent_activity": true,
+          "limit": 5
+        },
+        "delay": 4
+      }
+    ]
+  },
 
-#자동업로드 #YouTube #자동화 #프로그래밍""",
-        "sample1_schedule.txt": (datetime.now() + timedelta(hours=1)).strftime("%Y-%m-%d %H:%M")
-    }
-    
-    for filename, content in samples.items():
-        filepath = upload_dir / filename
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(content)
-    
-    print(f"\n✅ Sample files created in {upload_dir}/")
-    print("📋 Next steps:")
-    print("1. Add your video file as 'sample1_video.mp4'")
-    print("2. Optionally add 'sample1_thumbnail.jpg'")
-    print("3. Run the script again")
-    print("4. Log in to YouTube when prompted")
+  "repository_maintenance": {
+    "name": "Repository Maintenance",
+    "description": "Maintain and update existing repositories",
+    "tasks": [
+      {
+        "type": "update_dependencies",
+        "params": {
+          "repos": ["all"],
+          "files": ["requirements.txt", "package.json"],
+          "create_pr": true
+        },
+        "delay": 10
+      },
+      {
+        "type": "close_stale_issues",
+        "params": {
+          "days_inactive": 30,
+          "labels": ["question", "help wanted"],
+          "comment": "This issue has been automatically closed due to inactivity. Please reopen if you're still experiencing this problem."
+        },
+        "delay": 3
+      },
+      {
+        "type": "merge_dependabot_prs",
+        "params": {
+          "author": "dependabot",
+          "auto_merge": true,
+          "require_checks": true
+        },
+        "delay": 5
+      }
+    ]
+  },
 
-if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="YouTube Auto Uploader")
-    parser.add_argument("--headless", action="store_true", help="Run in headless mode")
-    parser.add_argument("--create-samples", action="store_true", help="Create sample files")
-    parser.add_argument("--privacy", choices=['public', 'unlisted', 'private'], 
-                       default='private', help="Default privacy setting")
-    args = parser.parse_args()
-    
-    if args.create_samples:
-        create_sample_files()
-    else:
-        uploader = YouTubeUploader()
-        uploader.settings['privacy'] = args.privacy
-        
-        # 업로드할 비디오가 있는지 확인
-        if not list(uploader.upload_dir.glob("*_video.mp4")):
-            print("❌ No video files found!")
-            print("📋 Use --create-samples to generate sample files")
-            print("📁 Or add video files to upload_queue/ folder")
-        else:
-            uploader.run(headless=args.headless)
+  "content_generation": {
+    "name": "Automated Content Generation",
+    "description": "Generate and update repository content",
+    "tasks": [
+      {
+        "type": "generate_changelog",
+        "params": {
+          "repos": ["main-project"],
+          "format": "keepachangelog",
+          "include_unreleased": true
+        },
+        "delay": 5
+      },
+      {
+        "type": "update_contributor_list",
+        "params": {
+          "format": "all-contributors",
+          "include_bots": false,
+          "min_contributions": 1
+        },
+        "delay": 3
+      },
+      {
+        "type": "generate_project_stats",
+        "params": {
+          "include_charts": true,
+          "time_range": "6months",
+          "save_as": "docs/stats.md"
+        },
+        "delay": 4
+      }
+    ]
+  },
 
-
-class YouTubeUploaderGUI:
-    """GUI 인터페이스 (선택사항)"""
-    
-    def __init__(self):
-        try:
-            import tkinter as tk
-            from tkinter import ttk, filedialog, messagebox
-            self.tk = tk
-            self.ttk = ttk
-            self.filedialog = filedialog
-            self.messagebox = messagebox
-        except ImportError:
-            logger.error("❌ tkinter not available. GUI mode disabled.")
-            return
-        
-        self.uploader = YouTubeUploader()
-        self.create_gui()
-    
-    def create_gui(self):
-        """GUI 생성"""
-        self.root = self.tk.Tk()
-        self.root.title("YouTube Auto Uploader")
-        self.root.geometry("800x600")
-        
-        # 메인 프레임
-        main_frame = self.ttk.Frame(self.root, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(self.tk.W, self.tk.E, self.tk.N, self.tk.S))
-        
-        # 파일 선택 섹션
-        file_frame = self.ttk.LabelFrame(main_frame, text="📁 File Selection", padding="10")
-        file_frame.grid(row=0, column=0, columnspan=2, sticky=(self.tk.W, self.tk.E), pady=5)
-        
-        self.ttk.Button(file_frame, text="📹 Select Video", 
-                       command=self.select_video).grid(row=0, column=0, padx=5)
-        self.ttk.Button(file_frame, text="🖼️ Select Thumbnail", 
-                       command=self.select_thumbnail).grid(row=0, column=1, padx=5)
-        
-        self.video_label = self.ttk.Label(file_frame, text="No video selected")
-        self.video_label.grid(row=1, column=0, columnspan=2, pady=5)
-        
-        # 메타데이터 섹션
-        meta_frame = self.ttk.LabelFrame(main_frame, text="📝 Video Metadata", padding="10")
-        meta_frame.grid(row=1, column=0, columnspan=2, sticky=(self.tk.W, self.tk.E), pady=5)
-        
-        self.ttk.Label(meta_frame, text="Title:").grid(row=0, column=0, sticky=self.tk.W)
-        self.title_entry = self.ttk.Entry(meta_frame, width=60)
-        self.title_entry.grid(row=0, column=1, padx=5, pady=2)
-        
-        self.ttk.Label(meta_frame, text="Description:").grid(row=1, column=0, sticky=self.tk.NW)
-        self.description_text = self.tk.Text(meta_frame, width=60, height=8)
-        self.description_text.grid(row=1, column=1, padx=5, pady=2)
-        
-        # 설정 섹션
-        settings_frame = self.ttk.LabelFrame(main_frame, text="⚙️ Settings", padding="10")
-        settings_frame.grid(row=2, column=0, columnspan=2, sticky=(self.tk.W, self.tk.E), pady=5)
-        
-        self.ttk.Label(settings_frame, text="Privacy:").grid(row=0, column=0, sticky=self.tk.W)
-        self.privacy_var = self.tk.StringVar(value="private")
-        privacy_combo = self.ttk.Combobox(settings_frame, textvariable=self.privacy_var,
-                                         values=["public", "unlisted", "private"])
-        privacy_combo.grid(row=0, column=1, padx=5)
-        
-        self.ttk.Label(settings_frame, text="Schedule:").grid(row=1, column=0, sticky=self.tk.W)
-        self.schedule_var = self.tk.BooleanVar()
-        self.ttk.Checkbutton(settings_frame, variable=self.schedule_var,
-                            command=self.toggle_schedule).grid(row=1, column=1, sticky=self.tk.W)
-        
-        self.schedule_frame = self.ttk.Frame(settings_frame)
-        self.schedule_frame.grid(row=2, column=0, columnspan=2, sticky=(self.tk.W, self.tk.E))
-        
-        self.ttk.Label(self.schedule_frame, text="Date:").grid(row=0, column=0)
-        self.date_entry = self.ttk.Entry(self.schedule_frame, width=15)
-        self.date_entry.grid(row=0, column=1, padx=5)
-        self.date_entry.insert(0, datetime.now().strftime("%Y-%m-%d"))
-        
-        self.ttk.Label(self.schedule_frame, text="Time:").grid(row=0, column=2)
-        self.time_entry = self.ttk.Entry(self.schedule_frame, width=10)
-        self.time_entry.grid(row=0, column=3, padx=5)
-        self.time_entry.insert(0, (datetime.now() + timedelta(hours=1)).strftime("%H:%M"))
-        
-        # 초기에는 스케줄 프레임 숨김
-        self.toggle_schedule()
-        
-        # 업로드 버튼
-        upload_frame = self.ttk.Frame(main_frame)
-        upload_frame.grid(row=3, column=0, columnspan=2, pady=20)
-        
-        self.ttk.Button(upload_frame, text="🚀 Upload Now", 
-                       command=self.upload_now).grid(row=0, column=0, padx=10)
-        self.ttk.Button(upload_frame, text="📋 Add to Queue", 
-                       command=self.add_to_queue).grid(row=0, column=1, padx=10)
-        self.ttk.Button(upload_frame, text="🎬 Process Queue", 
-                       command=self.process_queue).grid(row=0, column=2, padx=10)
-        
-        # 로그 영역
-        log_frame = self.ttk.LabelFrame(main_frame, text="📄 Log", padding="10")
-        log_frame.grid(row=4, column=0, columnspan=2, sticky=(self.tk.W, self.tk.E, self.tk.N, self.tk.S), pady=5)
-        
-        self.log_text = self.tk.Text(log_frame, width=80, height=10)
-        scrollbar = self.ttk.Scrollbar(log_frame, orient="vertical", command=self.log_text.yview)
-        self.log_text.configure(yscrollcommand=scrollbar.set)
-        
-        self.log_text.grid(row=0, column=0, sticky=(self.tk.W, self.tk.E, self.tk.N, self.tk.S))
-        scrollbar.grid(row=0, column=1, sticky=(self.tk.N, self.tk.S))
-        
-        # 그리드 가중치 설정
-        main_frame.columnconfigure(1, weight=1)
-        main_frame.rowconfigure(4, weight=1)
-        log_frame.columnconfigure(0, weight=1)
-        log_frame.rowconfigure(0, weight=1)
-        
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-        
-        # 변수 초기화
-        self.video_path = None
-        self.thumbnail_path = None
-    
-    def toggle_schedule(self):
-        """스케줄 설정 토글"""
-        if self.schedule_var.get():
-            for child in self.schedule_frame.winfo_children():
-                child.grid()
-        else:
-            for child in self.schedule_frame.winfo_children():
-                child.grid_remove()
-    
-    def select_video(self):
-        """비디오 파일 선택"""
-        file_path = self.filedialog.askopenfilename(
-            title="Select Video File",
-            filetypes=[("Video files", "*.mp4 *.avi *.mov *.mkv"), ("All files", "*.*")]
-        )
-        if file_path:
-            self.video_path = file_path
-            self.video_label.config(text=f"📹 {Path(file_path).name}")
-    
-    def select_thumbnail(self):
-        """썸네일 파일 선택"""
-        file_path = self.filedialog.askopenfilename(
-            title="Select Thumbnail Image",
-            filetypes=[("Image files", "*.jpg *.jpeg *.png"), ("All files", "*.*")]
-        )
-        if file_path:
-            self.thumbnail_path = file_path
-            self.log(f"🖼️ Thumbnail selected: {Path(file_path).name}")
-    
-    def log(self, message):
-        """로그 메시지 추가"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        self.log_text.insert(self.tk.END, f"[{timestamp}] {message}\n")
-        self.log_text.see(self.tk.END)
-        self.root.update()
-    
-    def validate_inputs(self):
-        """입력값 검증"""
-        if not self.video_path:
-            self.messagebox.showerror("Error", "Please select a video file")
-            return False
-        
-        if not self.title_entry.get().strip():
-            self.messagebox.showerror("Error", "Please enter a video title")
-            return False
-        
-        return True
-    
-    def get_video_config(self):
-        """현재 입력값으로 비디오 설정 생성"""
-        config = {
-            'video_path': Path(self.video_path),
-            'title': self.title_entry.get().strip(),
-            'description': self.description_text.get("1.0", self.tk.END).strip()
-        }
-        
-        if self.thumbnail_path:
-            config['thumbnail_path'] = Path(self.thumbnail_path)
-        
-        if self.schedule_var.get():
-            try:
-                date_str = self.date_entry.get()
-                time_str = self.time_entry.get()
-                schedule_str = f"{date_str} {time_str}"
-                config['schedule_datetime'] = datetime.strptime(schedule_str, "%Y-%m-%d %H:%M")
-            except ValueError:
-                self.messagebox.showerror("Error", "Invalid date/time format")
-                return None
-        
-        return config
-    
-    def upload_now(self):
-        """즉시 업로드"""
-        if not self.validate_inputs():
-            return
-        
-        config = self.get_video_config()
-        if not config:
-            return
-        
-        self.log("🚀 Starting immediate upload...")
-        
-        try:
-            # 설정 적용
-            self.uploader.settings['privacy'] = self.privacy_var.get()
-            
-            # 브라우저 시작
-            if not self.uploader.setup_browser():
-                self.log("❌ Failed to setup browser")
-                return
-            
-            # 인증
-            if not self.uploader.authenticate():
-                self.log("❌ Authentication failed")
-                return
-            
-            # 업로드
-            config['id'] = f"gui_upload_{int(time.time())}"
-            if self.uploader.upload_single_video(config):
-                self.log("✅ Upload completed successfully!")
-                self.messagebox.showinfo("Success", "Video uploaded successfully!")
-            else:
-                self.log("❌ Upload failed")
-                self.messagebox.showerror("Error", "Upload failed. Check logs for details.")
-                
-        except Exception as e:
-            self.log(f"❌ Error: {e}")
-            self.messagebox.showerror("Error", f"An error occurred: {e}")
-        finally:
-            if self.uploader.browser:
-                self.uploader.browser.close()
-    
-    def add_to_queue(self):
-        """큐에 추가"""
-        if not self.validate_inputs():
-            return
-        
-        config = self.get_video_config()
-        if not config:
-            return
-        
-        try:
-            # 큐 디렉토리 생성
-            self.uploader.upload_dir.mkdir(exist_ok=True)
-            
-            # 파일 ID 생성
-            timestamp = int(time.time())
-            file_id = f"queue_{timestamp}"
-            
-            # 비디오 파일 복사
-            video_dest = self.uploader.upload_dir / f"{file_id}_video.mp4"
-            import shutil
-            shutil.copy2(config['video_path'], video_dest)
-            
-            # 메타데이터 파일 생성
-            (self.uploader.upload_dir / f"{file_id}_title.txt").write_text(
-                config['title'], encoding='utf-8')
-            (self.uploader.upload_dir / f"{file_id}_description.txt").write_text(
-                config['description'], encoding='utf-8')
-            
-            # 썸네일 복사 (있는 경우)
-            if config.get('thumbnail_path'):
-                thumb_dest = self.uploader.upload_dir / f"{file_id}_thumbnail.jpg"
-                shutil.copy2(config['thumbnail_path'], thumb_dest)
-            
-            # 스케줄 파일 생성 (있는 경우)
-            if config.get('schedule_datetime'):
-                schedule_str = config['schedule_datetime'].strftime("%Y-%m-%d %H:%M")
-                (self.uploader.upload_dir / f"{file_id}_schedule.txt").write_text(
-                    schedule_str, encoding='utf-8')
-            
-            self.log(f"✅ Added to queue: {file_id}")
-            self.messagebox.showinfo("Success", "Video added to upload queue!")
-            
-        except Exception as e:
-            self.log(f"❌ Error adding to queue: {e}")
-            self.messagebox.showerror("Error", f"Failed to add to queue: {e}")
-    
-    def process_queue(self):
-        """큐 처리"""
-        self.log("🎬 Processing upload queue...")
-        
-        try:
-            self.uploader.settings['privacy'] = self.privacy_var.get()
-            success = self.uploader.run()
-            
-            if success:
-                self.log("✅ Queue processing completed!")
-                self.messagebox.showinfo("Success", "All uploads completed!")
-            else:
-                self.log("❌ Queue processing failed")
-                self.messagebox.showerror("Error", "Queue processing failed")
-                
-        except Exception as e:
-            self.log(f"❌ Error processing queue: {e}")
-            self.messagebox.showerror("Error", f"Queue processing error: {e}")
-    
-    def run(self):
-        """GUI 실행"""
-        self.root.mainloop()
-
-
-# 추가 유틸리티 함수들
-def batch_create_configs(video_folder, output_folder="upload_queue"):
-    """폴더의 모든 비디오에 대해 설정 파일 일괄 생성"""
-    video_folder = Path(video_folder)
-    output_folder = Path(output_folder)
-    output_folder.mkdir(exist_ok=True)
-    
-    video_files = list(video_folder.glob("*.mp4"))
-    
-    for i, video_file in enumerate(video_files, 1):
-        file_id = f"batch_{i:03d}"
-        
-        # 비디오 파일 복사
-        video_dest = output_folder / f"{file_id}_video.mp4"
-        import shutil
-        shutil.copy2(video_file, video_dest)
-        
-        # 기본 메타데이터 생성
-        title = video_file.stem.replace("_", " ").title()
-        (output_folder / f"{file_id}_title.txt").write_text(title, encoding='utf-8')
-        
-        description = f"""자동 업로드된 비디오: {title}
-
-업로드 날짜: {datetime.now().strftime('%Y-%m-%d')}
-
-#자동업로드 #YouTube"""
-        (output_folder / f"{file_id}_description.txt").write_text(description, encoding='utf-8')
-        
-        # 1시간 간격으로 예약 설정
-        schedule_time = datetime.now() + timedelta(hours=i)
-        (output_folder / f"{file_id}_schedule.txt").write_text(
-            schedule_time.strftime("%Y-%m-%d %H:%M"), encoding='utf-8')
-    
-    print(f"✅ Created configs for {len(video_files)} videos in {output_folder}")
-
-
-def monitor_folder(watch_folder, upload_folder="upload_queue"):
-    """폴더 모니터링하여 새 비디오 자동 처리"""
-    import watchdog
-    from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler
-    
-    class VideoHandler(FileSystemEventHandler):
-        def __init__(self, upload_folder):
-            self.upload_folder = Path(upload_folder)
-            self.uploader = YouTubeUploader(self.upload_folder)
-        
-        def on_created(self, event):
-            if event.is_file and event.src_path.endswith('.mp4'):
-                logger.info(f"🎬 New video detected: {event.src_path}")
-                self.process_new_video(event.src_path)
-        
-        def process_new_video(self, video_path):
-            try:
-                video_path = Path(video_path)
-                timestamp = int(time.time())
-                file_id = f"auto_{timestamp}"
-                
-                # 비디오 파일 이동
-                video_dest = self.upload_folder / f"{file_id}_video.mp4"
-                import shutil
-                shutil.move(str(video_path), str(video_dest))
-                
-                # 기본 메타데이터 생성
-                title = video_path.stem.replace("_", " ").title()
-                (self.upload_folder / f"{file_id}_title.txt").write_text(title, encoding='utf-8')
-                
-                description = f"자동 감지 및 업로드: {title}"
-                (self.upload_folder / f"{file_id}_description.txt").write_text(description, encoding='utf-8')
-                
-                # 30분 후 업로드 예약
-                schedule_time = datetime.now() + timedelta(minutes=30)
-                (self.upload_folder / f"{file_id}_schedule.txt").write_text(
-                    schedule_time.strftime("%Y-%m-%d %H:%M"), encoding='utf-8')
-                
-                logger.info(f"✅ Auto-configured video for upload: {file_id}")
-                
-            except Exception as e:
-                logger.error(f"❌ Auto-processing failed: {e}")
-    
-    # 모니터링 시작
-    event_handler = VideoHandler(upload_folder)
-    observer = Observer()
-    observer.schedule(event_handler, str(watch_folder), recursive=False)
-    observer.start()
-    
-    print(f"👁️ Monitoring {watch_folder} for new videos...")
-    print("Press Ctrl+C to stop")
-    
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
-        print("\n📴 Monitoring stopped")
-    
-    observer.join()
+  "security_audit": {
+    "name": "Security Audit Automation",
+    "description": "Automated security checks and updates",
+    "tasks": [
+      {
+        "type": "scan_dependencies",
+        "params": {
+          "repos": ["all"],
+          "create_issues": true,
+          "severity": "medium"
+        },
+        "delay": 8
+      },
+      {
+        "type": "update_github_actions",
+        "params": {
+          "check_versions": true,
+          "update_outdated": true,
+          "create_pr": true
+        },
+        "delay": 5
+      },
+      {
+        "type": "review_permissions",
+        "params": {
+          "check_tokens": true,
+          "review_collaborators": true,
+          "audit_webhooks": true
+        },
+        "delay": 3
+      }
+    ]
+  }
+}
