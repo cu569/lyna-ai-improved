@@ -6,82 +6,78 @@
   <title>유튜브 자동 업로드 시뮬레이터</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f8f9fa;
-      padding: 30px;
-    }
-    h1 {
-      color: #d62828;
+      font-family: sans-serif;
+      background: #f8f8f8;
+      text-align: center;
+      padding: 20px;
     }
     .container {
       background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      max-width: 600px;
-      margin: auto;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
     }
     input, textarea, button {
       width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      font-size: 1em;
-    }
-    video {
-      width: 100%;
-      margin-top: 10px;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 8px;
       border: 1px solid #ccc;
+      font-size: 16px;
     }
-    img {
-      width: 100px;
-      margin-top: 10px;
+    button {
+      background-color: red;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: darkred;
+    }
+    h2 {
+      color: #cc0000;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📤 유튜브 자동 업로드 시뮬레이터</h1>
-
+    <h2>🚀 유튜브 자동 업로드 시뮬레이터</h2>
+    
     <label>🎥 영상 선택</label>
-    <input type="file" accept="video/*" id="videoInput" />
+    <input type="file" id="videoInput" accept="video/*">
 
     <label>🖼 썸네일 선택</label>
-    <input type="file" accept="image/*" id="thumbnailInput" />
+    <input type="file" id="thumbnailInput" accept="image/*">
 
     <label>📝 제목</label>
-    <input type="text" id="titleInput" placeholder="영상 제목을 입력하세요" />
+    <input type="text" id="titleInput" placeholder="영상 제목을 입력하세요">
 
     <label>📄 설명</label>
     <textarea id="descInput" placeholder="영상 설명을 입력하세요"></textarea>
 
     <button onclick="simulateUpload()">🚀 업로드 실행</button>
 
-    <div id="previewArea"></div>
+    <div id="result"></div>
   </div>
 
   <script>
     function simulateUpload() {
-      const videoInput = document.getElementById('videoInput');
-      const thumbInput = document.getElementById('thumbnailInput');
-      const title = document.getElementById('titleInput').value;
-      const desc = document.getElementById('descInput').value;
+      const video = document.getElementById("videoInput").files[0];
+      const thumbnail = document.getElementById("thumbnailInput").files[0];
+      const title = document.getElementById("titleInput").value;
+      const desc = document.getElementById("descInput").value;
 
-      const preview = document.getElementById('previewArea');
-      preview.innerHTML = '';
-
-      if (videoInput.files.length > 0) {
-        const videoURL = URL.createObjectURL(videoInput.files[0]);
-        preview.innerHTML += `<h2>🎬 영상 미리보기</h2><video controls src="${videoURL}"></video>`;
+      if (!video || !thumbnail || !title || !desc) {
+        alert("모든 항목을 입력해 주세요.");
+        return;
       }
 
-      if (thumbInput.files.length > 0) {
-        const thumbURL = URL.createObjectURL(thumbInput.files[0]);
-        preview.innerHTML += `<h2>🖼 썸네일</h2><img src="${thumbURL}" />`;
-      }
-
-      preview.innerHTML += `<h2>📝 제목</h2><p>${title}</p>`;
-      preview.innerHTML += `<h2>📄 설명</h2><p>${desc}</p>`;
-      preview.innerHTML += `<h2 style="color:green;">✅ 업로드 완료 (시뮬레이션)</h2>`;
+      document.getElementById("result").innerHTML =
+        `<p>✅ "${title}" 영상이 유튜브에 업로드 되었다고 가정합니다!</p>
+         <p>썸네일: ${thumbnail.name}</p>
+         <p>설명: ${desc}</p>`;
     }
   </script>
 </body>
