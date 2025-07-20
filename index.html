@@ -1,117 +1,44 @@
-# 1) 작업 폴더로 이동 / 새 폴더 생성
-mkdir g911-rima && cd g911-rima
-
-# 2) .gitignore 생성
-cat > .gitignore << 'EOF'
-__pycache__/
-*.pyc
-chromedriver*
-.env
-EOF
-
-# 3) 의존성 목록
-cat > requirements.txt << 'EOF'
-Flask
-selenium
-EOF
-
-# 4) Python 서버 + Selenium 자동업로드 (app.py)
-cat > app.py << 'EOF'
-from flask import Flask, render_template, jsonify
+from flask import Flask, jsonify, send_file
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-import time, os, sys
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import os, time
 
-# ▶ 실제 업로드할 영상 파일 경로로 수정 (영문/공백 없는 경로 권장)
-VIDEO_PATH = r'C:\video\test.mp4'
-if not os.path.isfile(VIDEO_PATH):
-    print(f"ERROR: 영상 파일이 없습니다: {VIDEO_PATH}")
-    sys.exit(1)
+VIDEO_PATH = r"C:\video\test.mp4"   # TODO: CLI 인자·환경변수화
 
 app = Flask(__name__)
 
-# 단일 HTML 템플릿
-HTML = """
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8"/>
-  <title>G911 리마 AI 상황판</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <style>
-    body{font-family:sans-serif;background:#eef2ff;padding:2em;}
-    .card{background:#fff;padding:1.5em;border-radius:12px;
-      box-shadow:0 3px 10px rgba(0,0,0,0.1);text-align:center;
-      cursor:pointer;margin:0 auto 1em;max-width:300px;}
-    #status{background:#fff;padding:1em;border-radius:8px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);max-width:600px;margin:1em auto;}
-    pre{white-space:pre-wrap;color:#333;}
-  </style>
-</head>
-<body>
-  <h1 style="text-align:center;color:#4b4bff;">G911 리마 AI 상황판</h1>
-  <div class="card" onclick="runUpload()">
-    🎥 <h3>유튜브 업로드</h3><small>실제 자동 업로드 실행</small>
-  </div>
-  <div id="status">
-    업로드 횟수: <span id="count">0</span>회
-    <pre id="log"></pre>
-  </div>
-<script>
-  let cnt=0;
-  function log(t){ let L=document.getElementById('log'); L.innerText = t+"\\n"+L.innerText;}
-  function runUpload(){
-    log(new Date().toLocaleTimeString()+" 시작…");
-    fetch('/upload',{method:'POST'})
-      .then(r=>r.json()).then(j=>{
-        if(j.ok){
-          cnt++; document.getElementById('count').innerText=cnt;
-          log(new Date().toLocaleTimeString()+" 성공 → "+j.url);
-        } else {
-          log("ERROR → "+j.error);
-        }
-      });
-  }
-</script>
-</body>
-</html>
-"""
-
-@app.route('/')
-def index():
-    return HTML
+def get_driver():
+    options = webdriver.ChromeOptions()
+    options.add_argument(r'--user-data-dir=C:\selenium\profile')
+    options.add_argument('--disable-gpu')
+    return webdriver.Chrome(service=Service(ChromeDriverManager().install()),
+                            options=options)
 
 @app.route('/upload', methods=['POST'])
 def upload():
     try:
-        driver = webdriver.Chrome()  # chromedriver.exe는 PATH에!
-        driver.get('https://studio.youtube.com/')
-        input("▶ 로그인 완료 후 Enter:")  # 최초 1회만
-
-        driver.find_element(By.XPATH, '//*[@id="create-icon"]').click()
-        time.sleep(1)
-        driver.find_element(By.XPATH, '//*[@id="text-item-0"]').click()
+        drv = get_driver()
+        drv.get('https://studio.youtube.com/')
+        # 이미 로그인된 세션이면 다음 줄이 바로 실행됨
+        drv.find_element(By.XPATH, '//*[@id="create-icon"]').click()
+        drv.find_element(By.XPATH, '//*[@data-title="Upload videos"]').click()
         time.sleep(2)
-        inp = driver.find_element(By.XPATH, '//input[@type="file"]')
-        inp.send_keys(VIDEO_PATH)
-        time.sleep(60)
-        driver.quit()
-        return jsonify(ok=True, url="https://youtu.be/XXXXXXX")
+        drv.find_element(By.CSS_SELECTOR, 'input[type="file"]').send_keys(VIDEO_PATH)
+
+        # 진행률 감시
+        while True:
+            try:
+                bar = drv.find_element(By.CSS_SELECTOR, '#progress-bar')
+                if bar.get_attribute('aria-valuenow') == '100':
+                    break
+            except Exception:
+                pass
+            time.sleep(5)
+
+        url = drv.find_element(By.CSS_SELECTOR, 'a.ytcp-video-info').get_attribute('href')
+        drv.quit()
+        return jsonify(ok=True, url=url)
     except Exception as e:
         return jsonify(ok=False, error=str(e))
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
-EOF
-
-# 5) Git 초기화 & 커밋
-git init
-git add .
-git commit -m "feat: 통합 G911 리마 AI 자동 업로드 프로젝트"
-
-# 6) 원격 리포 추가 (USERNAME / repo명 변경)
-git remote add origin https://github.com/USERNAME/g911-rima.git
-git branch -M main
-git push -u origin main
-
-echo "✅ 완료! 이제 GitHub에 올라갔습니다."
