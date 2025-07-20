@@ -1,9 +1,9 @@
-Flask
-selenium
 __pycache__/
 *.pyc
 chromedriver*
 .env
+Flask
+selenium
 from flask import Flask, render_template, jsonify, request
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -11,7 +11,7 @@ import time, os, sys
 
 app = Flask(__name__)
 
-# 업로드할 영상 경로 (실제 경로로 바꿔주세요)
+# 실제 업로드할 영상 파일 경로로 바꿔주세요
 VIDEO_PATH = r'C:\video\test.mp4'
 if not os.path.isfile(VIDEO_PATH):
     print(f"ERROR: 영상 파일이 없습니다: {VIDEO_PATH}")
@@ -24,34 +24,32 @@ def index():
 @app.route('/run-upload', methods=['POST'])
 def run_upload():
     try:
-        # 1) ChromeDriver 실행 (PATH에 chromedriver.exe 필요)
-        driver = webdriver.Chrome()
+        driver = webdriver.Chrome()  # chromedriver.exe가 PATH에 있어야 합니다
         driver.get('https://studio.youtube.com/')
-        # 2) 최초 1회 수동 로그인
-        #    (브라우저가 뜨면 수동 로그인 후 콘솔에 엔터)
-        input("▶ 로그인 완료 후 엔터를 눌러주세요…")
 
-        # 3) 업로드 버튼 클릭
+        # 최초 1회만: 터미널에 뜬 브라우저에서 로그인 후 엔터키
+        input("▶ 로그인 완료 후 엔터:")
+
+        # 업로드 버튼 클릭
         driver.find_element(By.XPATH, '//*[@id="create-icon"]').click()
         time.sleep(1)
         driver.find_element(By.XPATH, '//*[@id="text-item-0"]').click()
         time.sleep(2)
 
-        # 4) 파일 선택
+        # 파일 선택
         el = driver.find_element(By.XPATH, '//input[@type="file"]')
         el.send_keys(VIDEO_PATH)
 
-        # 5) 업로드 대기 (Progress bar로 대체 가능)
+        # 업로드 완료 대기
         time.sleep(60)
         driver.quit()
 
-        # 6) 성공 응답 (실제 URL을 받아오려면 추가 스크래핑)
+        # 실제 유튜브 URL은 별도 스크래핑 또는 API로 가져올 수 있습니다
         return jsonify(ok=True, url="https://youtu.be/XXXXXXX")
     except Exception as e:
         return jsonify(ok=False, error=str(e))
 
 if __name__ == '__main__':
-    # 포트는 필요에 따라 변경 가능
     app.run(host='0.0.0.0', port=8080)
 <!DOCTYPE html>
 <html lang="ko">
@@ -61,21 +59,24 @@ if __name__ == '__main__':
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body { font-family:sans-serif; background:#eef2ff; margin:0; padding:2em; }
-    .grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5em; max-width:600px; margin:auto; }
+    .grid { display:grid; grid-template-columns:1fr; gap:1.5em; max-width:400px; margin:auto; }
     .card {
       background:white; padding:1.5em; border-radius:12px;
       box-shadow:0 3px 10px rgba(0,0,0,0.1); text-align:center;
       cursor:pointer; user-select:none;
     }
-    .card h3 { margin:0 .5em .5em; }
-    #statusBar { margin-top:2em; background:#fff; padding:1em; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+    #statusBar { margin-top:2em; background:#fff;
+      padding:1em; border-radius:8px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
   <h1 style="text-align:center; color:#4b4bff;">G911 리마 AI 메인 상황판</h1>
   <div class="grid">
     <div class="card" onclick="runUpload()">
-      🎥<h3>유튜브 업로드</h3><small>실제 파일 자동 업로드</small>
+      🎥<h3>유튜브 업로드</h3>
+      <small>실제 파일 자동 업로드</small>
     </div>
   </div>
   
