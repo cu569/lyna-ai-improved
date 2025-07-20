@@ -1,61 +1,109 @@
+Flask
+selenium
+__pycache__/
+*.pyc
+chromedriver*
+.env
+from flask import Flask, render_template, jsonify, request
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import os, sys, time
+import time, os, sys
 
-# 0. 환경/파일 경로 점검
+app = Flask(__name__)
+
+# 업로드할 영상 경로 (실제 경로로 바꿔주세요)
 VIDEO_PATH = r'C:\video\test.mp4'
 if not os.path.isfile(VIDEO_PATH):
-    print(f"ERROR ▶ 파일을 찾을 수 없습니다: {VIDEO_PATH}")
+    print(f"ERROR: 영상 파일이 없습니다: {VIDEO_PATH}")
     sys.exit(1)
 
-# 1. 드라이버 준비 (버전 일치 필수)
-try:
-    driver = webdriver.Chrome()  # 또는 Chrome(executable_path='C:/chromedriver.exe')
-except Exception as e:
-    print("ERROR ▶ ChromeDriver 실행 실패:", e)
-    sys.exit(1)
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-wait = WebDriverWait(driver, 20)
+@app.route('/run-upload', methods=['POST'])
+def run_upload():
+    try:
+        # 1) ChromeDriver 실행 (PATH에 chromedriver.exe 필요)
+        driver = webdriver.Chrome()
+        driver.get('https://studio.youtube.com/')
+        # 2) 최초 1회 수동 로그인
+        #    (브라우저가 뜨면 수동 로그인 후 콘솔에 엔터)
+        input("▶ 로그인 완료 후 엔터를 눌러주세요…")
 
-try:
-    # 2. 유튜브 스튜디오 접속
-    driver.get('https://studio.youtube.com/')
-    input("▶ 유튜브 로그인(최초 1회만) 후 엔터를 눌러주세요.")
+        # 3) 업로드 버튼 클릭
+        driver.find_element(By.XPATH, '//*[@id="create-icon"]').click()
+        time.sleep(1)
+        driver.find_element(By.XPATH, '//*[@id="text-item-0"]').click()
+        time.sleep(2)
 
-    # 3. '만들기(+)' 버튼 클릭
-    create_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="create-icon"]')))
-    create_btn.click()
+        # 4) 파일 선택
+        el = driver.find_element(By.XPATH, '//input[@type="file"]')
+        el.send_keys(VIDEO_PATH)
 
-    # 4. '동영상 업로드' 선택
-    upload_menu = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="text-item-0"]')))
-    upload_menu.click()
+        # 5) 업로드 대기 (Progress bar로 대체 가능)
+        time.sleep(60)
+        driver.quit()
 
-    # 5. 파일 업로드 input 대기/전송
-    file_input = wait.until(EC.presence_of_element_located((By.XPATH, '//input[@type="file"]')))
-    file_input.send_keys(VIDEO_PATH)
-    print("▶ 파일 업로드 입력 완료")
+        # 6) 성공 응답 (실제 URL을 받아오려면 추가 스크래핑)
+        return jsonify(ok=True, url="https://youtu.be/XXXXXXX")
+    except Exception as e:
+        return jsonify(ok=False, error=str(e))
 
-    # 6. (옵션) 제목 자동 입력
-    # title_box = wait.until(EC.presence_of_element_located((By.XPATH, '//ytcp-social-suggestions-textbox//textarea')))
-    # title_box.clear()
-    # title_box.send_keys("자동화 테스트 영상")
+if __name__ == '__main__':
+    # 포트는 필요에 따라 변경 가능
+    app.run(host='0.0.0.0', port=8080)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>G911 리마 AI 메인 상황판</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family:sans-serif; background:#eef2ff; margin:0; padding:2em; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5em; max-width:600px; margin:auto; }
+    .card {
+      background:white; padding:1.5em; border-radius:12px;
+      box-shadow:0 3px 10px rgba(0,0,0,0.1); text-align:center;
+      cursor:pointer; user-select:none;
+    }
+    .card h3 { margin:0 .5em .5em; }
+    #statusBar { margin-top:2em; background:#fff; padding:1em; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <h1 style="text-align:center; color:#4b4bff;">G911 리마 AI 메인 상황판</h1>
+  <div class="grid">
+    <div class="card" onclick="runUpload()">
+      🎥<h3>유튜브 업로드</h3><small>실제 파일 자동 업로드</small>
+    </div>
+  </div>
+  
+  <div id="statusBar">
+    <div>유튜브 업로드: <span id="uploadCount">0</span>회</div>
+    <pre id="log" style="white-space:pre-wrap; margin-top:1em; color:#333;"></pre>
+  </div>
 
-    # 7. (옵션) 다음→다음→공개 클릭 예시
-    # for _ in range(3):
-    #     next_btn = wait.until(EC.element_to_be_clickable((By.ID, 'next-button')))
-    #     next_btn.click()
-    #     time.sleep(1)
-    # public_btn = wait.until(EC.element_to_be_clickable((By.NAME, 'PUBLIC')))
-    # public_btn.click()
+  <script>
+    let uploadCount = 0;
+    function appendLog(txt){
+      const pre = document.getElementById('log');
+      pre.innerText = txt + "\n" + pre.innerText;
+    }
 
-    # 8. 업로드 완료 대기 (업로드 진행률 요소가 생기면 대체 가능)
-    print("▶ 업로드 진행 중, 최대 60초 대기...")
-    time.sleep(60)
-
-    print("✅ 업로드 완료! 스튜디오에서 확인하세요.")
-except Exception as ex:
-    print("ERROR ▶ 자동화 중 예외 발생:", ex)
-finally:
-    driver.quit()
+    function runUpload(){
+      appendLog(`[${new Date().toLocaleTimeString()}] 업로드 시작…`);
+      fetch('/run-upload', { method:'POST' })
+        .then(r=>r.json()).then(j=>{
+          if(j.ok){
+            uploadCount++;
+            document.getElementById('uploadCount').innerText = uploadCount;
+            appendLog(`[${new Date().toLocaleTimeString()}] 업로드 성공: ${j.url}`);
+          } else {
+            appendLog(`ERROR: 업로드 실패 → ${j.error}`);
+          }
+        });
+    }
+  </script>
+</body>
+</html>
