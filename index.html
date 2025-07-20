@@ -1,51 +1,56 @@
-__pycache__/
-*.pyc
-chromedriver*
-.env
-Flask
-selenium
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, request, jsonify
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time, os, sys
 
 app = Flask(__name__)
 
-# 실제 업로드할 영상 파일 경로로 바꿔주세요
-VIDEO_PATH = r'C:\video\test.mp4'
-if not os.path.isfile(VIDEO_PATH):
-    print(f"ERROR: 영상 파일이 없습니다: {VIDEO_PATH}")
+# 1) 업로드할 동영상이 있는 폴더 (영문 경로 권장)
+VIDEO_DIR = r'C:\video\bulk'  
+if not os.path.isdir(VIDEO_DIR):
+    print(f"ERROR: 디렉터리가 없습니다: {VIDEO_DIR}")
     sys.exit(1)
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/run-upload', methods=['POST'])
-def run_upload():
+@app.route('/run-batch-upload', methods=['POST'])
+def run_batch_upload():
+    files = [f for f in os.listdir(VIDEO_DIR) if f.lower().endswith('.mp4')]
+    if len(files) == 0:
+        return jsonify(ok=False, error="업로드할 .mp4 파일이 없습니다.")
+
     try:
-        driver = webdriver.Chrome()  # chromedriver.exe가 PATH에 있어야 합니다
+        driver = webdriver.Chrome()
         driver.get('https://studio.youtube.com/')
+        input("▶ 로그인 완료 후 Enter 눌러주세요…")
 
-        # 최초 1회만: 터미널에 뜬 브라우저에서 로그인 후 엔터키
-        input("▶ 로그인 완료 후 엔터:")
+        results = []
+        for idx, fname in enumerate(files, start=1):
+            path = os.path.join(VIDEO_DIR, fname)
+            try:
+                # --- 업로드 루틴 ---
+                driver.find_element(By.XPATH, '//*[@id="create-icon"]').click()
+                time.sleep(1)
+                driver.find_element(By.XPATH, '//*[@id="text-item-0"]').click()
+                time.sleep(2)
+                driver.find_element(By.XPATH, '//input[@type="file"]').send_keys(path)
+                # (원한다면 제목/설명 자동 입력 코드를 여기에 추가)
+                time.sleep(8)  # 업로드 시작 대기
+                # 다음 버튼 클릭 등 추가 자동화 가능
+                time.sleep(60)  # 완전 업로드 대기
 
-        # 업로드 버튼 클릭
-        driver.find_element(By.XPATH, '//*[@id="create-icon"]').click()
-        time.sleep(1)
-        driver.find_element(By.XPATH, '//*[@id="text-item-0"]').click()
-        time.sleep(2)
+                results.append({ 'file': fname, 'status': 'ok' })
+                print(f"[{idx}/{len(files)}] 업로드 성공: {fname}")
+            except Exception as e:
+                results.append({ 'file': fname, 'status': 'error', 'msg': str(e) })
+                print(f"[{idx}/{len(files)}] 업로드 실패: {fname} → {e}")
+                # 실패해도 계속 진행
 
-        # 파일 선택
-        el = driver.find_element(By.XPATH, '//input[@type="file"]')
-        el.send_keys(VIDEO_PATH)
-
-        # 업로드 완료 대기
-        time.sleep(60)
         driver.quit()
+        return jsonify(ok=True, total=len(files), results=results)
 
-        # 실제 유튜브 URL은 별도 스크래핑 또는 API로 가져올 수 있습니다
-        return jsonify(ok=True, url="https://youtu.be/XXXXXXX")
     except Exception as e:
         return jsonify(ok=False, error=str(e))
 
@@ -54,55 +59,40 @@ if __name__ == '__main__':
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>G911 리마 AI 메인 상황판</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8"/>
+  <title>Batch YouTube Upload</title>
   <style>
-    body { font-family:sans-serif; background:#eef2ff; margin:0; padding:2em; }
-    .grid { display:grid; grid-template-columns:1fr; gap:1.5em; max-width:400px; margin:auto; }
-    .card {
-      background:white; padding:1.5em; border-radius:12px;
-      box-shadow:0 3px 10px rgba(0,0,0,0.1); text-align:center;
-      cursor:pointer; user-select:none;
-    }
-    #statusBar { margin-top:2em; background:#fff;
-      padding:1em; border-radius:8px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);
-    }
+    /* 간략화된 스타일 */
+    body{font-family:sans-serif;padding:2em;}
+    button{padding:1em;border:none;background:#4b4bff;color:white;border-radius:6px;cursor:pointer;}
+    pre{background:#f0f0f0;padding:1em;}
   </style>
 </head>
 <body>
-  <h1 style="text-align:center; color:#4b4bff;">G911 리마 AI 메인 상황판</h1>
-  <div class="grid">
-    <div class="card" onclick="runUpload()">
-      🎥<h3>유튜브 업로드</h3>
-      <small>실제 파일 자동 업로드</small>
-    </div>
-  </div>
-  
-  <div id="statusBar">
-    <div>유튜브 업로드: <span id="uploadCount">0</span>회</div>
-    <pre id="log" style="white-space:pre-wrap; margin-top:1em; color:#333;"></pre>
-  </div>
+  <h1>대량(30k) 유튜브 업로드</h1>
+  <p>▶ 업로드 폴더: <code>C:\video\bulk</code></p>
+  <button onclick="batchUpload()">대량 업로드 시작</button>
+
+  <h2>진행 로그</h2>
+  <pre id="log"></pre>
 
   <script>
-    let uploadCount = 0;
-    function appendLog(txt){
-      const pre = document.getElementById('log');
-      pre.innerText = txt + "\n" + pre.innerText;
+    function log(txt){
+      document.getElementById('log').innerText += txt + "\n";
     }
 
-    function runUpload(){
-      appendLog(`[${new Date().toLocaleTimeString()}] 업로드 시작…`);
-      fetch('/run-upload', { method:'POST' })
+    function batchUpload(){
+      log("▶ 업로드 폴더 스캔 중...");
+      fetch('/run-batch-upload', { method:'POST' })
         .then(r=>r.json()).then(j=>{
-          if(j.ok){
-            uploadCount++;
-            document.getElementById('uploadCount').innerText = uploadCount;
-            appendLog(`[${new Date().toLocaleTimeString()}] 업로드 성공: ${j.url}`);
-          } else {
-            appendLog(`ERROR: 업로드 실패 → ${j.error}`);
+          if(!j.ok){
+            log("ERROR: " + j.error);
+            return;
           }
+          log(`총 ${j.total}개 파일 처리 완료.`);
+          j.results.forEach((res,i)=>{
+            log(`${i+1}. ${res.file} → ${res.status}` + (res.msg?(" ("+res.msg+")"):""));
+          });
         });
     }
   </script>
