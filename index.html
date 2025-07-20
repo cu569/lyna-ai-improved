@@ -7,8 +7,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import os, time, logging
 
-# 환경 설정
-VIDEO_PATH = os.getenv("VIDEO_PATH", r"C:\video\test.mp4")  # 환경변수 또는 기본값
+# 환경설정
+VIDEO_PATH = os.getenv("VIDEO_PATH", r"C:\video\test.mp4")
 CHROME_PROFILE_PATH = os.getenv("CHROME_PROFILE", r"C:\selenium\profile")
 
 app = Flask(__name__)
@@ -31,32 +31,29 @@ def upload():
         wait = WebDriverWait(driver, 60)
         driver.get('https://studio.youtube.com/')
 
-        # 업로드 버튼 클릭
+        # 업로드 클릭
         wait.until(EC.element_to_be_clickable((By.ID, 'create-icon'))).click()
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-title="Upload videos"]'))).click()
 
-        # 파일 입력
+        # 파일 선택
         file_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="file"]')))
         file_input.send_keys(VIDEO_PATH)
         logging.info("Uploading video...")
 
-        # 진행률 100% 확인
+        # 업로드 진행률 확인
         WebDriverWait(driver, 300).until(
-            lambda d: d.find_element(By.ID, 'progress-bar').get_attribute('aria-valuenow') == '100'
+            lambda d: d.find_element(By.ID, 'progress-bar').getAttribute('aria-valuenow') == '100'
         )
-        logging.info("Upload complete")
 
-        # 다음 → 다음 → 다음 → 공개 → 완료
+        # 다음 3회 → 공개 → 완료
         for _ in range(3):
             wait.until(EC.element_to_be_clickable((By.ID, 'next-button'))).click()
-
         wait.until(EC.element_to_be_clickable((By.NAME, 'PUBLIC'))).click()
         wait.until(EC.element_to_be_clickable((By.ID, 'done-button'))).click()
 
-        # 업로드된 URL 추출
+        # 결과 링크
         url_elem = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'a.ytcp-video-info')))
         video_url = url_elem.get_attribute('href')
-
         return jsonify(ok=True, url=video_url)
     except Exception as e:
         logging.exception("Upload failed")
