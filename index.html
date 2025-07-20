@@ -1,21 +1,21 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-import time
+# G911 리마 유튜브 자동 업로드
 
-# 크롬드라이버 경로가 PATH에 없다면 아래 주석 해제
-# driver = webdriver.Chrome(executable_path='C:/chromedriver.exe')
-driver = webdriver.Chrome()
+## 주요 기능
+- 리마 AI 자동 생성/실행
+- 유튜브 영상 자동 업로드(Python/Selenium)
+- 실시간 상황판/로그/채팅
+- GPT+리마+사용자 3자 명령/대화
+- 전체 자동화 프로토콜 및 확장
 
-driver.get('https://studio.youtube.com/')
-input("유튜브 로그인(최초 1회) 후 Enter를 누르세요.")
+## 실행 방법
+1. 크롬드라이버 설치
+2. pip install selenium
+3. youtube_upload.py 코드 실행
 
-driver.find_element(By.XPATH, '//*[@id="create-icon"]').click()
-time.sleep(1)
-driver.find_element(By.XPATH, '//ytcp-ve[@id="upload-beta"]').click()
-time.sleep(2)
+## 개발/확장
+- 제목, 설명, 썸네일 자동입력
+- 대량 업로드/반복 자동화
+- 다국어 변환 및 상황판 집계
 
-upload_input = driver.find_element(By.XPATH, '//input[@type="file"]')
-upload_input.send_keys(r'C:\경로\동영상.mp4')  # 실제 파일 경로로 수정!
-
-time.sleep(60)  # 업로드 완료 대기 (필요시 늘려도 됨)
-driver.quit()
+## 문의/기여
+이슈 또는 PR로 남겨주세요!
