@@ -1,17 +1,61 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-import time
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import os, sys, time
 
-driver = webdriver.Chrome()
-driver.get('https://studio.youtube.com/')
-input("유튜브 로그인 후 엔터:")
+# 0. 환경/파일 경로 점검
+VIDEO_PATH = r'C:\video\test.mp4'
+if not os.path.isfile(VIDEO_PATH):
+    print(f"ERROR ▶ 파일을 찾을 수 없습니다: {VIDEO_PATH}")
+    sys.exit(1)
 
-driver.find_element(By.XPATH, '//*[@id="create-icon"]').click()
-time.sleep(1)
-driver.find_element(By.XPATH, '//*[@id="text-item-0"]').click()
-time.sleep(2)
-upload_input = driver.find_element(By.XPATH, '//input[@type="file"]')
-upload_input.send_keys(r'C:\video\test.mp4')  # 파일경로만 내 PC에 맞게!
+# 1. 드라이버 준비 (버전 일치 필수)
+try:
+    driver = webdriver.Chrome()  # 또는 Chrome(executable_path='C:/chromedriver.exe')
+except Exception as e:
+    print("ERROR ▶ ChromeDriver 실행 실패:", e)
+    sys.exit(1)
 
-time.sleep(60)
-driver.quit()
+wait = WebDriverWait(driver, 20)
+
+try:
+    # 2. 유튜브 스튜디오 접속
+    driver.get('https://studio.youtube.com/')
+    input("▶ 유튜브 로그인(최초 1회만) 후 엔터를 눌러주세요.")
+
+    # 3. '만들기(+)' 버튼 클릭
+    create_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="create-icon"]')))
+    create_btn.click()
+
+    # 4. '동영상 업로드' 선택
+    upload_menu = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="text-item-0"]')))
+    upload_menu.click()
+
+    # 5. 파일 업로드 input 대기/전송
+    file_input = wait.until(EC.presence_of_element_located((By.XPATH, '//input[@type="file"]')))
+    file_input.send_keys(VIDEO_PATH)
+    print("▶ 파일 업로드 입력 완료")
+
+    # 6. (옵션) 제목 자동 입력
+    # title_box = wait.until(EC.presence_of_element_located((By.XPATH, '//ytcp-social-suggestions-textbox//textarea')))
+    # title_box.clear()
+    # title_box.send_keys("자동화 테스트 영상")
+
+    # 7. (옵션) 다음→다음→공개 클릭 예시
+    # for _ in range(3):
+    #     next_btn = wait.until(EC.element_to_be_clickable((By.ID, 'next-button')))
+    #     next_btn.click()
+    #     time.sleep(1)
+    # public_btn = wait.until(EC.element_to_be_clickable((By.NAME, 'PUBLIC')))
+    # public_btn.click()
+
+    # 8. 업로드 완료 대기 (업로드 진행률 요소가 생기면 대체 가능)
+    print("▶ 업로드 진행 중, 최대 60초 대기...")
+    time.sleep(60)
+
+    print("✅ 업로드 완료! 스튜디오에서 확인하세요.")
+except Exception as ex:
+    print("ERROR ▶ 자동화 중 예외 발생:", ex)
+finally:
+    driver.quit()
