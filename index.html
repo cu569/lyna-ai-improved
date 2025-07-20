@@ -1,12 +1,10 @@
-# 1. 먼저 아래 명령으로 selenium 설치
 # pip install selenium
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
 
-# 1. 크롬드라이버(내 크롬 버전과 맞는 최신) 준비
-#    크롬드라이버.exe는 .py 파일과 같은 폴더에 놓기
+# 1. 드라이버 준비(같은 폴더에 chromedriver.exe 위치)
 driver = webdriver.Chrome()
 
 # 2. 유튜브 스튜디오 접속
@@ -26,20 +24,20 @@ time.sleep(2)
 # 6. 파일 업로드 input 찾기
 upload_input = driver.find_element(By.XPATH, '//input[@type="file"]')
 
-# 7. 업로드할 파일 경로 입력 (폴더/파일명은 영어 권장)
+# 7. 업로드 파일 경로 입력 (영문 폴더/파일명 권장)
 upload_input.send_keys(r'C:\video\test.mp4')
 
-# 8. 제목/설명 자동 입력 (필요시)
-time.sleep(8)  # 파일 업로드 대기
+# 8. (필요시) 제목/설명 자동 입력
+time.sleep(8)
 driver.find_element(By.XPATH, '//*[@id="textbox"]').send_keys('자동화 테스트 영상')
 
-# 9. (필요시) "다음" 3회 + 공개 클릭 등도 자동화 가능
-# (예시)
+# 9. (필요시) "다음" 3회, 공개 설정 등도 자동화 가능
 # for _ in range(3):
 #     driver.find_element(By.ID, "next-button").click()
 #     time.sleep(1)
-# driver.find_element(By.NAME, "PUBLIC").click()  # 예시
+# driver.find_element(By.NAME, "PUBLIC").click()
 
 # 10. 업로드 완료 대기
 time.sleep(60)
+
 driver.quit()
