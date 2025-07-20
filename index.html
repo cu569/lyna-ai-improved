@@ -1,43 +1,17 @@
-# pip install selenium
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
 
-# 1. 드라이버 준비(같은 폴더에 chromedriver.exe 위치)
 driver = webdriver.Chrome()
-
-# 2. 유튜브 스튜디오 접속
 driver.get('https://studio.youtube.com/')
+input("유튜브 로그인 후 엔터:")
 
-# 3. 최초 1회만 직접 로그인(수동)
-input("유튜브 로그인(최초 1회만) 후 엔터를 누르세요.")
-
-# 4. '만들기' 버튼(+) 클릭
 driver.find_element(By.XPATH, '//*[@id="create-icon"]').click()
-time.sleep(2)
-
-# 5. '동영상 업로드' 메뉴 클릭
+time.sleep(1)
 driver.find_element(By.XPATH, '//*[@id="text-item-0"]').click()
 time.sleep(2)
-
-# 6. 파일 업로드 input 찾기
 upload_input = driver.find_element(By.XPATH, '//input[@type="file"]')
+upload_input.send_keys(r'C:\video\test.mp4')  # 파일경로만 내 PC에 맞게!
 
-# 7. 업로드 파일 경로 입력 (영문 폴더/파일명 권장)
-upload_input.send_keys(r'C:\video\test.mp4')
-
-# 8. (필요시) 제목/설명 자동 입력
-time.sleep(8)
-driver.find_element(By.XPATH, '//*[@id="textbox"]').send_keys('자동화 테스트 영상')
-
-# 9. (필요시) "다음" 3회, 공개 설정 등도 자동화 가능
-# for _ in range(3):
-#     driver.find_element(By.ID, "next-button").click()
-#     time.sleep(1)
-# driver.find_element(By.NAME, "PUBLIC").click()
-
-# 10. 업로드 완료 대기
 time.sleep(60)
-
 driver.quit()
