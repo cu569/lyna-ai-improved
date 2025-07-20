@@ -1,10 +1,24 @@
-## [실패/반복 실행 기록]
+# pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
 
-- 2025-07-20 16:50 : 파일 경로 에러 - 경로에 한글 포함 (C:\내문서\동영상.mp4)
-  - 해결: 폴더명을 C:\video\로 변경
+SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+flow = InstalledAppFlow.from_client_secrets_file('client_secrets.json', SCOPES)
+credentials = flow.run_console()
+youtube = build('youtube', 'v3', credentials=credentials)
 
-- 2025-07-20 17:00 : 크롬드라이버 버전 불일치
-  - 해결: 크롬드라이버 최신 버전 재설치, chrome://settings/help에서 버전 확인
-
-- 2025-07-20 17:05 : XPATH 에러 (유튜브 UI 변경)
-  - 해결: F12 개발자도구에서 요소 새로 확인, XPATH 업데이트
+request = youtube.videos().insert(
+    part="snippet,status",
+    body={
+      "snippet": {
+        "title": "AI 자동 업로드 테스트",
+        "description": "GPT 자동 업로드 성공",
+        "tags": ["AI", "리마", "자동화"],
+        "categoryId": "22"
+      },
+      "status": {"privacyStatus": "private"}
+    },
+    media_body="C:/video/동영상.mp4"
+)
+response = request.execute()
+print(response)
