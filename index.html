@@ -1,19 +1,66 @@
-# 1. 압축 해제 후 해당 폴더로 이동
-cd yt_uploader
+from flask import Flask, jsonify, request
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+import os, time, logging
 
-# 2. 가상환경 설정 (선택)
-python -m venv venv
-venv\Scripts\activate  # macOS/Linux: source venv/bin/activate
+# 환경설정: 환경변수 또는 기본값 사용
+VIDEO_PATH = os.getenv("VIDEO_PATH", r"C:\video\test.mp4")
+CHROME_PROFILE_PATH = os.getenv("CHROME_PROFILE", r"C:\selenium\profile")
 
-# 3. 의존성 설치
-pip install -r requirements.txt
+app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
-# 4. 환경변수 설정 (또는 .env 직접 생성)
-set VIDEO_PATH=C:\video\test.mp4
-set CHROME_PROFILE=C:\selenium\profile
+def get_driver():
+    options = webdriver.ChromeOptions()
+    options.add_argument(f'--user-data-dir={CHROME_PROFILE_PATH}')  # 로그인 유지
+    options.add_argument('--disable-gpu')
+    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-# 5. 서버 실행
-python upload_server.py
+@app.route('/upload', methods=['POST'])
+def upload():
+    driver = None
+    try:
+        if not os.path.exists(VIDEO_PATH):
+            return jsonify(ok=False, error="Video file not found")
 
-# 6. 업로드 요청
-curl -X POST http://localhost:5000/upload
+        driver = get_driver()
+        wait = WebDriverWait(driver, 60)
+        driver.get('https://studio.youtube.com/')
+
+        # 업로드 버튼 클릭
+        wait.until(EC.element_to_be_clickable((By.ID, 'create-icon'))).click()
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-title="Upload videos"]'))).click()
+
+        # 파일 선택
+        file_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="file"]')))
+        file_input.send_keys(VIDEO_PATH)
+        logging.info("Uploading video...")
+
+        # 업로드 완료 대기
+        WebDriverWait(driver, 300).until(
+            lambda d: d.find_element(By.ID, 'progress-bar').get_attribute('aria-valuenow') == '100'
+        )
+
+        # 다음 3회 → 공개 → 완료
+        for _ in range(3):
+            wait.until(EC.element_to_be_clickable((By.ID, 'next-button'))).click()
+        wait.until(EC.element_to_be_clickable((By.NAME, 'PUBLIC'))).click()
+        wait.until(EC.element_to_be_clickable((By.ID, 'done-button'))).click()
+
+        # 결과 링크 추출
+        url_elem = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'a.ytcp-video-info')))
+        video_url = url_elem.get_attribute('href')
+        return jsonify(ok=True, url=video_url)
+    except Exception as e:
+        logging.exception("Upload failed")
+        return jsonify(ok=False, error=str(e))
+    finally:
+        if driver:
+            driver.quit()
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
