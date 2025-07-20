@@ -1,44 +1,69 @@
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, request
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import os, time
+import os, time, logging
 
-VIDEO_PATH = r"C:\video\test.mp4"   # TODO: CLI 인자·환경변수화
+# 환경 설정
+VIDEO_PATH = os.getenv("VIDEO_PATH", r"C:\video\test.mp4")  # 환경변수 또는 기본값
+CHROME_PROFILE_PATH = os.getenv("CHROME_PROFILE", r"C:\selenium\profile")
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 def get_driver():
     options = webdriver.ChromeOptions()
-    options.add_argument(r'--user-data-dir=C:\selenium\profile')
+    options.add_argument(f'--user-data-dir={CHROME_PROFILE_PATH}')
     options.add_argument('--disable-gpu')
-    return webdriver.Chrome(service=Service(ChromeDriverManager().install()),
-                            options=options)
+    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    driver = None
     try:
-        drv = get_driver()
-        drv.get('https://studio.youtube.com/')
-        # 이미 로그인된 세션이면 다음 줄이 바로 실행됨
-        drv.find_element(By.XPATH, '//*[@id="create-icon"]').click()
-        drv.find_element(By.XPATH, '//*[@data-title="Upload videos"]').click()
-        time.sleep(2)
-        drv.find_element(By.CSS_SELECTOR, 'input[type="file"]').send_keys(VIDEO_PATH)
+        if not os.path.exists(VIDEO_PATH):
+            return jsonify(ok=False, error="Video file not found")
 
-        # 진행률 감시
-        while True:
-            try:
-                bar = drv.find_element(By.CSS_SELECTOR, '#progress-bar')
-                if bar.get_attribute('aria-valuenow') == '100':
-                    break
-            except Exception:
-                pass
-            time.sleep(5)
+        driver = get_driver()
+        wait = WebDriverWait(driver, 60)
+        driver.get('https://studio.youtube.com/')
 
-        url = drv.find_element(By.CSS_SELECTOR, 'a.ytcp-video-info').get_attribute('href')
-        drv.quit()
-        return jsonify(ok=True, url=url)
+        # 업로드 버튼 클릭
+        wait.until(EC.element_to_be_clickable((By.ID, 'create-icon'))).click()
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-title="Upload videos"]'))).click()
+
+        # 파일 입력
+        file_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="file"]')))
+        file_input.send_keys(VIDEO_PATH)
+        logging.info("Uploading video...")
+
+        # 진행률 100% 확인
+        WebDriverWait(driver, 300).until(
+            lambda d: d.find_element(By.ID, 'progress-bar').get_attribute('aria-valuenow') == '100'
+        )
+        logging.info("Upload complete")
+
+        # 다음 → 다음 → 다음 → 공개 → 완료
+        for _ in range(3):
+            wait.until(EC.element_to_be_clickable((By.ID, 'next-button'))).click()
+
+        wait.until(EC.element_to_be_clickable((By.NAME, 'PUBLIC'))).click()
+        wait.until(EC.element_to_be_clickable((By.ID, 'done-button'))).click()
+
+        # 업로드된 URL 추출
+        url_elem = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'a.ytcp-video-info')))
+        video_url = url_elem.get_attribute('href')
+
+        return jsonify(ok=True, url=video_url)
     except Exception as e:
+        logging.exception("Upload failed")
         return jsonify(ok=False, error=str(e))
+    finally:
+        if driver:
+            driver.quit()
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
