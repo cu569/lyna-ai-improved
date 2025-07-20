@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
 
-# 크롬 드라이버 경로가 PATH에 없다면 아래처럼 직접 지정
+# 크롬 드라이버 경로가 PATH에 없으면 아래 주석 해제 후 경로 입력
 # driver = webdriver.Chrome(executable_path='C:/chromedriver.exe')
 driver = webdriver.Chrome()
 
@@ -19,7 +19,6 @@ time.sleep(2)
 upload_input = driver.find_element(By.XPATH, '//input[@type="file"]')
 upload_input.send_keys(r'C:\경로\동영상.mp4')  # 업로드할 실제 파일 경로로 수정!
 
-# (옵션) 제목, 설명 등 추가 자동화 가능
-
+# (옵션) 제목, 설명 등 추가 자동화 가능 (필요하면 요청!)
 time.sleep(60)  # 업로드 완료 대기 (필요시 더 늘려도 됨)
 driver.quit()
