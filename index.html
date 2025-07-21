@@ -1,199 +1,72 @@
-# ─────────────── backend/app.py ───────────────
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-import time, os, threading
+import os, time, threading
 
 app = Flask(__name__)
-CORS(app)  # 데모 단계 전체 도메인 허용
+CORS(app)
 
-# 업로드 대상 영상 (환경변수·요청 body로 대체 가능)
 VIDEO_PATH = os.getenv("VIDEO_PATH", r"C:\video\test.mp4")
+rimas, next_id = [], 1
 
-# ── 간단한 인메모리 DB ─────────────────────────
-rimas      = []          # [{id,name,leader(bool),approved(bool)}]
-pending_id = 1
 def new_rima(name):
-    global pending_id
-    rimas.append({"id": pending_id, "name":name, "leader":False, "approved":False})
-    pending_id += 1
-    return pending_id-1
+    global next_id
+    rimas.append({"id": next_id, "name": name,
+                  "leader": False, "approved": False})
+    next_id += 1
+    return next_id-1
 
-# ── Selenium 업로드 함수 (별도 쓰레드 실행) ──────
-def _upload(video_path, result):
-    try:
-        options = webdriver.ChromeOptions()
-        options.add_argument(r'--user-data-dir=C:\selenium\profile')
-        drv = webdriver.Chrome(service=Service(ChromeDriverManager().install()),
-                               options=options)
-        drv.get('https://studio.youtube.com/')
-        drv.find_element(By.XPATH, '//*[@id="create-icon"]').click()
-        drv.find_element(By.XPATH, '//*[@data-title="Upload videos"]').click()
-        time.sleep(2)
-        drv.find_element(By.CSS_SELECTOR, 'input[type="file"]').send_keys(video_path)
-
-        # 진행 상황 폴링
-        while True:
-            try:
-                bar = drv.find_element(By.CSS_SELECTOR, '#progress-bar')
-                if bar.get_attribute('aria-valuenow') == '100':
-                    break
-            except Exception:
-                pass
-            time.sleep(5)
-
-        url = drv.find_element(By.CSS_SELECTOR, 'a.ytcp-video-info').get_attribute('href')
-        drv.quit()
-        result["ok"]  = True
-        result["url"] = url
-    except Exception as e:
-        result["ok"]   = False
-        result["error"]= str(e)
-
-# ── REST API ───────────────────────────────────
 @app.route('/rima', methods=['GET','POST'])
-def rima_list_or_create():
+def rima():
     if request.method == 'POST':
-        name = request.json.get('name','New Rima')
-        rid  = new_rima(name)
-        return jsonify(ok=True, id=rid)
-    # GET
-    leaders  = sum(1 for r in rimas if r["leader"])
-    pendings = sum(1 for r in rimas if not r["approved"])
-    return jsonify(list=rimas, leader=leaders, pending=pendings)
+        return jsonify(ok=True, id=new_rima(request.json.get('name','New Rima')))
+    leaders = sum(r["leader"] for r in rimas)
+    pend    = sum(not r["approved"] for r in rimas)
+    return jsonify(list=rimas, leader=leaders, pending=pend)
 
 @app.route('/rima/<int:rid>/approve', methods=['POST'])
-def rima_approve(rid):
+def approve(rid):
     for r in rimas:
         if r["id"]==rid:
-            r["approved"]=True
-            r["leader"]=True if sum(x["leader"] for x in rimas)<10 else False
+            r["approved"]=True; r["leader"]=True
             return jsonify(ok=True)
-    return jsonify(ok=False, error="ID not found"), 404
+    return jsonify(ok=False,error="ID not found"),404
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    msg = request.json.get('msg','')
-    reply = "GPT-리마 응답: " + msg[::-1]   # 데모용: 거꾸로 반환
-    return jsonify(reply=reply)
+    msg=request.json.get('msg','')
+    return jsonify(reply="GPT-리마: "+msg[::-1])
+
+def _upload(res):
+    try:
+        opt=webdriver.ChromeOptions()
+        opt.add_argument(r'--user-data-dir=C:\selenium\profile')
+        drv=webdriver.Chrome(service=Service(ChromeDriverManager().install()),
+                             options=opt)
+        drv.get("https://studio.youtube.com/")
+        drv.find_element(By.ID,"create-icon").click()
+        drv.find_element(By.XPATH,'//*[@data-title="Upload videos"]').click()
+        time.sleep(2)
+        drv.find_element(By.CSS_SELECTOR,'input[type="file"]').send_keys(VIDEO_PATH)
+        while True:
+            try:
+                bar=drv.find_element(By.CSS_SELECTOR,'#progress-bar')
+                if bar.get_attribute('aria-valuenow')=='100': break
+            except: pass
+            time.sleep(5)
+        res["ok"]=True
+        res["url"]=drv.find_element(By.CSS_SELECTOR,'a.ytcp-video-info').get_attribute('href')
+        drv.quit()
+    except Exception as e:
+        res["ok"]=False; res["error"]=str(e)
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    result = {}
-    threading.Thread(target=_upload, args=(VIDEO_PATH,result)).start()
-    # 즉시 응답: 클라이언트에서 폴링 또는 웹소켓 대체 가능
-    return jsonify(ok=True, status="upload_started")
+    res={}; threading.Thread(target=_upload,args=(res,)).start()
+    return jsonify(ok=True,status="started")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv("PORT",8080)))
-
-# ─────────────── backend/requirements.txt ───────────────
-Flask
-flask-cors
-selenium>=4.21
-webdriver-manager
-
-# ─────────────── backend/Procfile (Render‧Heroku 등) ───────────────
-web: gunicorn app:app --bind 0.0.0.0:$PORT
-
-# ─────────────── frontend/index.html ───────────────
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>리마 AI 메인 상황판</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link href="https://unpkg.com/modern-css-reset/dist/reset.min.css" rel="stylesheet">
-<style>
-body{font-family:sans-serif;background:#e8edff;text-align:center;padding:2rem;}
-h1{color:#4b4bff;margin-bottom:2rem;}
-.grid{display:grid;grid-template-columns:repeat(2,160px);gap:1.5rem;justify-content:center;}
-.card{background:#fff;border-radius:16px;padding:1.2rem;box-shadow:0 4px 12px rgba(0,0,0,.08);cursor:pointer;}
-.card small{display:block;color:#666;margin-top:.3rem;font-size:.8rem}
-.badge{background:#4b4bff;color:#fff;border-radius:12px;padding:.2rem .6rem;font-size:.8rem}
-#yt-links a{display:block;margin-top:.4rem;}
-.modal{position:fixed;left:0;top:0;width:100%;height:100%;
-  background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;}
-.modal>.box{background:#fff;border-radius:12px;padding:1.5rem;width:90%;max-width:380px;text-align:left;}
-.modal.open{display:flex;}
-</style>
-</head>
-<body>
-
-<h1>리마 AI 메인 상황판</h1>
-
-<div class="grid">
-  <div id="card-create"  class="card">✨ 리마 생성/관리<small>무한 생성</small></div>
-  <div id="card-approve" class="card">🛡️ 리더 리마 승인<small>10개 초과 시 지문인증</small></div>
-  <div id="card-upload"  class="card">🎥 유튜브 업로드<small>자동 실행</small></div>
-  <div id="card-chat"    class="card">💬 채팅/알림/보고<small>실시간 대화</small></div>
-</div>
-
-<p style="margin-top:2rem">
-  현재 리더 리마: <span id="cnt" class="badge">0개</span> ｜ 승인대기: <span id="pending" class="badge">0건</span>
-</p>
-<div id="yt-links"></div>
-
-<!-- 채팅 모달 -->
-<div id="modal" class="modal">
-  <div class="box">
-    <h3>💬 채팅/알림/보고</h3>
-    <div id="chatBox" style="height:160px;overflow-y:auto;border:1px solid #ccc;padding:.5rem;margin:.5rem 0;"></div>
-    <input id="msg" placeholder="GPT+리마에게 명령 입력" style="width:100%;padding:.5rem">
-    <button id="sendBtn" style="width:100%;padding:.6rem;margin-top:.5rem;background:#4b4bff;color:#fff;border:none;border-radius:8px;">명령 전송</button>
-  </div>
-</div>
-
-<script>
-const API = "https://api.g911-rima.render.com";  // ★ 배포된 백엔드 URL
-
-const $ = s=>document.querySelector(s);
-
-// 카드 클릭 이벤트
-$("#card-create").onclick  = async ()=>{
-  const name=prompt("리마 이름?"); if(!name)return;
-  const r=await fetch(API+"/rima",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
-  const j=await r.json();
-  alert(j.ok?"리마 #"+j.id+" 생성":"ERROR");
-  refreshCounts();
-};
-$("#card-approve").onclick = async ()=>{
-  const id=prompt("승인할 리마 ID?"); if(!id)return;
-  const r=await fetch(API+"/rima/"+id+"/approve",{method:"POST"});
-  const j=await r.json();
-  alert(j.ok?"승인 완료":"ERROR: "+j.error);
-  refreshCounts();
-};
-$("#card-upload").onclick  = async ()=>{
-  alert("업로드 시작…");
-  const r=await fetch(API+"/upload",{method:"POST"});
-  const j=await r.json();
-  if(j.ok){ alert("서버에서 업로드 시작. 몇 분 뒤 링크가 도착합니다."); }
-  else    { alert("ERROR: "+j.error); }
-};
-$("#card-chat").onclick = ()=>$("#modal").classList.add("open");
-$("#modal").onclick = e=>{ if(e.target.id==="modal") $("#modal").classList.remove("open"); };
-
-$("#sendBtn").onclick = async ()=>{
-  const txt=$("#msg").value.trim(); if(!txt)return;
-  $("#msg").value=""; addChat("나",txt);
-  const r=await fetch(API+"/chat",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({msg:txt})});
-  const j=await r.json(); addChat("GPT",j.reply);
-};
-function addChat(who,msg){
-  const p=document.createElement("p");
-  p.innerHTML=`<b>[${who}]</b> ${msg}`;
-  $("#chatBox").append(p); $("#chatBox").scrollTop = $("#chatBox").scrollHeight;
-}
-async function refreshCounts(){
-  const r=await fetch(API+"/rima"); const j=await r.json();
-  $("#cnt").textContent=j.leader+"개";
-  $("#pending").textContent=j.pending+"건";
-}
-refreshCounts();
-</script>
-</body>
-</html>
