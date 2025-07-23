@@ -1,48 +1,26 @@
-# 1) 리포 클론
-cd %USERPROFILE%
-git clone https://github.com/USERNAME/g911-platform.git
-cd g911-platform
+# 1) 작업 폴더로 들어가기
+cd C:\Users\Park\Downloads\rima-webapp
 
-# 2) IPFS 실행 (별도 창 하나 열어서)
-ipfs init
-ipfs daemon --enable-pubsub-experiment
+# 2) 기존 .git·docs 폴더 삭제 (깨끗한 상태로 시작)
+Remove-Item -Recurse -Force .git, docs
 
-# 3) 백엔드 시작
-cd backend
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000 &    # ← & 로 백그라운드
+# 3) Git 초기화 및 원격 연결
+git init
+git remote add origin https://github.com/<YourUserName>/rima-webapp.git
 
-# 4) Rima 엔진 시작
-cd ..\rima_engine
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8001 &
+# 4) 기본 브랜치(main) 생성
+git checkout -b main
 
-# 5) PWA (mobile_client) 띄우기
-cd ..\mobile_client
-npm install
-npm run dev &                                  # 기본 http://localhost:5173
+# 5) GitHub Pages용 docs 폴더 준비
+md docs\tv
 
-# 6) TV Web 앱 (tv_client) 띄우기
-cd ..\tv_client
-npm install
-npm run dev &                                  # 기본 http://localhost:3000
+# 6) 모바일 클라이언트 빌드 결과 복사
+Copy-Item -Recurse .\mobile_client\dist\* docs\
 
-# 7) 브라우저 확장 로드
-cd ..\extension
-npm install
-npm run build                                  # dist/ 폴더 생성
-# Chrome → chrome://extensions → '개발자 모드' 온 → '압축해제된 확장 프로그램 로드' → dist/ 선택
+# 7) TV 클라이언트 빌드 결과 복사
+Copy-Item -Recurse .\tv_client\dist\* docs\tv\
 
-# --- 이제 통합 infra 가 자동으로 움직입니다 ---
-# 8) infra/docker-compose 로 오케스트레이션(별도 창)
-cd ..\infra
-docker-compose up -d
-
-# 9) 최종 확인
-# - http://localhost:5173 에서 스케줄 등록
-# - http://localhost:3000 에서 TV Web 뷰 확인
-# - 지정된 시간에 Studio (https://studio.youtube.com) 페이지에서 자동 업로드 트리거 확인
+# 8) 스테이징 → 커밋 → 푸시
+git add .
+git commit -m "feat: deploy rima-webapp to GitHub Pages"
+git push -u origin main
