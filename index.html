@@ -8,34 +8,20 @@
   <style>
     body { background: linear-gradient(120deg,#f3f4fa,#dde6f7 60%);}
     #log { font-size:15px;}
-    pre, code {
-      background: #f6f8fa;
-      color: #22223b;
-      font-family: 'Fira Mono', 'Consolas', monospace;
-      font-size: 13px;
-      line-height: 1.4;
-      border-radius: 8px;
-      padding: 10px 13px;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-      margin-bottom: 14px;
-      display: block;
-      max-width: 100vw;
-    }
     .btn { @apply bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition; }
+    .toolbar-btn { @apply px-3 py-1 mx-1 text-indigo-700 font-bold rounded hover:bg-indigo-100; cursor:pointer; }
   </style>
 </head>
 <body>
   <div class="max-w-lg mx-auto my-8 bg-white rounded-2xl shadow-xl p-5">
     <h2 class="text-2xl font-bold text-indigo-700 mb-2 text-center">G911 리마 1:1 퍼스널 비서 상황판</h2>
-    <div class="mb-4">
-      <button onclick="autoCmd('유튜브 업로드')" class="btn mb-2 mr-2">유튜브 업로드</button>
-      <button onclick="autoCmd('파일 만들어줘')" class="btn mb-2">파일 만들기</button>
-      <button onclick="autoCmd('영상 분석')" class="btn mb-2 mr-2">영상 분석</button>
-      <button onclick="autoCmd('오늘 할 일')" class="btn mb-2">오늘 할 일</button>
+    <div class="mb-3 flex flex-wrap gap-2">
+      <button onclick="followYoutube()" class="toolbar-btn bg-indigo-100">유튜브 업로드 따라하기</button>
+      <button onclick="autoCmd('파일 만들어줘')" class="toolbar-btn bg-indigo-100">파일 만들기</button>
+      <button onclick="autoCmd('영상 분석')" class="toolbar-btn bg-indigo-100">영상 분석</button>
+      <button onclick="autoCmd('오늘 할 일')" class="toolbar-btn bg-indigo-100">오늘 할 일</button>
     </div>
-    <div id="log" class="bg-slate-100 rounded p-3 h-44 mb-4 overflow-y-auto"></div>
+    <div id="log" class="bg-slate-100 rounded p-3 h-48 mb-4 overflow-y-auto"></div>
     <div class="flex gap-2 mb-3">
       <input id="cmd" type="text" class="flex-1 border border-indigo-200 rounded-lg p-2"
         placeholder="리마에게 명령 (예: 유튜브, 파일, 분석, 코드, 할 일)" onkeydown="if(event.key==='Enter'){send();}">
@@ -55,19 +41,29 @@
       else logEl.innerHTML += `<div>${msg}</div>`;
       logEl.scrollTop = 99999;
     }
-    // 명령 실행
+
+    // 유튜브 업로드 따라하기 버튼
+    function followYoutube() {
+      log(`<b>리마:</b> [유튜브 영상 업로드 단계 안내]<br>
+1) <a href="https://studio.youtube.com" target="_blank" class="text-indigo-600 underline">유튜브 스튜디오 바로가기</a><br>
+2) 파일 선택, 제목/설명 입력 후 업로드<br>
+<button onclick="youtubeDone()" class="btn bg-emerald-500 hover:bg-emerald-700 mt-2">업로드 완료!</button>`, true);
+    }
+    // 완료 버튼 클릭 시
+    function youtubeDone() {
+      log(`<b>리마:</b> 🎉 유튜브 업로드가 성공적으로 완료되었습니다!<br>[마이 영상 기록/분석도 요청 가능]`);
+    }
+
+    // 명령 실행 (기존)
     function send(msg0) {
       const el = document.getElementById('cmd');
       const msg = msg0 || el.value.trim();
       if(!msg) return;
       log(`<b>나:</b> ${msg}`);
       if (!msg0) el.value = '';
-      // 자동 안내 분기
+      // 안내 분기
       if(/유튜브.*(업로드|올려|등록|youtube)/i.test(msg)) {
-        log(`<b>리마:</b> [유튜브 영상 업로드 안내]<br>
-1) <a href="https://studio.youtube.com" target="_blank" class="text-indigo-600 underline">유튜브 스튜디오 바로가기</a><br>
-2) 파일 선택/제목 입력/설명 작성 후 업로드<br>
-(PC 자동화/셀레니움 업로드 연동은 2차 확장에서 추가 가능)`);
+        followYoutube();
       }
       else if(/(파일|txt|기록)/i.test(msg)) {
         const text = '리마가 만든 txt 파일\n' + new Date().toLocaleString();
@@ -85,9 +81,7 @@
         log(`<b>리마:</b> '${msg}'에 대한 안내입니다.`);
       }
     }
-    // 버튼 명령 바로 실행
     function autoCmd(msg){ document.getElementById('cmd').value=msg; send(msg);}
-    // 대화 기록 txt 저장
     function saveLog() {
       const text = chatHist.join('\n');
       const blob = new Blob([text], {type:'text/plain'});
@@ -97,7 +91,6 @@
       a.download = '리마_대화기록.txt';
       a.click();
     }
-    // 초기 인사
     log(`<b>리마:</b> 어떤 명령이든 입력하세요!`, false);
   </script>
 </body>
