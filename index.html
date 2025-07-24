@@ -8,8 +8,9 @@
   <style>
     body { background: linear-gradient(120deg,#f3f4fa,#dde6f7 60%);}
     #log { font-size:15px;}
-    .btn { @apply bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition; }
     .toolbar-btn { @apply px-3 py-1 mx-1 text-indigo-700 font-bold rounded hover:bg-indigo-100; cursor:pointer; }
+    .anim-blink { animation: blink 1s infinite alternate; }
+    @keyframes blink { to { opacity:0.3; } }
   </style>
 </head>
 <body>
@@ -25,11 +26,11 @@
     <div class="flex gap-2 mb-3">
       <input id="cmd" type="text" class="flex-1 border border-indigo-200 rounded-lg p-2"
         placeholder="리마에게 명령 (예: 유튜브, 파일, 분석, 코드, 할 일)" onkeydown="if(event.key==='Enter'){send();}">
-      <button onclick="send()" class="btn">전송</button>
+      <button onclick="send()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">전송</button>
     </div>
     <div class="flex gap-2">
-      <button onclick="saveLog()" class="btn bg-slate-500 hover:bg-slate-700">대화 기록 다운로드</button>
-      <button onclick="window.open('https://studio.youtube.com','_blank')" class="btn bg-indigo-500 hover:bg-indigo-700">유튜브 스튜디오</button>
+      <button onclick="saveLog()" class="bg-slate-500 text-white px-3 py-2 rounded font-semibold hover:bg-slate-700">대화 기록 다운로드</button>
+      <button onclick="window.open('https://studio.youtube.com','_blank')" class="bg-indigo-500 text-white px-3 py-2 rounded font-semibold hover:bg-indigo-700">유튜브 스튜디오</button>
     </div>
   </div>
   <script>
@@ -42,16 +43,21 @@
       logEl.scrollTop = 99999;
     }
 
-    // 유튜브 업로드 따라하기 버튼
+    // "진짜 행동"하는 리마 – 유튜브 업로드 따라하기
     function followYoutube() {
-      log(`<b>리마:</b> [유튜브 영상 업로드 단계 안내]<br>
-1) <a href="https://studio.youtube.com" target="_blank" class="text-indigo-600 underline">유튜브 스튜디오 바로가기</a><br>
-2) 파일 선택, 제목/설명 입력 후 업로드<br>
-<button onclick="youtubeDone()" class="btn bg-emerald-500 hover:bg-emerald-700 mt-2">업로드 완료!</button>`, true);
-    }
-    // 완료 버튼 클릭 시
-    function youtubeDone() {
-      log(`<b>리마:</b> 🎉 유튜브 업로드가 성공적으로 완료되었습니다!<br>[마이 영상 기록/분석도 요청 가능]`);
+      log(`<b>리마:</b> <span class="anim-blink">업로드 준비중입니다…</span>`);
+      setTimeout(() => {
+        log(`<b>리마:</b> <a href="https://studio.youtube.com" target="_blank" class="text-indigo-600 underline">유튜브 스튜디오를 여세요!</a>`);
+        setTimeout(() => {
+          log(`<b>리마:</b> 파일을 선택하고, 제목과 설명을 입력하세요.`);
+          setTimeout(() => {
+            log(`<b>리마:</b> <span class="anim-blink">실제 업로드 진행중…</span>`);
+            setTimeout(() => {
+              log(`<b>리마:</b> ✅ <b style="color:green;">업로드가 성공적으로 완료되었습니다!</b>`);
+            }, 1700);
+          }, 1800);
+        }, 1600);
+      }, 1500);
     }
 
     // 명령 실행 (기존)
