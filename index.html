@@ -1,59 +1,118 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-import os, time
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>리마 1.0 컨트롤 박스</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="max-w-xl mx-auto p-4">
+    <h1 class="text-3xl font-bold text-indigo-700 text-center mt-4">리마 1.0 메인 상황판</h1>
 
-VIDEO_PATH = r"C:\video\test.mp4"   # 업로드할 동영상 파일 경로
-TITLE = "리마 자동화 업로드 테스트"
-DESCRIPTION = "리마가 직접 올린 영상입니다!"
+    <!-- 상태 -->
+    <div id="statusBox" class="bg-white p-3 mt-4 rounded-xl shadow text-center">
+      <span id="statusText">리마 준비 완료</span>
+    </div>
 
-# 크롬 프로필 경로(본인 PC에 맞게)
-options = webdriver.ChromeOptions()
-options.add_argument(r"--user-data-dir=C:\Users\홍길동\AppData\Local\Google\Chrome\User Data")
-options.add_argument("--profile-directory=Default")
-options.add_argument("--disable-gpu")
-options.add_argument("--no-sandbox")
+    <!-- 카드 메뉴 -->
+    <div class="grid grid-cols-2 gap-4 mt-6">
+      <div onclick="openModal('upload')" class="rounded-xl bg-white shadow p-4 text-center hover:scale-105 transition">
+        <span class="text-2xl">⬆️</span><p class="font-bold">유튜브 업로드</p>
+      </div>
+      <div onclick="openModal('analysis')" class="rounded-xl bg-white shadow p-4 text-center hover:scale-105 transition">
+        <span class="text-2xl">📊</span><p class="font-bold">영상 분석</p>
+      </div>
+      <div onclick="openModal('todo')" class="rounded-xl bg-white shadow p-4 text-center hover:scale-105 transition">
+        <span class="text-2xl">📝</span><p class="font-bold">오늘 할 일</p>
+      </div>
+      <div onclick="openModal('chat')" class="rounded-xl bg-white shadow p-4 text-center hover:scale-105 transition">
+        <span class="text-2xl">💬</span><p class="font-bold">리마 대화</p>
+      </div>
+    </div>
 
-driver = webdriver.Chrome(service=Service(), options=options)
+    <!-- 모달 -->
+    <div id="modalBG" class="fixed inset-0 bg-black bg-opacity-40 hidden justify-center items-center">
+      <div class="bg-white p-6 rounded-xl w-[90vw] max-w-md relative">
+        <button onclick="closeModal()" class="absolute top-3 right-4 text-xl">×</button>
+        <div id="modalContent"></div>
+      </div>
+    </div>
+  </div>
 
-try:
-    driver.get("https://studio.youtube.com/upload")
-    time.sleep(5)
-    file_input = driver.find_element(By.XPATH, "//input[@type='file']")
-    file_input.send_keys(VIDEO_PATH)
-    time.sleep(2)
+  <script>
+    // 리마 기억 불러오기
+    let rimaState = JSON.parse(localStorage.getItem('rimaState')) || { history: [] };
 
-    # 제목/설명 입력
-    boxes = driver.find_elements(By.ID, "textbox")
-    if len(boxes) >= 2:
-        boxes[0].clear()
-        boxes[0].send_keys(TITLE)
-        boxes[1].send_keys(DESCRIPTION)
-    time.sleep(1)
+    function saveState() {
+      localStorage.setItem('rimaState', JSON.stringify(rimaState));
+    }
 
-    # [다음] 3번 클릭
-    for _ in range(3):
-        driver.find_element(By.ID, "next-button").click()
-        time.sleep(2)
+    function openModal(type){
+      let html = "";
+      if(type==='upload'){
+        html = `
+          <h2 class="text-xl font-bold mb-2">유튜브 업로드</h2>
+          <input type="text" id="videoTitle" placeholder="영상 제목" class="border p-2 w-full mb-2"/>
+          <button onclick="uploadVideo()" class="w-full bg-indigo-600 text-white p-2 rounded">업로드</button>
+        `;
+      } else if(type==='analysis'){
+        html = `
+          <h2 class="text-xl font-bold mb-2">영상 분석</h2>
+          <button onclick="analyzeVideo()" class="w-full bg-indigo-600 text-white p-2 rounded">분석 시작</button>
+        `;
+      } else if(type==='todo'){
+        html = `
+          <h2 class="text-xl font-bold mb-2">오늘 할 일</h2>
+          <textarea id="todoInput" placeholder="할 일 입력" class="border p-2 w-full mb-2"></textarea>
+          <button onclick="saveTodo()" class="w-full bg-indigo-600 text-white p-2 rounded">저장</button>
+        `;
+      } else if(type==='chat'){
+        html = `
+          <h2 class="text-xl font-bold mb-2">리마와 대화</h2>
+          <div id="chatBox" class="border p-2 h-32 overflow-y-auto mb-2 bg-gray-50">${rimaState.history.map(m=>`<div>${m}</div>`).join("")}</div>
+          <input type="text" id="chatInput" placeholder="메시지 입력" class="border p-2 w-full mb-2"/>
+          <button onclick="sendChat()" class="w-full bg-indigo-600 text-white p-2 rounded">전송</button>
+        `;
+      }
+      document.getElementById('modalContent').innerHTML = html;
+      document.getElementById('modalBG').classList.remove('hidden');
+    }
 
-    # 공개로 설정
-    public_btn = driver.find_element(By.NAME, "PUBLIC")
-    public_btn.click()
-    time.sleep(1)
+    function closeModal(){
+      document.getElementById('modalBG').classList.add('hidden');
+    }
 
-    # 완료
-    driver.find_element(By.ID, "done-button").click()
+    function uploadVideo(){
+      const title = document.getElementById('videoTitle').value;
+      document.getElementById('statusText').innerText = `업로드 준비: ${title}`;
+      rimaState.history.push(`업로드 요청: ${title}`);
+      saveState();
+      closeModal();
+    }
 
-    # 업로드 성공 대기
-    timeout = time.time() + 60
-    while time.time() < timeout:
-        if "게시됨" in driver.page_source or "Published" in driver.page_source:
-            print("✅ 업로드 성공!")
-            break
-        time.sleep(2)
-    else:
-        print("⚠️ 업로드 확인 타임아웃")
+    function analyzeVideo(){
+      document.getElementById('statusText').innerText = "영상 분석 중...";
+      rimaState.history.push("영상 분석 요청");
+      saveState();
+      closeModal();
+    }
 
-finally:
-    time.sleep(5)
-    driver.quit()
+    function saveTodo(){
+      const todo = document.getElementById('todoInput').value;
+      rimaState.history.push(`할 일: ${todo}`);
+      document.getElementById('statusText').innerText = "오늘 할 일 저장됨";
+      saveState();
+      closeModal();
+    }
+
+    function sendChat(){
+      const input = document.getElementById('chatInput').value;
+      rimaState.history.push(`나: ${input}`);
+      document.getElementById('chatBox').innerHTML += `<div>나: ${input}</div>`;
+      saveState();
+      document.getElementById('chatInput').value = "";
+    }
+  </script>
+</body>
+</html>
