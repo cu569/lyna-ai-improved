@@ -2,33 +2,103 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>리마 채팅 예시</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>G911 리마 1:1 퍼스널 비서 상황판</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    #log {min-height:80px; background:#f5f5fa; border-radius:12px; padding:10px;}
-    .btn {background:#5b4fff;color:white;padding:6px 15px;border:none;border-radius:8px;}
-    input {padding:6px 8px;border-radius:7px;}
+    body { background: linear-gradient(120deg,#f3f4fa,#dde6f7 60%);}
+    #log { font-size:15px;}
+    pre, code {
+      background: #f6f8fa;
+      color: #22223b;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      border-radius: 8px;
+      padding: 10px 13px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-bottom: 14px;
+      display: block;
+      max-width: 100vw;
+    }
+    .btn { @apply bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition; }
   </style>
 </head>
 <body>
-  <div id="log">리마: 어떤 명령이든 입력하세요!</div>
-  <div style="margin-top:10px;">
-    <input id="cmd" placeholder="명령 입력 (예: 유튜브)" style="width:60%">
-    <button onclick="send()" class="btn">전송</button>
+  <div class="max-w-lg mx-auto my-8 bg-white rounded-2xl shadow-xl p-5">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-2 text-center">G911 리마 1:1 퍼스널 비서 상황판</h2>
+    <div class="mb-4">
+      <button onclick="autoCmd('유튜브 업로드')" class="btn mb-2 mr-2">유튜브 업로드</button>
+      <button onclick="autoCmd('파일 만들어줘')" class="btn mb-2">파일 만들기</button>
+      <button onclick="autoCmd('영상 분석')" class="btn mb-2 mr-2">영상 분석</button>
+      <button onclick="autoCmd('오늘 할 일')" class="btn mb-2">오늘 할 일</button>
+    </div>
+    <div id="log" class="bg-slate-100 rounded p-3 h-44 mb-4 overflow-y-auto"></div>
+    <div class="flex gap-2 mb-3">
+      <input id="cmd" type="text" class="flex-1 border border-indigo-200 rounded-lg p-2"
+        placeholder="리마에게 명령 (예: 유튜브, 파일, 분석, 코드, 할 일)" onkeydown="if(event.key==='Enter'){send();}">
+      <button onclick="send()" class="btn">전송</button>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="saveLog()" class="btn bg-slate-500 hover:bg-slate-700">대화 기록 다운로드</button>
+      <button onclick="window.open('https://studio.youtube.com','_blank')" class="btn bg-indigo-500 hover:bg-indigo-700">유튜브 스튜디오</button>
+    </div>
   </div>
   <script>
-    function send() {
-      const el = document.getElementById('cmd');
-      const msg = el.value.trim();
-      if(!msg) return;
-      document.getElementById('log').innerHTML += "<div><b>나:</b> " + msg + "</div>";
-      // 리마 답변 예시
-      setTimeout(()=>{
-        document.getElementById('log').innerHTML += "<div><b>리마:</b> '" + msg + "'에 대한 안내입니다.</div>";
-      }, 400);
-      el.value = "";
-      el.focus();
+    let chatHist = [];
+    function log(msg, isRaw) {
+      chatHist.push(msg.replace(/<[^>]+>/g,""));
+      const logEl = document.getElementById('log');
+      if(isRaw) logEl.innerHTML += msg;
+      else logEl.innerHTML += `<div>${msg}</div>`;
+      logEl.scrollTop = 99999;
     }
+    // 명령 실행
+    function send(msg0) {
+      const el = document.getElementById('cmd');
+      const msg = msg0 || el.value.trim();
+      if(!msg) return;
+      log(`<b>나:</b> ${msg}`);
+      if (!msg0) el.value = '';
+      // 자동 안내 분기
+      if(/유튜브.*(업로드|올려|등록|youtube)/i.test(msg)) {
+        log(`<b>리마:</b> [유튜브 영상 업로드 안내]<br>
+1) <a href="https://studio.youtube.com" target="_blank" class="text-indigo-600 underline">유튜브 스튜디오 바로가기</a><br>
+2) 파일 선택/제목 입력/설명 작성 후 업로드<br>
+(PC 자동화/셀레니움 업로드 연동은 2차 확장에서 추가 가능)`);
+      }
+      else if(/(파일|txt|기록)/i.test(msg)) {
+        const text = '리마가 만든 txt 파일\n' + new Date().toLocaleString();
+        const blob = new Blob([text], {type:'text/plain'});
+        const url = URL.createObjectURL(blob);
+        log(`<b>리마:</b> <a href="${url}" download="리마파일.txt" class="text-indigo-600 underline">여기서 txt 파일 다운</a>`);
+      }
+      else if(/(분석|썸네일|조회수)/i.test(msg)) {
+        log(`<b>리마:</b> 분석/썸네일/조회수 등 영상 분석 기능 준비됨.<br>유튜브 영상 URL을 붙여 넣어주세요!`);
+      }
+      else if(/오늘|할 일|todo|ToDo/i.test(msg)) {
+        log(`<b>리마:</b> 오늘 할 일<br>- 영상 업로드<br>- 유튜브 관리<br>- 공부<br>- 산책`);
+      }
+      else {
+        log(`<b>리마:</b> '${msg}'에 대한 안내입니다.`);
+      }
+    }
+    // 버튼 명령 바로 실행
+    function autoCmd(msg){ document.getElementById('cmd').value=msg; send(msg);}
+    // 대화 기록 txt 저장
+    function saveLog() {
+      const text = chatHist.join('\n');
+      const blob = new Blob([text], {type:'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '리마_대화기록.txt';
+      a.click();
+    }
+    // 초기 인사
+    log(`<b>리마:</b> 어떤 명령이든 입력하세요!`, false);
   </script>
 </body>
 </html>
