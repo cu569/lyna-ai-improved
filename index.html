@@ -1,178 +1,59 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>G911 리마 생성/명령 비서</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <style>
-    body { font-family:'Pretendard',sans-serif; background:#eef2fa; margin:0;}
-    .wrap { max-width:420px; margin:30px auto; background:white; border-radius:20px; box-shadow:0 3px 15px #b7c3ea55; padding:28px 18px 20px;}
-    h2 { color:#6554c0; text-align:center; margin-bottom:18px; font-size:1.5em; letter-spacing:-2px;}
-    .btn-main { display:block; width:100%; background:#6554c0; color:white; font-weight:700; border:none; border-radius:13px; font-size:1.1em; padding:13px 0; margin-bottom:16px; cursor:pointer;}
-    .limastate { text-align:center; margin-bottom:19px; color:#4f47aa;}
-    .menu { display:flex; gap:7px; margin-bottom:16px;}
-    .menu button {flex:1; background:#e8e8fa; color:#5d57b3; border:none; border-radius:8px; padding:10px 0; font-weight:600; font-size:1em; cursor:pointer;}
-    .menu button.active {background:#6554c0; color:white;}
-    .chatbox {min-height:110px; background:#f5f7ff; border-radius:11px; margin-bottom:12px; padding:13px 11px; font-size:1.08em;}
-    .msg-lima {margin-bottom:8px;}
-    .msg-me {margin-bottom:7px; text-align:right;}
-    .msg-lima span {color:#6554c0; font-weight:600;}
-    .msg-me span {color:#333; font-weight:500;}
-    .inputbar {display:flex; gap:7px;}
-    .inputbar input {flex:1; padding:11px; border-radius:9px; border:1px solid #cdd6ee; font-size:1em;}
-    .inputbar button {padding:0 23px; border-radius:9px; background:#6554c0; color:white; border:none; font-weight:600; font-size:1em; cursor:pointer;}
-    .menu2 {display:flex; gap:7px; margin-top:13px;}
-    .menu2 button {flex:1; background:#f5f7ff; color:#555bb7; border:none; border-radius:8px; padding:9px 0; font-weight:600; cursor:pointer;}
-    .limas {display:flex; gap:6px; margin:8px 0 10px;}
-    .limatag {background:#e9e4fd; color:#6554c0; border-radius:7px; padding:2px 10px; font-weight:600;}
-    @media (max-width:500px){ .wrap{margin:0; border-radius:0;} }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h2>G911 리마 1:1 비서 상황판</h2>
-    <button class="btn-main" onclick="createLima()">✨ 리마 생성</button>
-    <div class="limastate" id="limastate">리마가 아직 없습니다.<br>먼저 [리마 생성]을 눌러주세요.</div>
-    <div class="limas" id="limas"></div>
-    <div class="menu">
-      <button id="btnUpload" class="active">유튜브 업로드 따라하기</button>
-      <button id="btnFile">파일 만들기</button>
-      <button id="btnAnalysis">영상 분석</button>
-      <button id="btnTodo">오늘 할 일</button>
-    </div>
-    <div class="chatbox" id="chatbox">
-      <div class="msg-lima"><span>리마:</span> 리마가 생성되면 안내를 시작합니다.</div>
-    </div>
-    <form class="inputbar" onsubmit="sendMsg();return false;">
-      <input id="userInput" autocomplete="off" placeholder="리마에게 명령 (예: 유튜브 따라해, 파일 만들어 등)"/>
-      <button type="submit">전송</button>
-    </form>
-    <div class="menu2">
-      <button onclick="downloadLog()">대화 기록 다운로드</button>
-      <button onclick="window.open('https://studio.youtube.com','_blank')">유튜브 스튜디오</button>
-    </div>
-  </div>
-  <script>
-    // 여러 리마 관리 가능(확장성 대비)
-    let limas = [];  // [{id:1, name:'리마#1', active:true}]
-    let activeLima = null; // id
-    let mode = "upload";
-    let step = 0;
-    let chatlog = [];
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+import os, time
 
-    function createLima(){
-      const id = limas.length+1;
-      const name = '리마#'+id;
-      limas.push({id,name,active:true});
-      activeLima = id;
-      updateLimaState();
-      chatlog = [];
-      chatlog.push({from:'lima',msg:`${name} 생성 완료! 명령을 입력해 주세요.`});
-      updateChatbox();
-    }
-    function updateLimaState(){
-      const list = limas.map(l=>`<span class="limatag">${l.name}${l.active?'(활성)':''}</span>`).join('');
-      document.getElementById('limas').innerHTML = list;
-      document.getElementById('limastate').innerHTML =
-        limas.length ? `[${limas[limas.length-1].name}] 활성화됨!<br>명령을 입력하세요.` :
-        '리마가 아직 없습니다.<br>먼저 [리마 생성]을 눌러주세요.';
-    }
+VIDEO_PATH = r"C:\video\test.mp4"   # 업로드할 동영상 파일 경로
+TITLE = "리마 자동화 업로드 테스트"
+DESCRIPTION = "리마가 직접 올린 영상입니다!"
 
-    document.getElementById('btnUpload').onclick = function(){
-      mode = "upload"; step=0;
-      setActive(this); showChatIntro();
-    }
-    document.getElementById('btnFile').onclick = function(){
-      mode = "file"; step=0;
-      setActive(this); showChatIntro();
-    }
-    document.getElementById('btnAnalysis').onclick = function(){
-      mode = "analysis"; step=0;
-      setActive(this); showChatIntro();
-    }
-    document.getElementById('btnTodo').onclick = function(){
-      mode = "todo"; step=0;
-      setActive(this); showChatIntro();
-    }
-    function setActive(btn){
-      document.querySelectorAll('.menu button').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-    }
-    function showChatIntro() {
-      if(!activeLima){chatlog=[{from:'lima',msg:'리마가 없습니다. [리마 생성]을 눌러주세요.'}]; updateChatbox();return;}
-      chatlog = [];
-      if(mode=="upload") chatlog.push({from:'lima',msg:'유튜브 영상 업로드 따라하기!'});
-      if(mode=="file") chatlog.push({from:'lima',msg:'새 파일 만들기. 파일명과 내용을 알려주세요.'});
-      if(mode=="analysis") chatlog.push({from:'lima',msg:'분석할 영상을 설명해 주세요.'});
-      if(mode=="todo") chatlog.push({from:'lima',msg:'오늘 할 일을 말씀해 주세요.'});
-      updateChatbox();
-    }
-    function sendMsg() {
-      let v = document.getElementById('userInput').value.trim();
-      if(!v) return;
-      if(!activeLima){
-        chatlog=[{from:'lima',msg:'리마가 없습니다. [리마 생성]을 먼저 눌러주세요.'}];
-        updateChatbox(); return;
-      }
-      chatlog.push({from:'me', msg:v});
-      document.getElementById('userInput').value = "";
-      updateChatbox();
-      setTimeout(()=>limaFlow(v), 700);
-    }
-    function limaFlow(v){
-      if(mode==="upload"){
-        if(step===0 || /유튜브|업로드|따라해/.test(v)){
-          chatlog.push({from:'lima',msg:'[1] 유튜브 스튜디오로 이동하세요. <a href="https://studio.youtube.com" target="_blank" style="color:#6554c0;text-decoration:underline">바로가기</a>'});
-          chatlog.push({from:'lima',msg:'[2] 파일을 선택하고, 제목과 설명을 입력하세요.'});
-          chatlog.push({from:'lima',msg:'[3] 업로드 버튼을 누르세요.'});
-          chatlog.push({from:'lima',msg:'완료되면 "업로드 완료"라고 입력해 주세요.'});
-          step=1;
-        } else if(step===1 && /업로드 완료/.test(v)){
-          chatlog.push({from:'lima',msg:'✅ 업로드가 성공적으로 완료되었습니다!'});
-          step=0;
-        } else {
-          chatlog.push({from:'lima',msg:'진행 안내: 유튜브 업로드 과정을 순서대로 따라 해주세요.'});
-        }
-      }
-      else if(mode==="file"){
-        if(step===0){
-          chatlog.push({from:'lima',msg:'파일명을 입력해 주세요.'});
-          step=1;
-        } else if(step===1){
-          chatlog.push({from:'lima',msg:`"${v}" 파일 생성 완료!`});
-          step=0;
-        }
-      }
-      else if(mode==="analysis"){
-        if(step===0){
-          chatlog.push({from:'lima',msg:'분석할 영상의 주제나 질문을 알려주세요.'});
-          step=1;
-        } else if(step===1){
-          chatlog.push({from:'lima',msg:`"${v}" 영상을 분석했습니다. (예시)`});
-          step=0;
-        }
-      }
-      else if(mode==="todo"){
-        chatlog.push({from:'lima',msg:`"${v}" 할 일로 기록했습니다.`});
-      }
-      updateChatbox();
-    }
-    function updateChatbox() {
-      let html = '';
-      chatlog.forEach(row=>{
-        if(row.from==='lima') html += `<div class="msg-lima"><span>리마:</span> ${row.msg}</div>`;
-        else html += `<div class="msg-me"><span>나:</span> ${row.msg}</div>`;
-      });
-      document.getElementById('chatbox').innerHTML = html;
-    }
-    function downloadLog(){
-      let txt = chatlog.map(r=>(r.from==='lima'?'리마: ':'나: ')+r.msg.replace(/<[^>]+>/g,'')).join('\n');
-      let blob = new Blob([txt],{type:'text/plain'});
-      let url = URL.createObjectURL(blob);
-      let a = document.createElement('a');
-      a.href=url; a.download='lima_대화기록.txt'; a.click();
-      setTimeout(()=>URL.revokeObjectURL(url), 1000);
-    }
-  </script>
-</body>
-</html>
+# 크롬 프로필 경로(본인 PC에 맞게)
+options = webdriver.ChromeOptions()
+options.add_argument(r"--user-data-dir=C:\Users\홍길동\AppData\Local\Google\Chrome\User Data")
+options.add_argument("--profile-directory=Default")
+options.add_argument("--disable-gpu")
+options.add_argument("--no-sandbox")
+
+driver = webdriver.Chrome(service=Service(), options=options)
+
+try:
+    driver.get("https://studio.youtube.com/upload")
+    time.sleep(5)
+    file_input = driver.find_element(By.XPATH, "//input[@type='file']")
+    file_input.send_keys(VIDEO_PATH)
+    time.sleep(2)
+
+    # 제목/설명 입력
+    boxes = driver.find_elements(By.ID, "textbox")
+    if len(boxes) >= 2:
+        boxes[0].clear()
+        boxes[0].send_keys(TITLE)
+        boxes[1].send_keys(DESCRIPTION)
+    time.sleep(1)
+
+    # [다음] 3번 클릭
+    for _ in range(3):
+        driver.find_element(By.ID, "next-button").click()
+        time.sleep(2)
+
+    # 공개로 설정
+    public_btn = driver.find_element(By.NAME, "PUBLIC")
+    public_btn.click()
+    time.sleep(1)
+
+    # 완료
+    driver.find_element(By.ID, "done-button").click()
+
+    # 업로드 성공 대기
+    timeout = time.time() + 60
+    while time.time() < timeout:
+        if "게시됨" in driver.page_source or "Published" in driver.page_source:
+            print("✅ 업로드 성공!")
+            break
+        time.sleep(2)
+    else:
+        print("⚠️ 업로드 확인 타임아웃")
+
+finally:
+    time.sleep(5)
+    driver.quit()
