@@ -2,134 +2,109 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>G911 리마 메인 컨트롤 박스</title>
+  <title>G911 리마 1:1 퍼스널 비서</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gradient-to-br from-slate-100 to-indigo-200 min-h-screen">
-  <div class="max-w-2xl mx-auto p-4">
-    <h1 class="text-3xl font-extrabold text-indigo-700 mb-3 mt-5 text-center tracking-tight">G911 리마 메인 상황판</h1>
-    <!-- 상황판: 업로드 현황 + 명령 + 알림 + 리마 리스트 -->
-    <div class="bg-white rounded-2xl shadow-xl p-5 mb-4">
-      <div class="flex flex-wrap gap-4 items-center justify-between mb-2">
-        <button id="createRimaBtn" class="flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 text-lg transition">🪄 리마 생성</button>
-        <a id="studioLinkBtn" href="#" class="flex-1 py-2 bg-slate-200 text-indigo-700 rounded-xl font-bold hover:bg-indigo-300 text-lg text-center no-underline transition">🖥️ 유튜브 스튜디오 바로가기</a>
-      </div>
-      <div class="flex flex-wrap gap-4 mt-3 mb-2">
-        <div class="flex-1 text-center">
-          <span class="text-indigo-700 font-semibold">진행 중</span>
-          <div id="uploadStatus" class="text-base text-gray-700 mt-1">없음</div>
-        </div>
-        <div class="flex-1 text-center">
-          <span class="text-indigo-700 font-semibold">최근 기록</span>
-          <div id="logList" class="text-sm text-gray-500 mt-1"></div>
-        </div>
-      </div>
+<body class="bg-gradient-to-br from-slate-100 to-indigo-200 min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-3 text-center">G911 리마 1:1 퍼스널 비서</h2>
+    <div id="log" class="bg-slate-100 rounded p-3 h-44 mb-4 overflow-y-auto text-sm"></div>
+    <div class="flex gap-2">
+      <input id="cmd" type="text" class="flex-1 border border-indigo-200 rounded-lg p-2" placeholder="리마에게 명령 (예: 할 일, 파일, 유튜브, 분석, 번역, 애니메이션)" onkeydown="if(event.key==='Enter'){send();}">
+      <button onclick="send()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">전송</button>
     </div>
-    <!-- 채팅/명령 인터페이스 -->
-    <div class="bg-white rounded-2xl shadow-xl p-5 mb-4">
-      <div class="font-bold text-indigo-600 mb-2">GPT + 리마 + 나 채팅/명령</div>
-      <div id="chatHistory" class="bg-slate-50 rounded p-3 h-32 mb-3 overflow-y-auto text-[15px]"></div>
-      <div class="flex gap-2">
-        <input id="chatInput" type="text" class="flex-1 border border-indigo-200 rounded-lg p-2 focus:outline-none" placeholder="GPT/리마에게 명령 또는 질문..." onkeydown="if(event.key==='Enter'){sendChat();}">
-        <button onclick="sendChat()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition">전송</button>
-      </div>
-    </div>
-    <!-- 리마 리스트/상태판 -->
-    <div class="bg-white rounded-2xl shadow-xl p-5">
-      <div class="font-bold text-indigo-600 mb-2">모든 리마 현황</div>
-      <div id="rimaList" class="flex flex-wrap gap-3"></div>
+    <div class="mt-4 text-right">
+      <button onclick="downloadLog()" class="text-xs text-indigo-600 underline">대화 기록 다운로드</button>
     </div>
   </div>
   <script>
-    // 기본 상태
-    let rimas = [];
-    let logs = [];
-    let chatHist = [];
-    let studioLink = "https://studio.youtube.com/"; // 기본값, 사용자가 입력할 수 있음
+    // 리마의 맞춤형 기억 (로컬 저장)
+    let rimaMemory = JSON.parse(localStorage.getItem('rimaMemory')||'[]');
 
-    // 유튜브 스튜디오 링크 전체(글자 아무데나) 클릭으로 이동
-    document.getElementById('studioLinkBtn').addEventListener('click', e => {
-      e.preventDefault();
-      window.open(studioLink, '_blank');
-    });
-
-    // 리마 생성
-    document.getElementById('createRimaBtn').onclick = function() {
-      const idx = rimas.length + 1;
-      const rima = {id: idx, name: `리마#${idx}`, status: "대기", time: new Date().toLocaleTimeString()};
-      rimas.push(rima);
-      logs.unshift(`[${rima.time}] ${rima.name} 생성`);
-      updateRimaList();
-      updateLog();
-      updateUploadStatus(`${rima.name} 생성됨 (대기)`);
-      setTimeout(() => {
-        rima.status = "실행중";
-        updateRimaList();
-        updateUploadStatus(`${rima.name} 실행중...`);
-        setTimeout(() => {
-          rima.status = "완료";
-          updateRimaList();
-          logs.unshift(`[${new Date().toLocaleTimeString()}] ${rima.name} 실행 완료`);
-          updateLog();
-          updateUploadStatus(`${rima.name} 실행 완료!`);
-        }, 2000);
-      }, 1000);
-    };
-
-    function updateRimaList() {
-      document.getElementById('rimaList').innerHTML = rimas.length === 0
-        ? '<div class="text-gray-400">아직 생성된 리마가 없습니다.</div>'
-        : rimas.map(r =>
-          `<div class="flex flex-col items-center bg-indigo-50 rounded-xl px-3 py-2 shadow w-28 mb-2">
-             <span class="font-bold text-indigo-700">${r.name}</span>
-             <span class="text-sm text-gray-700">${r.status}</span>
-             <span class="text-xs text-gray-400">${r.time}</span>
-           </div>`).join('');
-    }
-    function updateLog() {
-      document.getElementById('logList').innerHTML = logs.slice(0,3).map(l => `<div>${l}</div>`).join('');
-    }
-    function updateUploadStatus(msg) {
-      document.getElementById('uploadStatus').textContent = msg;
-    }
-    // GPT+리마+나 채팅
-    function sendChat() {
-      const input = document.getElementById('chatInput');
-      const msg = input.value.trim();
+    function send() {
+      const el = document.getElementById('cmd');
+      const msg = el.value.trim();
       if(!msg) return;
-      chatHist.push({role: '나', msg});
-      document.getElementById('chatHistory').innerHTML += `<div><b>나:</b> ${msg}</div>`;
-      input.value = "";
-      setTimeout(()=>{
-        let reply = "";
-        if(/리마/i.test(msg) && /생성/.test(msg)) {
-          document.getElementById('createRimaBtn').click();
-          reply = "새 리마를 생성했습니다!";
-        } else if(/유튜브/i.test(msg) && /스튜디오/.test(msg)) {
-          reply = `<a href="${studioLink}" target="_blank" class="text-indigo-700 underline">유튜브 스튜디오로 이동</a>`;
-        } else {
-          reply = "GPT+리마가 명령을 받았습니다! (예시 응답)";
-        }
-        chatHist.push({role: 'GPT+리마', msg: reply});
-        document.getElementById('chatHistory').innerHTML += `<div><b>GPT+리마:</b> ${reply}</div>`;
-        document.getElementById('chatHistory').scrollTop = 99999;
-      }, 1200);
+      log(`<b>나:</b> ${msg}`);
+      el.value = '';
+      rimaMemory.push({role:'나', msg, date:new Date().toISOString()});
+      localStorage.setItem('rimaMemory', JSON.stringify(rimaMemory));
+
+      // 리마 기능(명령어별 분기)
+      // 1. 파일 생성
+      if(/파일|txt|문서/i.test(msg)) {
+        const text = '[리마]\n당신이 요청한 파일입니다!\n' + new Date().toLocaleString();
+        const blob = new Blob([text], {type:'text/plain'});
+        const url = URL.createObjectURL(blob);
+        log(`<b>리마:</b> <a href="${url}" download="리마파일.txt" class="text-indigo-600 underline">여기서 파일 다운</a>`);
+        rimaRemember('파일 생성');
+      }
+      // 2. 할 일/오늘 할 일
+      else if(/오늘 할 일|todo|할 일|계획/i.test(msg)) {
+        const todos = ['유튜브 영상 업로드', 'AI 공부 30분', '산책', '메모 정리'];
+        log(`<b>리마:</b> 오늘 할 일:<br>- `+todos.join('<br>- '));
+        rimaRemember('오늘 할 일 안내');
+      }
+      // 3. 유튜브 업로드
+      else if(/유튜브|영상 업로드|올려|업로드/i.test(msg)) {
+        log(`<b>리마:</b> 영상 업로드 준비 완료!<br>
+          <span class="text-gray-600 text-xs">(* 실제 자동화 연동은 2차 확장으로 바로 추가 가능!)</span>`);
+        rimaRemember('영상 업로드 준비');
+      }
+      // 4. 기록/노트/로그
+      else if(/기록|노트|저장|로그/i.test(msg)) {
+        log(`<b>리마:</b> 방금 대화를 노트에 저장했습니다.`);
+        rimaRemember('대화 기록 저장');
+      }
+      // 5. 영상 분석/번역/애니메이션 (기본 안내, 실제 API는 2차 연동)
+      else if(/분석|통계|데이터|트렌드|조회수|댓글/i.test(msg)) {
+        log(`<b>리마:</b> 영상 분석/통계 기능 준비 완료!<br>
+          <span class="text-gray-600 text-xs">(* 유튜브 영상 주소를 입력하시면 2차로 분석 API 연결이 바로 가능합니다)</span>`);
+        rimaRemember('영상 분석');
+      }
+      else if(/번역|다국어|translate|중국어|영어|일본어/i.test(msg)) {
+        log(`<b>리마:</b> 다국어 번역 준비!<br>
+          <span class="text-gray-600 text-xs">(* 실제 다국어 AI 연결은 2차에서 즉시 붙일 수 있습니다)</span>`);
+        rimaRemember('다국어 번역');
+      }
+      else if(/애니메이션|animation|캐릭터|AI영상|motion/i.test(msg)) {
+        log(`<b>리마:</b> 애니메이션 제작 모듈 준비!<br>
+          <span class="text-gray-600 text-xs">(* AI 영상/이미지/모션 API 연결은 2차에서 연동!)</span>`);
+        rimaRemember('애니메이션 제작');
+      }
+      // 6. 그 외
+      else {
+        log(`<b>리마:</b> 명령을 받았습니다!<br>
+          <span class="text-gray-500 text-xs">(* 원하는 자동화 기능은 단계별로 즉시 추가할 수 있습니다)</span>`);
+        rimaRemember('기본 명령 처리');
+      }
     }
 
-    // 상황판 업데이트(최초)
-    updateRimaList();
-    updateLog();
-    updateUploadStatus("없음");
+    function rimaRemember(action) {
+      rimaMemory.push({role:'리마', msg:action, date:new Date().toISOString()});
+      localStorage.setItem('rimaMemory', JSON.stringify(rimaMemory));
+    }
 
-    // 유튜브 스튜디오 링크 직접 입력받게(옵션)
-    document.getElementById('studioLinkBtn').ondblclick = function() {
-      const link = prompt("유튜브 스튜디오 링크를 입력하세요:", studioLink);
-      if(link) {
-        studioLink = link;
-        alert('링크가 저장되었습니다!');
-      }
-    };
+    // 로그 기록
+    function log(msg) {
+      const logEl = document.getElementById('log');
+      logEl.innerHTML += `<div>${msg}</div>`;
+      logEl.scrollTop = 99999;
+    }
+    // 대화 기록 다운로드
+    function downloadLog() {
+      const lines = rimaMemory.map(x=>`[${x.role}] ${x.msg} (${x.date})`).join('\n');
+      const blob = new Blob([lines], {type:'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = '리마_대화기록.txt'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    }
+
+    // 초기 인사
+    log(`<b>리마:</b> 반갑습니다! 어떤 명령이든 입력해 주세요.<br>
+      <span class="text-gray-400 text-xs">예: 파일 만들어줘, 오늘 할 일, 유튜브 영상 업로드, 번역, 분석, 애니메이션 등</span>`);
   </script>
 </body>
 </html>
