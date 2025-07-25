@@ -1,49 +1,44 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-import json, time
+from webdriver_manager.chrome import ChromeDriverManager
+import time
 
-# 1. data.json 불러오기
-with open('data.json', 'r', encoding='utf-8') as f:
-    data = json.load(f)
+# ===== 사용자 설정 =====
+VIDEO_PATH = r"C:\video\test.mp4"  # 업로드할 영상 경로
+TITLE = "리마 자동화 업로드 테스트"
+DESCRIPTION = "리마가 직접 올린 영상입니다"
 
-VIDEO_PATH = data['video_path']
-TITLE = data['title']
-DESCRIPTION = data['description']
+# ===== 크롬 프로필 경로 (로그인 유지) =====
+PROFILE_PATH = r"C:\Users\Park\AppData\Local\Google\Chrome\User Data"
 
-# 2. 크롬 프로필 경로 (로그인 상태 유지)
-PROFILE_PATH = r"C:\Users\사용자이름\AppData\Local\Google\Chrome\User Data"
-
+# ===== 크롬 옵션 설정 =====
 options = webdriver.ChromeOptions()
 options.add_argument(f"--user-data-dir={PROFILE_PATH}")
 options.add_argument("--profile-directory=Default")
+options.add_argument("--disable-gpu")
+options.add_argument("--no-sandbox")
 
-driver = webdriver.Chrome(service=Service(), options=options)
+# ===== 드라이버 실행 =====
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+driver.get("https://studio.youtube.com/upload")
 
-try:
-    driver.get("https://studio.youtube.com/upload")
-    time.sleep(5)
+# ===== 파일 업로드 =====
+time.sleep(5)
+file_input = driver.find_element(By.XPATH, "//input[@type='file']")
+file_input.send_keys(VIDEO_PATH)
 
-    # 파일 업로드
-    file_input = driver.find_element(By.XPATH, "//input[@type='file']")
-    file_input.send_keys(VIDEO_PATH)
-    time.sleep(2)
+# ===== 제목/설명 입력 =====
+time.sleep(2)
+boxes = driver.find_elements(By.ID, "textbox")
+if len(boxes) >= 2:
+    boxes[0].clear()
+    boxes[0].send_keys(TITLE)
+    boxes[1].send_keys(DESCRIPTION)
 
-    # 제목/설명 입력
-    boxes = driver.find_elements(By.ID, "textbox")
-    if len(boxes) >= 2:
-        boxes[0].clear()
-        boxes[0].send_keys(TITLE)
-        boxes[1].send_keys(DESCRIPTION)
-
-    print("업로드 시작됨...")
-    time.sleep(10)
-
-    # 업로드 완료 표시
-    result = {"status": "success", "message": "업로드 완료"}
-except Exception as e:
-    result = {"status": "fail", "message": str(e)}
-finally:
-    with open("result.json", "w", encoding="utf-8") as f:
-        json.dump(result, f, ensure_ascii=False, indent=2)
-    driver.quit()
+time.sleep(2)
+print("업로드 자동화 완료!")
+@echo off
+cd /d "%~dp0"
+python uploader.py
+pause
