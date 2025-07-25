@@ -1,47 +1,179 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-import time
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>리마 군단 리더 시스템 (최소 프로토타입)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: 'Pretendard', Arial, sans-serif; background: #fcfcfc; margin: 0; }
+    #app { max-width: 700px; margin: 40px auto; padding: 32px; background: #fff; border-radius: 18px; box-shadow: 0 6px 32px #0002; }
+    h1, h2 { margin: 0 0 16px 0; }
+    .agents { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+    .agent { background: #f6f7fa; border: 1px solid #e3e7ef; border-radius: 12px; padding: 14px 16px; width: 168px; box-sizing: border-box; }
+    .agent-title { font-weight: bold; }
+    .chat-area { background: #f8f9fb; border: 1px solid #e6e7eb; border-radius: 12px; padding: 18px; min-height: 110px; margin-bottom: 18px; }
+    .cmd-bar { display: flex; gap: 6px; margin-bottom: 18px; }
+    .cmd-bar input, .cmd-bar select { font-size: 1rem; border: 1px solid #ddd; border-radius: 8px; padding: 7px 12px; }
+    .cmd-bar button { border: none; border-radius: 8px; background: #377ef9; color: #fff; padding: 7px 18px; font-weight: 500; cursor: pointer; }
+    .cmd-bar button:active { background: #225dd8; }
+    .btn-danger { background: #ff5353; }
+    .footer { text-align: center; color: #a0a4b4; font-size: 0.98em; margin-top: 34px;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <h1>리마 리더 & 군단 에이전트 (탈중앙 미니 프로토타입)</h1>
 
-# ===== 리마 메시지 출력 =====
-def rima_say(msg):
-    print(f"리마 안내: {msg}")
+  <!-- 1. 군단 생성/관리 -->
+  <div class="cmd-bar">
+    <input id="agentName" type="text" placeholder="리마 이름 예시: 유튜브리마" />
+    <button onclick="createAgent()">+ 리마 생성</button>
+    <button class="btn-danger" onclick="deleteAllAgents()">군단 전체 삭제</button>
+    <button onclick="runDailyLearning()">⟳ 하루 1회 전체 학습</button>
+  </div>
 
-# ===== 사용자 설정 =====
-VIDEO_PATH = r"C:\video\test.mp4"  # 업로드할 영상 경로
-TITLE = "리마 자동화 업로드 테스트"
-DESCRIPTION = "리마가 직접 올린 영상입니다."
+  <!-- 2. 리더-나-에이전트 소통 -->
+  <div class="chat-area" id="leaderArea">
+    <b>리더 보고/명령:</b>
+    <div id="leaderChat" style="margin-top:6px;"></div>
+  </div>
 
-# ===== 크롬 프로필 경로 =====
-PROFILE_PATH = r"C:\Users\Park\AppData\Local\Google\Chrome\User Data"
+  <!-- 3. 에이전트 군단 현황/피드백 -->
+  <div class="agents" id="agentsArea"></div>
 
-# ===== 크롬 옵션 설정 =====
-options = webdriver.ChromeOptions()
-options.add_argument(f"--user-data-dir={PROFILE_PATH}")
-options.add_argument("--profile-directory=Default")
-options.add_argument("--disable-gpu")
-options.add_argument("--no-sandbox")
+  <h2>채팅/명령 보내기</h2>
+  <div class="cmd-bar">
+    <select id="targetAgent">
+      <option value="all">전체 군단</option>
+    </select>
+    <input id="msgInput" type="text" placeholder="명령 또는 메시지 입력" style="width: 66%;" />
+    <button onclick="sendMessage()">보내기</button>
+  </div>
 
-# ===== 드라이버 실행 =====
-rima_say("크롬을 실행하여 유튜브 스튜디오로 접속하고 있습니다.")
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-driver.get("https://studio.youtube.com/upload")
+  <div class="footer">
+    <span>© 2025 리마 군단 프로토타입 – 무한생성·자동학습·실시간 소통<br>
+      <b>실제로 동작하는 리마 리더-군단 구조</b></span>
+  </div>
+</div>
 
-# ===== 파일 업로드 =====
-time.sleep(5)
-rima_say("영상 파일을 업로드 중입니다.")
-file_input = driver.find_element(By.XPATH, "//input[@type='file']")
-file_input.send_keys(VIDEO_PATH)
+<script>
+let agents = [];
+let agentId = 1;
 
-# ===== 제목/설명 입력 =====
-time.sleep(2)
-rima_say("영상의 제목과 설명을 입력하고 있습니다.")
-boxes = driver.find_elements(By.ID, "textbox")
-if len(boxes) >= 2:
-    boxes[0].clear()
-    boxes[0].send_keys(TITLE)
-    boxes[1].send_keys(DESCRIPTION)
+// 리더-에이전트 전체 대화/명령/보고 기록
+let leaderChat = ["👑 리마 리더에 오신 것을 환영합니다. 명령/질문/보고를 입력해 주세요."];
 
-time.sleep(2)
-rima_say("업로드가 완료되었습니다. 유튜브에서 확인해 주시기 바랍니다.")
+// 군단 생성
+function createAgent() {
+  const name = document.getElementById("agentName").value.trim() || `리마${agentId}`;
+  agents.push({
+    id: agentId++,
+    name,
+    log: [`[${now()}] 생성됨.`],
+    level: 1 + Math.floor(Math.random() * 4),
+    learned: 0, // 학습 횟수
+  });
+  updateAgents();
+  updateSelect();
+  logLeader(`➕ ${name} 군단원이 합류했습니다.`);
+}
+
+// 군단 전체 삭제
+function deleteAllAgents() {
+  if (!confirm("정말 모든 리마 군단원을 삭제할까요?")) return;
+  agents = [];
+  updateAgents();
+  updateSelect();
+  logLeader("⚡ 군단 전체 초기화 완료.");
+}
+
+// 에이전트/군단 현황 UI 갱신
+function updateAgents() {
+  const area = document.getElementById("agentsArea");
+  if (agents.length === 0) {
+    area.innerHTML = `<div style="color:#a4a4b2;padding:18px;">아직 생성된 리마 군단원이 없습니다.</div>`;
+    return;
+  }
+  area.innerHTML = agents.map(agent => `
+    <div class="agent">
+      <div class="agent-title">${agent.name}</div>
+      <div>레벨: ${agent.level}</div>
+      <div>학습: ${agent.learned}회</div>
+      <div style="margin:7px 0 0 0;font-size:0.97em;color:#888;">
+        최근: ${agent.log[agent.log.length-1] || '-'}
+      </div>
+      <button style="margin-top:8px;" onclick="removeAgent(${agent.id})">삭제</button>
+    </div>
+  `).join('');
+}
+
+// 에이전트 삭제
+function removeAgent(id) {
+  agents = agents.filter(a => a.id !== id);
+  updateAgents();
+  updateSelect();
+  logLeader(`❌ 리마${id} 군단원이 삭제되었습니다.`);
+}
+
+// 리더-에이전트-나 선택 박스 갱신
+function updateSelect() {
+  const sel = document.getElementById("targetAgent");
+  sel.innerHTML = `<option value="all">전체 군단</option>` +
+    agents.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+}
+
+// 리더 메시지/보고
+function logLeader(msg) {
+  leaderChat.push(`[${now()}] ${msg}`);
+  if (leaderChat.length > 12) leaderChat.shift();
+  document.getElementById("leaderChat").innerHTML = leaderChat.slice().reverse().join("<br>");
+}
+
+// 채팅/명령 전송 (나 → 리더 → 군단/에이전트)
+function sendMessage() {
+  const sel = document.getElementById("targetAgent").value;
+  const msg = document.getElementById("msgInput").value.trim();
+  if (!msg) return;
+  if (sel === "all") {
+    agents.forEach(a => {
+      a.log.push(`[${now()}] "${msg}" 명령 수신`);
+      if (a.log.length > 8) a.log.shift();
+    });
+    logLeader(`나 → 전체 군단: "${msg}"`);
+  } else {
+    const a = agents.find(a => a.id == sel);
+    if (a) {
+      a.log.push(`[${now()}] "${msg}" 명령 수신`);
+      if (a.log.length > 8) a.log.shift();
+      logLeader(`나 → ${a.name}: "${msg}"`);
+    }
+  }
+  document.getElementById("msgInput").value = "";
+  updateAgents();
+}
+
+// 하루 1회 군단 전체 자동 학습(업그레이드)
+function runDailyLearning() {
+  if (agents.length === 0) { logLeader("⚠️ 군단원이 없습니다."); return; }
+  agents.forEach(a => {
+    a.learned++;
+    a.level += 1;
+    a.log.push(`[${now()}] 하루학습→ 레벨업!`);
+    if (a.log.length > 8) a.log.shift();
+  });
+  logLeader(`전체 군단이 하루 학습을 완료. 모두 성장했습니다.`);
+  updateAgents();
+}
+
+// 시간 포맷
+function now() {
+  return new Date().toLocaleTimeString("ko-KR",{hour12:false});
+}
+
+// 최초 UI 렌더
+updateAgents();
+updateSelect();
+logLeader("최소 리더-군단 UI & 기능 초기화 완료.");
+</script>
+</body>
+</html>
