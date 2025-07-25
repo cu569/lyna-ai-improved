@@ -4,12 +4,16 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 
+# ===== 리마 메시지 출력 =====
+def rima_say(msg):
+    print(f"리마 안내: {msg}")
+
 # ===== 사용자 설정 =====
 VIDEO_PATH = r"C:\video\test.mp4"  # 업로드할 영상 경로
 TITLE = "리마 자동화 업로드 테스트"
-DESCRIPTION = "리마가 직접 올린 영상입니다"
+DESCRIPTION = "리마가 직접 올린 영상입니다."
 
-# ===== 크롬 프로필 경로 (로그인 유지) =====
+# ===== 크롬 프로필 경로 =====
 PROFILE_PATH = r"C:\Users\Park\AppData\Local\Google\Chrome\User Data"
 
 # ===== 크롬 옵션 설정 =====
@@ -20,16 +24,19 @@ options.add_argument("--disable-gpu")
 options.add_argument("--no-sandbox")
 
 # ===== 드라이버 실행 =====
+rima_say("크롬을 실행하여 유튜브 스튜디오로 접속하고 있습니다.")
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 driver.get("https://studio.youtube.com/upload")
 
 # ===== 파일 업로드 =====
 time.sleep(5)
+rima_say("영상 파일을 업로드 중입니다.")
 file_input = driver.find_element(By.XPATH, "//input[@type='file']")
 file_input.send_keys(VIDEO_PATH)
 
 # ===== 제목/설명 입력 =====
 time.sleep(2)
+rima_say("영상의 제목과 설명을 입력하고 있습니다.")
 boxes = driver.find_elements(By.ID, "textbox")
 if len(boxes) >= 2:
     boxes[0].clear()
@@ -37,8 +44,4 @@ if len(boxes) >= 2:
     boxes[1].send_keys(DESCRIPTION)
 
 time.sleep(2)
-print("업로드 자동화 완료!")
-@echo off
-cd /d "%~dp0"
-python uploader.py
-pause
+rima_say("업로드가 완료되었습니다. 유튜브에서 확인해 주시기 바랍니다.")
